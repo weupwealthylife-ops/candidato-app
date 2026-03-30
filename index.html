@@ -936,14 +936,18 @@ footer{
    REVEAL
 ════════════════════════════════════ */
 .reveal{
+  opacity:1;transform:translateY(0);
+  transition:none;
+}
+.reveal.animated{
   opacity:0;transform:translateY(18px);
   transition:opacity .6s cubic-bezier(.22,1,.36,1),transform .6s cubic-bezier(.22,1,.36,1);
 }
-.reveal.in{opacity:1;transform:translateY(0)}
-.reveal[data-d="1"]{transition-delay:.07s}
-.reveal[data-d="2"]{transition-delay:.14s}
-.reveal[data-d="3"]{transition-delay:.21s}
-.reveal[data-d="4"]{transition-delay:.28s}
+.reveal.animated.in{opacity:1;transform:translateY(0)}
+.reveal.animated[data-d="1"]{transition-delay:.07s}
+.reveal.animated[data-d="2"]{transition-delay:.14s}
+.reveal.animated[data-d="3"]{transition-delay:.21s}
+.reveal.animated[data-d="4"]{transition-delay:.28s}
 
 /* ════════════════════════════════════
    ACCESSIBILITY
@@ -1462,7 +1466,7 @@ footer{
         <li data-es="Envío de hojas de vida" data-en="Resume delivery">Envío de hojas de vida</li>
         <li data-es="Soporte por WhatsApp" data-en="WhatsApp support">Soporte por WhatsApp</li>
       </ul>
-      <a href="/app.html?type=company" class="btn btn-outline" style="width:100%;justify-content:center" data-es="Comenzar" data-en="Get started">Comenzar</a>
+      <a href="https://wa.me/573205046723" class="btn btn-outline" style="width:100%;justify-content:center" data-es="Comenzar" data-en="Get started">Comenzar</a>
     </div>
     <div class="pc feat reveal" data-d="2">
       <div class="pce">Pro ✦</div>
@@ -1477,7 +1481,7 @@ footer{
         <li data-es="Reporte de compatibilidad" data-en="Compatibility report">Reporte de compatibilidad</li>
         <li data-es="Asesoría personalizada" data-en="Personalized consulting">Asesoría personalizada</li>
       </ul>
-      <a href="/app.html?type=company" class="btn btn-coral" style="width:100%;justify-content:center" data-es="Comenzar" data-en="Get started">Comenzar</a>
+      <a href="https://wa.me/573205046723" class="btn btn-coral" style="width:100%;justify-content:center" data-es="Comenzar" data-en="Get started">Comenzar</a>
     </div>
     <div class="pc reveal" data-d="3">
       <div class="pce">Enterprise</div>
@@ -1491,7 +1495,7 @@ footer{
         <li data-es="SLA garantizado" data-en="Guaranteed SLA">SLA garantizado</li>
         <li data-es="Account manager" data-en="Account manager">Account manager</li>
       </ul>
-      <a href="/app.html?type=company" class="btn btn-outline" style="width:100%;justify-content:center" data-es="Hablemos" data-en="Let's talk">Hablemos</a>
+      <a href="https://wa.me/573205046723" class="btn btn-outline" style="width:100%;justify-content:center" data-es="Hablemos" data-en="Let's talk">Hablemos</a>
     </div>
   </div>
 </section>
@@ -1510,7 +1514,7 @@ footer{
         <span class="cc-label">WhatsApp</span>
       </div>
       <div class="cc-btn-wrap">
-        <a href="/cdn-cgi/l/email-protection#6b0304070a2b080a050f020f0a1f0445080406450804" class="cc-btn" aria-label="Email">
+        <a href="mailto:hola@candidato.com.co" class="cc-btn" aria-label="Email">
           <svg viewBox="0 0 48 48" fill="none"><defs><radialGradient id="eg" cx="38%" cy="32%" r="68%"><stop offset="0%" stop-color="#f5896a"/><stop offset="100%" stop-color="#c44e2c"/></radialGradient></defs><circle cx="24" cy="24" r="24" fill="url(#eg)"/><path d="M12 17a2 2 0 012-2h20a2 2 0 012 2v14a2 2 0 01-2 2H14a2 2 0 01-2-2V17zm2 0l10 7.5L34 17H14zm20 2.5L24 27 14 19.5V31h20V19.5z" fill="white"/></svg>
         </a>
         <span class="cc-label">Email</span>
@@ -1542,7 +1546,7 @@ footer{
   <div><div class="t-ttl" id="tttl"></div><div class="t-sub" id="tbdy"></div></div>
 </div>
 
-<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+<script>
 // ── Language ──────────────────────────────
 let lang = 'es';
 function setLang(l) {
@@ -1564,13 +1568,22 @@ window.addEventListener('scroll', () => {
 // ── Scroll reveal (IntersectionObserver) ──
 (function() {
   // ── Scroll reveal ───────────────────────────────────────
+  // Add animation class only after page is loaded (progressive enhancement)
+  // Elements are visible by default — animation is a bonus if JS works
+  window.addEventListener('load', () => {
+    // Trigger count-up for visible stat items immediately
+    document.querySelectorAll('.stat-item').forEach(item => {
+      const numEl = item.querySelector('.stat-n');
+      if (numEl && numEl.dataset.target) countUp(numEl);
+    });
+  });
+
   const obs = new IntersectionObserver(entries => {
     entries.forEach(e => {
       if (!e.isIntersecting) return;
       const d = +(e.target.dataset.d || 0);
       setTimeout(() => {
         e.target.classList.add('in');
-        // Trigger count-up if this is a stat-item
         if (e.target.classList.contains('stat-item')) {
           const numEl = e.target.querySelector('.stat-n');
           if (numEl && numEl.dataset.target) countUp(numEl);
@@ -1578,29 +1591,23 @@ window.addEventListener('scroll', () => {
       }, d * 90);
       obs.unobserve(e.target);
     });
-  }, { threshold: 0.01, rootMargin: '0px 0px 0px 0px' });
+  }, { threshold: 0.01, rootMargin: '0px' });
 
-  document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
-
-  // Force reveal all visible elements immediately
+  // Only add scroll animation to elements NOT already in viewport
   document.querySelectorAll('.reveal').forEach(el => {
-    if (el.getBoundingClientRect().top < window.innerHeight + 200)
-      el.classList.add('in');
-  });
-
-  setTimeout(() => {
-    document.querySelectorAll('.reveal:not(.in)').forEach(el => {
-      el.classList.add('in');
-    });
-    // Safety: also trigger stat count-ups if already visible
-    document.querySelectorAll('.stat-item').forEach(item => {
-      if (item.getBoundingClientRect().top < window.innerHeight) {
-        item.classList.add('in');
-        const numEl = item.querySelector('.stat-n');
+    const rect = el.getBoundingClientRect();
+    if (rect.top < window.innerHeight) {
+      // Already visible — just trigger count-up if needed, no animation
+      if (el.classList.contains('stat-item')) {
+        const numEl = el.querySelector('.stat-n');
         if (numEl && numEl.dataset.target) countUp(numEl);
       }
-    });
-  }, 350);
+    } else {
+      // Below fold — add animation class so it animates in when scrolled to
+      el.classList.add('animated');
+      obs.observe(el);
+    }
+  });
 
   // ── Count-up animation ──────────────────────────────────
   function countUp(el) {
@@ -1629,11 +1636,6 @@ window.addEventListener('scroll', () => {
 
 
 })();
-
-// ── Force all reveals after 1s (safety net) ──
-setTimeout(() => {
-  document.querySelectorAll('.reveal:not(.in)').forEach(el => el.classList.add('in'));
-}, 800);
 
 // ── Magnetic buttons ───────────────────────
 document.querySelectorAll('.btn-forest,.btn-coral,.sub-btn').forEach(btn => {
@@ -1678,4 +1680,7 @@ function doSub() {
   showToast('🎉', lang==='es'?'¡Match en camino!':'Match on its way!', lang==='es'?`Enviando matches a ${em}`:`Sending matches to ${em}`);
 }
 
-function showToast(ico, ttl, 
+function showToast(ico, ttl, bdy) {
+  document.getElementById('tico').textContent = ico;
+  document.getElementById('tttl').textContent = ttl;
+  document.getElementById('tbdy').textC
