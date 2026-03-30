@@ -1038,7 +1038,7 @@ footer{
 
 <!-- ── HERO ── -->
 <section class="hero" id="hero">
-  <div class="hero-l reveal">
+  <div class="hero-l">
     <span class="hero-eyebrow" data-es="Matching inteligente · Colombia" data-en="Intelligent matching · Colombia">Matching inteligente · Colombia</span>
     <h1 class="hero-h1">
       <span data-es="La conexión" data-en="The connection">La conexión</span><br/>
@@ -1510,7 +1510,7 @@ footer{
         <span class="cc-label">WhatsApp</span>
       </div>
       <div class="cc-btn-wrap">
-        <a href="mailto:hola@candidato.com.co" class="cc-btn" aria-label="Email">
+        <a href="/cdn-cgi/l/email-protection#6b0304070a2b080a050f020f0a1f0445080406450804" class="cc-btn" aria-label="Email">
           <svg viewBox="0 0 48 48" fill="none"><defs><radialGradient id="eg" cx="38%" cy="32%" r="68%"><stop offset="0%" stop-color="#f5896a"/><stop offset="100%" stop-color="#c44e2c"/></radialGradient></defs><circle cx="24" cy="24" r="24" fill="url(#eg)"/><path d="M12 17a2 2 0 012-2h20a2 2 0 012 2v14a2 2 0 01-2 2H14a2 2 0 01-2-2V17zm2 0l10 7.5L34 17H14zm20 2.5L24 27 14 19.5V31h20V19.5z" fill="white"/></svg>
         </a>
         <span class="cc-label">Email</span>
@@ -1542,7 +1542,7 @@ footer{
   <div><div class="t-ttl" id="tttl"></div><div class="t-sub" id="tbdy"></div></div>
 </div>
 
-<script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
 // ── Language ──────────────────────────────
 let lang = 'es';
 function setLang(l) {
@@ -1578,14 +1578,19 @@ window.addEventListener('scroll', () => {
       }, d * 90);
       obs.unobserve(e.target);
     });
-  }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
+  }, { threshold: 0.01, rootMargin: '0px 0px 0px 0px' });
 
   document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
 
+  // Force reveal all visible elements immediately
+  document.querySelectorAll('.reveal').forEach(el => {
+    if (el.getBoundingClientRect().top < window.innerHeight + 200)
+      el.classList.add('in');
+  });
+
   setTimeout(() => {
     document.querySelectorAll('.reveal:not(.in)').forEach(el => {
-      if (el.getBoundingClientRect().top < window.innerHeight + 100)
-        el.classList.add('in');
+      el.classList.add('in');
     });
     // Safety: also trigger stat count-ups if already visible
     document.querySelectorAll('.stat-item').forEach(item => {
@@ -1624,6 +1629,11 @@ window.addEventListener('scroll', () => {
 
 
 })();
+
+// ── Force all reveals after 1s (safety net) ──
+setTimeout(() => {
+  document.querySelectorAll('.reveal:not(.in)').forEach(el => el.classList.add('in'));
+}, 800);
 
 // ── Magnetic buttons ───────────────────────
 document.querySelectorAll('.btn-forest,.btn-coral,.sub-btn').forEach(btn => {
@@ -1668,7 +1678,4 @@ function doSub() {
   showToast('🎉', lang==='es'?'¡Match en camino!':'Match on its way!', lang==='es'?`Enviando matches a ${em}`:`Sending matches to ${em}`);
 }
 
-function showToast(ico, ttl, bdy) {
-  document.getElementById('tico').textContent = ico;
-  document.getElementById('tttl').textContent = ttl;
-  document.getElementById('tbdy').textC
+function showToast(ico, ttl, 
