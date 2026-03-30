@@ -1024,7 +1024,7 @@ footer{
     <li><a href="#process" data-es="Proceso" data-en="Process">Proceso</a></li>
     <li><a href="#metrics" data-es="Resultados" data-en="Results">Resultados</a></li>
     <li><a href="#curator" data-es="Talento" data-en="Talent">Talento</a></li>
-    <li><a href="#register" data-es="Candidatos" data-en="Candidates">Candidatos</a></li>
+    <li><a href="/app.html" data-es="Candidatos" data-en="Candidates">Candidatos</a></li>
     <li><a href="#pricing" data-es="Empresas" data-en="Companies">Empresas</a></li>
   </ul>
   <div class="nav-right">
@@ -1032,7 +1032,7 @@ footer{
       <button id="btn-es" class="on" onclick="setLang('es')">ES</button>
       <button id="btn-en" onclick="setLang('en')">EN</button>
     </div>
-    <a href="#register" class="btn btn-coral" data-es="Comenzar gratis" data-en="Get started free">Comenzar gratis</a>
+    <a href="/app.html" class="btn btn-coral" data-es="Comenzar gratis" data-en="Get started free">Comenzar gratis</a>
   </div>
 </nav>
 
@@ -1047,7 +1047,7 @@ footer{
     </h1>
     <p class="hero-sub" data-es="Candidato conecta el perfil correcto con la vacante correcta. Solo las oportunidades que realmente importan — directo a tu email." data-en="Candidato connects the right profile with the right position. Only the opportunities that truly matter — directly to your inbox.">Candidato conecta el perfil correcto con la vacante correcta. Solo las oportunidades que realmente importan — directo a tu email.</p>
     <div class="hero-actions">
-      <a href="#register" class="btn btn-forest btn-xl" data-es="Crear mi perfil gratis" data-en="Create my free profile">Crear mi perfil gratis</a>
+      <a href="/app.html" class="btn btn-forest btn-xl" data-es="Crear mi perfil gratis" data-en="Create my free profile">Crear mi perfil gratis</a>
       <a href="#process" class="btn btn-outline btn-xl" data-es="Cómo funciona" data-en="How it works">Cómo funciona</a>
     </div>
     <div class="hero-stats" id="heroStats">
@@ -1243,7 +1243,7 @@ footer{
         </div>
       </div>
       <div class="m-wide-text" data-es="Nacimos en Cali con pasión. Operamos en todo el país conectando el mejor talento colombiano con las mejores empresas." data-en="Born in Cali with passion. We operate nationwide connecting Colombia's best talent with the best companies.">Nacimos en Cali con pasión. Operamos en todo el país conectando el mejor talento colombiano con las mejores empresas.</div>
-      <a href="#register" class="btn btn-forest btn-lg" data-es="Unirme →" data-en="Join →">Unirme →</a>
+      <a href="/app.html" class="btn btn-forest btn-lg" data-es="Unirme →" data-en="Join →">Unirme →</a>
     </div>
   </div>
 </section>
@@ -1462,7 +1462,7 @@ footer{
         <li data-es="Envío de hojas de vida" data-en="Resume delivery">Envío de hojas de vida</li>
         <li data-es="Soporte por WhatsApp" data-en="WhatsApp support">Soporte por WhatsApp</li>
       </ul>
-      <a href="https://wa.me/573205046723" class="btn btn-outline" style="width:100%;justify-content:center" data-es="Comenzar" data-en="Get started">Comenzar</a>
+      <a href="/app.html?type=company" class="btn btn-outline" style="width:100%;justify-content:center" data-es="Comenzar" data-en="Get started">Comenzar</a>
     </div>
     <div class="pc feat reveal" data-d="2">
       <div class="pce">Pro ✦</div>
@@ -1477,7 +1477,7 @@ footer{
         <li data-es="Reporte de compatibilidad" data-en="Compatibility report">Reporte de compatibilidad</li>
         <li data-es="Asesoría personalizada" data-en="Personalized consulting">Asesoría personalizada</li>
       </ul>
-      <a href="https://wa.me/573205046723" class="btn btn-coral" style="width:100%;justify-content:center" data-es="Comenzar" data-en="Get started">Comenzar</a>
+      <a href="/app.html?type=company" class="btn btn-coral" style="width:100%;justify-content:center" data-es="Comenzar" data-en="Get started">Comenzar</a>
     </div>
     <div class="pc reveal" data-d="3">
       <div class="pce">Enterprise</div>
@@ -1491,7 +1491,7 @@ footer{
         <li data-es="SLA garantizado" data-en="Guaranteed SLA">SLA garantizado</li>
         <li data-es="Account manager" data-en="Account manager">Account manager</li>
       </ul>
-      <a href="https://wa.me/573205046723" class="btn btn-outline" style="width:100%;justify-content:center" data-es="Hablemos" data-en="Let's talk">Hablemos</a>
+      <a href="/app.html?type=company" class="btn btn-outline" style="width:100%;justify-content:center" data-es="Hablemos" data-en="Let's talk">Hablemos</a>
     </div>
   </div>
 </section>
@@ -1531,7 +1531,7 @@ footer{
   <span class="f-copy" data-es="© 2026 Candidato® · Cali, Colombia" data-en="© 2026 Candidato® · Cali, Colombia">© 2026 Candidato® · Cali, Colombia</span>
   <div class="f-links">
     <a href="#process" data-es="Proceso" data-en="Process">Proceso</a>
-    <a href="#register" data-es="Candidatos" data-en="Candidates">Candidatos</a>
+    <a href="/app.html" data-es="Candidatos" data-en="Candidates">Candidatos</a>
     <a href="#pricing" data-es="Empresas" data-en="Companies">Empresas</a>
     <a href="#contact" data-es="Contacto" data-en="Contact">Contacto</a>
   </div>
@@ -1671,9 +1671,4 @@ function doSub() {
 function showToast(ico, ttl, bdy) {
   document.getElementById('tico').textContent = ico;
   document.getElementById('tttl').textContent = ttl;
-  document.getElementById('tbdy').textContent = bdy
-  const t=document.getElementById('toast');t.classList.add('on');setTimeout(()=>t.classList.remove('on'),4200);
-}
-</script>
-</body>
-</html>
+  document.getElementById('tbdy').textC
