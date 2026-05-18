@@ -171,8 +171,8 @@ export default function Curator() {
                 </div>
               </div>
             </div>
-            <div className="mac-stand"></div>
-            <div className="mac-base"></div>
+            <div className="mac-hinge"></div>
+            <div className="mac-body"></div>
           </div>
         </div>
       </div>

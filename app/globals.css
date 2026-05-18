@@ -483,97 +483,87 @@ button:focus-visible,input:focus-visible,select:focus-visible,.btn:focus-visible
 .curator-copy .sec-sub{margin-bottom:2rem}
 
 /* Mac mockup wrapper */
+/* ════ MacBook Laptop Mockup ════ */
 .mac-wrap{
   position:relative;
   animation:floatMac 7s ease-in-out infinite;
   max-width:680px;
   width:100%;
+  filter:drop-shadow(0 24px 48px rgba(0,0,0,.28));
 }
 @keyframes floatMac{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
 
+/* ── Lid (screen lid) ── */
 .mac-outer{
-  background:#2a2a2a;border-radius:16px 16px 0 0;
+  background:linear-gradient(180deg,#3a3a3c 0%,#2c2c2e 100%);
+  border-radius:14px 14px 0 0;
   padding:10px 10px 0;
-  box-shadow:0 4px 0 #1a1a1a,0 32px 80px rgba(0,0,0,.22),0 0 0 1px rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.08);
+  border-bottom:none;
   position:relative;
   width:100%;
 }
 /* Notch bar */
 .mac-topbar{
-  height:28px;background:#1e1e1e;border-radius:8px 8px 0 0;
-  display:flex;align-items:center;padding:0 12px;gap:7px;margin-bottom:8px;
+  height:26px;background:#1c1c1e;border-radius:6px 6px 0 0;
+  display:flex;align-items:center;padding:0 10px;gap:6px;margin-bottom:6px;
 }
-.mac-dot{width:10px;height:10px;border-radius:50%}
+.mac-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
 .mac-dot.red{background:#ff5f56}
 .mac-dot.yel{background:#ffbd2e}
 .mac-dot.grn{background:#27c93f}
 .mac-addr{
-  flex:1;background:#2d2d2d;border-radius:4px;height:16px;
+  flex:1;background:#2a2a2c;border-radius:3px;height:14px;
   display:flex;align-items:center;justify-content:center;
-  font-size:.55rem;color:rgba(255,255,255,.3);font-family:var(--body);
+  font-size:.5rem;color:rgba(255,255,255,.3);font-family:var(--body);
 }
 
-/* Screen */
-.mac-screen{
-  background:#fafaf8;border-radius:4px 4px 0 0;
-  overflow:hidden;min-height:340px;
-  padding:20px;
+/* ── Body / keyboard base ── */
+.mac-body{
+  background:linear-gradient(180deg,#e8e8ea 0%,#d4d4d6 40%,#c8c8ca 100%);
+  border-radius:0 0 10px 10px;
+  height:22px;
+  width:100%;
+  position:relative;
+  border:1px solid rgba(0,0,0,.18);
+  border-top:1px solid rgba(255,255,255,.6);
+  box-shadow:0 4px 12px rgba(0,0,0,.2),inset 0 1px 0 rgba(255,255,255,.7);
 }
-/* Mac screen content — dashboard preview */
-.mac-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
-.mac-logo{font-family:var(--head);font-size:.75rem;font-weight:700;color:var(--forest)}
-.mac-week-badge{background:var(--pale);border:1px solid var(--mist);border-radius:50px;padding:3px 10px;font-size:.58rem;font-weight:600;color:var(--sage)}
+/* Trackpad hint */
+.mac-body::after{
+  content:'';
+  position:absolute;
+  bottom:4px;left:50%;transform:translateX(-50%);
+  width:80px;height:10px;
+  border-radius:4px;
+  background:rgba(0,0,0,.06);
+  border:1px solid rgba(0,0,0,.1);
+}
+/* Hinge / shadow between lid and body */
+.mac-hinge{
+  height:3px;
+  background:linear-gradient(to bottom,#1a1a1c,#2c2c2e);
+  width:100%;
+}
 
-.mac-profiles-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
-.mac-profile{
-  background:var(--white);border:1px solid var(--line);border-radius:10px;padding:10px;
-  transition:transform .3s,box-shadow .3s;
-}
-.mac-profile:hover{transform:translateY(-3px);box-shadow:0 8px 24px rgba(14,30,32,.08)}
-.mac-p-top{display:flex;align-items:center;gap:6px;margin-bottom:6px}
-.mac-p-ava{width:24px;height:24px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:.7rem}
-.mac-p-name{font-family:var(--head);font-size:.62rem;font-weight:700;color:var(--ink)}
-.mac-p-role{font-size:.55rem;color:var(--ink-45)}
-.mac-p-tags{display:flex;gap:3px;flex-wrap:wrap;margin-bottom:5px}
-.mac-p-tag{background:var(--pale);border-radius:3px;padding:1px 5px;font-size:.52rem;color:var(--ink-70)}
-.mac-p-match{display:flex;justify-content:space-between;align-items:center;background:var(--off);border-radius:5px;padding:4px 6px}
-.mac-p-match-l{font-size:.55rem;color:var(--ink-45)}
-.mac-p-match-n{font-family:var(--head);font-size:.65rem;font-weight:800;color:var(--coral)}
-/* Blur overlay */
+/* Blur overlay (unused but kept) */
 .mac-blur{
   position:absolute;bottom:0;left:0;right:0;height:120px;
   background:linear-gradient(to top,var(--off) 0%,transparent 100%);
   pointer-events:none;
 }
-/* Lock banner */
-.mac-lock{
-  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem;
-  padding:10px 14px;background:var(--forest);border-radius:8px;
-  position:relative;z-index:2;
-}
-.mac-lock-l{display:flex;align-items:center;gap:8px}
-.mac-lock-ico{font-size:.9rem}
-.mac-lock-txt{font-size:.68rem;color:rgba(255,255,255,.8);font-weight:500}
-.mac-lock-txt strong{color:var(--white);font-weight:700}
 .mac-btn{background:var(--coral);color:var(--white);border:none;border-radius:6px;padding:6px 14px;font-family:var(--body);font-size:.68rem;font-weight:600;cursor:pointer;transition:all .2s;white-space:nowrap}
 .mac-btn:hover{background:var(--coral-dk)}
 
-/* Mac stand */
-.mac-stand{
-  width:60px;height:14px;background:linear-gradient(to bottom,#3a3a3a,#2a2a2a);
-  margin:0 auto;border-radius:0 0 4px 4px;
-}
-.mac-base{
-  width:140px;height:6px;background:#2a2a2a;
-  margin:0 auto;border-radius:3px;
-  box-shadow:0 1px 0 #1a1a1a;
-}
+/* Old stand/base — hidden (laptop body replaces these) */
+.mac-stand{display:none}
+.mac-base{display:none}
 
 /* ── Mac Job Search UI ── */
 .mac-screen{
   background:#f7f8f9;border-radius:4px 4px 0 0;
   overflow:hidden;padding:0;
-  min-height:420px;position:relative;
+  min-height:400px;position:relative;
   display:flex;flex-direction:column;
 }
 /* App header */
@@ -1108,15 +1098,15 @@ footer{
 .lock-title{font-family:var(--head);font-size:.92rem;font-weight:700;color:var(--ink)}
 .lock-sub{font-size:.76rem;color:var(--ink-45);max-width:300px;line-height:1.6}
 
-/* ── FORM ── */
+/* ── FORM (app shell only — scoped to avoid overriding register form) ── */
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}
-.fg{margin-bottom:0}
-.fg label{display:block;font-size:.65rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-45);margin-bottom:.28rem}
-.fg input,.fg select,.fg textarea{width:100%;background:var(--off);border:1.5px solid transparent;border-radius:var(--radius-sm);padding:9px 11px;color:var(--ink);font-family:var(--body);font-size:.83rem;outline:none;transition:border-color .2s,box-shadow .2s,background .2s}
-.fg input:focus,.fg select:focus,.fg textarea:focus{background:var(--white);border-color:var(--forest);box-shadow:0 0 0 3px rgba(27,59,62,.07)}
-.fg textarea{resize:vertical;min-height:85px}
-.fg select{cursor:pointer;-webkit-appearance:none}
-.fg input::placeholder,.fg textarea::placeholder{color:var(--ink-45)}
+.app-shell .fg{margin-bottom:0}
+.app-shell .fg label{display:block;font-size:.65rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-45);margin-bottom:.28rem}
+.app-shell .fg input,.app-shell .fg select,.app-shell .fg textarea{width:100%;background:var(--off);border:1.5px solid transparent;border-radius:var(--radius-sm);padding:9px 11px;color:var(--ink);font-family:var(--body);font-size:.83rem;outline:none;transition:border-color .2s,box-shadow .2s,background .2s}
+.app-shell .fg input:focus,.app-shell .fg select:focus,.app-shell .fg textarea:focus{background:var(--white);border-color:var(--forest);box-shadow:0 0 0 3px rgba(27,59,62,.07)}
+.app-shell .fg textarea{resize:vertical;min-height:85px}
+.app-shell .fg select{cursor:pointer;-webkit-appearance:none}
+.app-shell .fg input::placeholder,.app-shell .fg textarea::placeholder{color:var(--ink-45)}
 .fg-full{grid-column:1/-1}
 .skill-row{display:flex;gap:.4rem}
 .skill-row input{flex:1}
