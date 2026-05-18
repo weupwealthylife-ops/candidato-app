@@ -21,7 +21,7 @@ export default function Pricing() {
         <div className="pc in">
           <div className="pce">Starter</div>
           <div className="pcn">{t('Básico', 'Basic')}</div>
-          <div className="pca"><sup>$</sup>250K <span>/ {t('mes', 'month')}</span></div>
+          <div className="pca"><sup>$</sup>300K <span>/ {t('mes', 'month')}</span></div>
           <div className="pcd"></div>
           <ul className="pcf">
             <li>{t('1 vacante al mes', '1 job listing per month')}</li>
