@@ -475,8 +475,8 @@ button:focus-visible,input:focus-visible,select:focus-visible,.btn:focus-visible
 .curator-inner{max-width:1200px;margin:0 auto}
 /* 2-col: copy left, mac right */
 .curator-split{
-  display:grid;grid-template-columns:380px 1fr;
-  gap:4rem;align-items:center;
+  display:grid;grid-template-columns:360px 1fr;
+  gap:3rem;align-items:center;
 }
 .curator-copy{display:flex;flex-direction:column;justify-content:center}
 .curator-copy .sec-h2{margin-bottom:.8rem}
@@ -486,6 +486,8 @@ button:focus-visible,input:focus-visible,select:focus-visible,.btn:focus-visible
 .mac-wrap{
   position:relative;
   animation:floatMac 7s ease-in-out infinite;
+  max-width:680px;
+  width:100%;
 }
 @keyframes floatMac{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
 
@@ -494,6 +496,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,.btn:focus-visible
   padding:10px 10px 0;
   box-shadow:0 4px 0 #1a1a1a,0 32px 80px rgba(0,0,0,.22),0 0 0 1px rgba(255,255,255,.06);
   position:relative;
+  width:100%;
 }
 /* Notch bar */
 .mac-topbar{
@@ -570,7 +573,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,.btn:focus-visible
 .mac-screen{
   background:#f7f8f9;border-radius:4px 4px 0 0;
   overflow:hidden;padding:0;
-  min-height:380px;position:relative;
+  min-height:420px;position:relative;
   display:flex;flex-direction:column;
 }
 /* App header */

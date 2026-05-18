@@ -1,3 +1,7 @@
+'use client'
+
+import { useLang } from '@/lib/LangContext'
+
 const CHIPS = [
   { i: 'DS', n: 'Daniela Salcedo', bg: '#EA6440' },
   { i: 'HP', n: 'helppeople', bg: '#1B3B3E' },
@@ -11,14 +15,15 @@ const CHIPS = [
 ]
 
 export default function TrustBar() {
+  const { t } = useLang()
   const all = [...CHIPS, ...CHIPS]
   return (
     <>
       <div className="trust-bar">
         <span className="trust-lbl">
-          Confían en
+          {t('Confían en', 'Trusted by')}
           <br />
-          nosotros
+          {t('nosotros', 'our clients')}
         </span>
         <div className="trust-sep"></div>
         <div className="marquee-wrap">

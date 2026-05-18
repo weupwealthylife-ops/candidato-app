@@ -1,39 +1,49 @@
+'use client'
+
+import { useLang } from '@/lib/LangContext'
+
 export default function Metrics() {
+  const { t } = useLang()
+
   return (
     <section className="sec" id="metrics" style={{ background: 'var(--cream)' }}>
       <div className="sec-inner">
         <div>
-          <span className="sec-eye">Por qué Candidato</span>
-          <h2 className="sec-h2">Resultados que hablan.</h2>
+          <span className="sec-eye">{t('Por qué Candidato', 'Why Candidato')}</span>
+          <h2 className="sec-h2">{t('Resultados que hablan.', 'Results that speak.')}</h2>
         </div>
         <div className="metrics-wrap">
           <div className="m-card dark in">
-            <div className="m-tag">Velocidad</div>
+            <div className="m-tag">{t('Velocidad', 'Speed')}</div>
             <div className="m-num">2–4</div>
-            <div className="m-label">semanas menos de espera</div>
+            <div className="m-label">{t('semanas menos de espera', 'fewer weeks of waiting')}</div>
             <div className="m-desc">
-              Reducimos el tiempo de contratación drásticamente. Menos tiempo
-              buscando, más tiempo construyendo.
+              {t(
+                'Reducimos el tiempo de contratación drásticamente. Menos tiempo buscando, más tiempo construyendo.',
+                'We drastically reduce hiring time. Less time searching, more time building.',
+              )}
             </div>
           </div>
           <div className="m-card in">
-            <div className="m-tag">Precisión</div>
+            <div className="m-tag">{t('Precisión', 'Precision')}</div>
             <div className="m-num coral">80%</div>
-            <div className="m-label">tasa de match exitoso</div>
+            <div className="m-label">{t('tasa de match exitoso', 'successful match rate')}</div>
             <div className="m-desc">
-              No es suerte — es tecnología. Nuestro algoritmo identifica
-              compatibilidad real entre candidato y empresa.
+              {t(
+                'No es suerte — es tecnología. Nuestro algoritmo identifica compatibilidad real entre candidato y empresa.',
+                "It's not luck — it's technology. Our algorithm identifies real compatibility between candidate and company.",
+              )}
             </div>
           </div>
           <div className="m-card in">
-            <div className="m-tag">Ahorro</div>
-            <div className="m-num" style={{ color: 'var(--forest)' }}>
-              −90%
-            </div>
-            <div className="m-label">en costos de contratación</div>
+            <div className="m-tag">{t('Ahorro', 'Savings')}</div>
+            <div className="m-num" style={{ color: 'var(--forest)' }}>−90%</div>
+            <div className="m-label">{t('en costos de contratación', 'in hiring costs')}</div>
             <div className="m-desc">
-              Sin honorarios de agencia tradicional. Solo el talento correcto, al
-              costo correcto.
+              {t(
+                'Sin honorarios de agencia tradicional. Solo el talento correcto, al costo correcto.',
+                'No traditional agency fees. Just the right talent, at the right cost.',
+              )}
             </div>
           </div>
         </div>
@@ -49,28 +59,23 @@ export default function Metrics() {
             borderTop: '1px solid var(--line)',
           }}
         >
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '1rem',
-              flexWrap: 'wrap',
-            }}
-          >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
             <span style={{ fontSize: '1.4rem' }}>🇨🇴 → 🌎</span>
             <div>
-              <div className="m-tag">Cobertura</div>
+              <div className="m-tag">{t('Cobertura', 'Coverage')}</div>
               <div className="m-label" style={{ marginBottom: 0 }}>
-                Hecho en Colombia, para el mundo
+                {t('Hecho en Colombia, para el mundo', 'Made in Colombia, for the world')}
               </div>
             </div>
           </div>
           <div className="m-wide-text">
-            Nacimos en Cali con pasión. Operamos en todo el país conectando el
-            mejor talento colombiano con las mejores empresas.
+            {t(
+              'Nacimos en Cali con pasión. Operamos en todo el país conectando el mejor talento colombiano con las mejores empresas.',
+              'Born in Cali with passion. We operate nationwide connecting the best Colombian talent with the best companies.',
+            )}
           </div>
           <a href="/app" className="btn btn-forest btn-lg">
-            Unirme →
+            {t('Unirme →', 'Join us →')}
           </a>
         </div>
       </div>
