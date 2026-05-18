@@ -1,49 +1,59 @@
+'use client'
+
+import { useLang } from '@/lib/LangContext'
+
 export default function Hero() {
+  const { t } = useLang()
+
   return (
     <section className="hero" id="hero">
       <div className="hero-l">
-        <span className="hero-eyebrow">Matching inteligente · Colombia</span>
+        <span className="hero-eyebrow">
+          {t('Matching inteligente · Colombia', 'Intelligent matching · Colombia')}
+        </span>
         <h1 className="hero-h1">
-          <span>La conexión</span>
+          <span>{t('La conexión', 'The connection')}</span>
           <br />
-          <span className="accent">que estaba</span>
+          <span className="accent">{t('que estaba', 'that was always')}</span>
           <br />
-          <span>destinada.</span>
+          <span>{t('destinada.', 'meant to be.')}</span>
         </h1>
         <p className="hero-sub">
-          Candidato conecta el perfil correcto con la vacante correcta. Solo las
-          oportunidades que realmente importan — directo a tu email.
+          {t(
+            'Candidato conecta el perfil correcto con la vacante correcta. Solo las oportunidades que realmente importan — directo a tu email.',
+            'Candidato connects the right profile with the right role. Only the opportunities that truly matter — straight to your inbox.',
+          )}
         </p>
         <div className="hero-actions">
           <a href="/app" className="btn btn-forest btn-xl">
-            Crear mi perfil gratis
+            {t('Crear mi perfil gratis', 'Create my free profile')}
           </a>
           <a href="#process" className="btn btn-outline btn-xl">
-            Cómo funciona
+            {t('Cómo funciona', 'How it works')}
           </a>
         </div>
         <div className="hero-stats" id="heroStats">
           <div className="stat-item in">
             <div className="stat-bar"></div>
             <div className="stat-n">+2.400</div>
-            <div className="stat-l">CVs procesados</div>
+            <div className="stat-l">{t('CVs procesados', 'CVs processed')}</div>
           </div>
           <div className="stat-item in">
             <div className="stat-bar"></div>
             <div className="stat-n">80%</div>
-            <div className="stat-l">Tasa de match</div>
+            <div className="stat-l">{t('Tasa de match', 'Match rate')}</div>
           </div>
           <div className="stat-item in">
             <div className="stat-bar"></div>
             <div className="stat-n">−90%</div>
-            <div className="stat-l">Costo de contratar</div>
+            <div className="stat-l">{t('Costo de contratar', 'Cost to hire')}</div>
           </div>
         </div>
       </div>
 
       <div className="hero-r">
         <div className="hero-r-fade"></div>
-        <div className="phone-pill top">✅ <span>Match encontrado</span></div>
+        <div className="phone-pill top">✅ <span>{t('Match encontrado', 'Match found')}</span></div>
         <div className="iphone-wrap">
           <div className="iphone">
             <div className="iphone-notch"></div>
@@ -53,12 +63,12 @@ export default function Hero() {
                 <span>●●●</span>
               </div>
               <div className="iphone-app">
-                <div className="app-greeting">Buenos días,</div>
+                <div className="app-greeting">{t('Buenos días,', 'Good morning,')}</div>
                 <div className="app-name">Ana ✦</div>
                 <div className="phone-card">
                   <div className="phone-card-head">
-                    <span className="phone-card-title">Tus mejores matches</span>
-                    <span className="phone-badge">3 nuevos</span>
+                    <span className="phone-card-title">{t('Tus mejores matches', 'Your best matches')}</span>
+                    <span className="phone-badge">{t('3 nuevos', '3 new')}</span>
                   </div>
                   <div className="phone-row top">
                     <div className="phone-ico">💻</div>
@@ -80,24 +90,24 @@ export default function Hero() {
                     <div className="phone-ico">🎨</div>
                     <div className="phone-body">
                       <div className="phone-job">Brand Designer</div>
-                      <div className="phone-co">Mango · Remoto</div>
+                      <div className="phone-co">Mango · {t('Remoto', 'Remote')}</div>
                     </div>
                     <span className="phone-pct">81%</span>
                   </div>
                   <div className="phone-email">
                     <span className="phone-email-ico">📧</span>
                     <div>
-                      <div className="phone-email-title">Email enviado</div>
-                      <div className="phone-email-sub">Revisá tu bandeja</div>
+                      <div className="phone-email-title">{t('Email enviado', 'Email sent')}</div>
+                      <div className="phone-email-sub">{t('Revisá tu bandeja', 'Check your inbox')}</div>
                     </div>
                   </div>
                 </div>
                 <div className="phone-insight">
                   <div className="insight-label">IA INSIGHT</div>
                   <div className="insight-text">
-                    <span>Salvaste </span>
-                    <strong>34% esta semana</strong>
-                    <span> — por encima del promedio!</span>
+                    <span>{t('Salvaste ', 'You saved ')}</span>
+                    <strong>{t('34% esta semana', '34% this week')}</strong>
+                    <span>{t(' — por encima del promedio!', ' — above average!')}</span>
                   </div>
                   <div className="insight-bar">
                     <div className="insight-fill"></div>

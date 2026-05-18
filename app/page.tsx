@@ -1,3 +1,6 @@
+'use client'
+
+import { LangProvider } from '@/lib/LangContext'
 import Nav from '@/components/Nav'
 import Hero from '@/components/Hero'
 import TrustBar from '@/components/TrustBar'
@@ -11,7 +14,7 @@ import Footer from '@/components/Footer'
 
 export default function HomePage() {
   return (
-    <>
+    <LangProvider>
       <Nav />
       <Hero />
       <TrustBar />
@@ -22,6 +25,6 @@ export default function HomePage() {
       <Pricing />
       <Contact />
       <Footer />
-    </>
+    </LangProvider>
   )
 }

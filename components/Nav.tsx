@@ -1,10 +1,12 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Image from 'next/image'
+import { useLang } from '@/lib/LangContext'
 
 export default function Nav() {
   const [scrolled, setScrolled] = useState(false)
-  const [lang, setLang] = useState<'es' | 'en'>('es')
+  const { lang, setLang, t } = useLang()
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 10)
@@ -12,50 +14,25 @@ export default function Nav() {
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
-  const t = (es: string, en: string) => (lang === 'es' ? es : en)
-
   return (
     <nav className={`nav${scrolled ? ' scrolled' : ''}`} id="nav">
       <a href="#hero" className="nav-logo">
-        <div
+        <Image
+          src="/bird-logo.png"
+          alt="Candidato"
+          width={34}
+          height={34}
           className="nav-bird"
-          aria-hidden
-          style={{
-            width: 34,
-            height: 34,
-            borderRadius: 8,
-            background:
-              'linear-gradient(135deg,var(--forest) 0%,var(--forest-lt) 100%)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: 'var(--white)',
-            fontFamily: 'var(--head)',
-            fontSize: '.85rem',
-            fontWeight: 800,
-            letterSpacing: '-.02em',
-          }}
-        >
-          C
-        </div>
+          priority
+        />
         Candidato®
       </a>
       <ul className="nav-links">
-        <li>
-          <a href="#process">{t('Proceso', 'Process')}</a>
-        </li>
-        <li>
-          <a href="#metrics">{t('Resultados', 'Results')}</a>
-        </li>
-        <li>
-          <a href="#curator">{t('Talento', 'Talent')}</a>
-        </li>
-        <li>
-          <a href="/app">{t('Candidatos', 'Candidates')}</a>
-        </li>
-        <li>
-          <a href="#pricing">{t('Empresas', 'Companies')}</a>
-        </li>
+        <li><a href="#process">{t('Proceso', 'Process')}</a></li>
+        <li><a href="#metrics">{t('Resultados', 'Results')}</a></li>
+        <li><a href="#curator">{t('Talento', 'Talent')}</a></li>
+        <li><a href="/app">{t('Candidatos', 'Candidates')}</a></li>
+        <li><a href="#pricing">{t('Empresas', 'Companies')}</a></li>
       </ul>
       <div className="nav-right">
         <div className="lang-pill">
