@@ -462,81 +462,45 @@ export default function AppPage() {
                     {cStep === 1 && (
                       <div>
                         <div className="ob-form-title">{t('Crear mi perfil', 'Create my profile')}</div>
-                        <div className="ob-form-sub">Gratis · Sin compromiso · 3 minutos</div>
+                        <div className="ob-form-sub">{t('Gratis · Sin compromiso · 3 minutos', 'Free · No commitment · 3 minutes')}</div>
                         <div className="form-grid">
                           <div className="fg">
-                            <label>Nombre *</label>
-                            <input
-                              type="text"
-                              value={cfn}
-                              onChange={(e) => setCfn(e.target.value)}
-                              placeholder="Daniela"
-                            />
+                            <label>{t('Nombre *', 'First name *')}</label>
+                            <input type="text" value={cfn} onChange={(e) => setCfn(e.target.value)} placeholder={t('Daniela', 'Jane')} />
                           </div>
                           <div className="fg">
-                            <label>Apellido *</label>
-                            <input
-                              type="text"
-                              value={cln}
-                              onChange={(e) => setCln(e.target.value)}
-                              placeholder="Martínez"
-                            />
+                            <label>{t('Apellido *', 'Last name *')}</label>
+                            <input type="text" value={cln} onChange={(e) => setCln(e.target.value)} placeholder={t('Martínez', 'Smith')} />
                           </div>
                           <div className="fg fg-full">
-                            <label>Email *</label>
-                            <input
-                              type="email"
-                              value={cem}
-                              onChange={(e) => setCem(e.target.value)}
-                              placeholder="daniela@email.com"
-                            />
+                            <label>{t('Email *', 'Email *')}</label>
+                            <input type="email" value={cem} onChange={(e) => setCem(e.target.value)} placeholder={t('daniela@email.com', 'jane@email.com')} />
                           </div>
                           <div className="fg fg-full">
-                            <label>WhatsApp</label>
-                            <input
-                              type="tel"
-                              value={cph}
-                              onChange={(e) => setCph(e.target.value)}
-                              placeholder="+57 300 000 0000"
-                            />
+                            <label>{t('WhatsApp', 'WhatsApp')}</label>
+                            <input type="tel" value={cph} onChange={(e) => setCph(e.target.value)} placeholder="+57 300 000 0000" />
                           </div>
                           <div className="fg">
-                            <label>Ciudad</label>
-                            <select
-                              value={ccy}
-                              onChange={(e) => setCcy(e.target.value)}
-                            >
-                              <option value="" disabled>
-                                Seleccioná
-                              </option>
-                              <option>Cali</option>
-                              <option>Bogotá</option>
-                              <option>Medellín</option>
-                              <option>Barranquilla</option>
-                              <option>Bucaramanga</option>
-                              <option>Otra</option>
+                            <label>{t('Ciudad', 'City')}</label>
+                            <select value={ccy} onChange={(e) => setCcy(e.target.value)}>
+                              <option value="" disabled>{t('Seleccioná', 'Select')}</option>
+                              <option>Cali</option><option>Bogotá</option><option>Medellín</option>
+                              <option>Barranquilla</option><option>Bucaramanga</option>
+                              <option>{t('Otra', 'Other')}</option>
                             </select>
                           </div>
                           <div className="fg">
-                            <label>Modalidad</label>
-                            <select
-                              value={cmo}
-                              onChange={(e) => setCmo(e.target.value)}
-                            >
-                              <option value="" disabled>
-                                Seleccioná
-                              </option>
-                              <option>Presencial</option>
-                              <option>Remoto</option>
-                              <option>Híbrido</option>
+                            <label>{t('Modalidad', 'Work mode')}</label>
+                            <select value={cmo} onChange={(e) => setCmo(e.target.value)}>
+                              <option value="" disabled>{t('Seleccioná', 'Select')}</option>
+                              <option>{t('Presencial', 'On-site')}</option>
+                              <option>{t('Remoto', 'Remote')}</option>
+                              <option>{t('Híbrido', 'Hybrid')}</option>
                             </select>
                           </div>
                           <div className="fg fg-full" style={{ marginTop: '.3rem' }}>
-                            <button
-                              className="submit-btn"
-                              onClick={() => nextCStep(2)}
-                            >
-                              Continuar →
+                            <button className="submit-btn" onClick={() => nextCStep(2)}>
+                              {t('Continuar →', 'Continue →')}
                             </button>
                           </div>
                         </div>
@@ -545,77 +509,52 @@ export default function AppPage() {
 
                     {cStep === 2 && (
                       <div>
-                        <div className="ob-form-title">Experiencia profesional</div>
-                        <div className="ob-form-sub">Paso 2 de 3</div>
+                        <div className="ob-form-title">{t('Experiencia profesional', 'Professional experience')}</div>
+                        <div className="ob-form-sub">{t('Paso 2 de 3', 'Step 2 of 3')}</div>
                         <div className="form-grid">
                           <div className="fg fg-full">
-                            <label>Área profesional</label>
+                            <label>{t('Área profesional', 'Professional area')}</label>
                             <select value={car} onChange={(e) => setCar(e.target.value)}>
-                              <option value="" disabled>
-                                Seleccioná
-                              </option>
-                              <option>Tecnología / IT</option>
-                              <option>Diseño UX/UI</option>
-                              <option>Marketing y Comunicaciones</option>
-                              <option>Ventas y Comercial</option>
-                              <option>Finanzas y Contabilidad</option>
-                              <option>Recursos Humanos</option>
-                              <option>Operaciones</option>
-                              <option>Otro</option>
+                              <option value="" disabled>{t('Seleccioná', 'Select')}</option>
+                              <option>{t('Tecnología / IT', 'Technology / IT')}</option>
+                              <option>{t('Diseño UX/UI', 'UX/UI Design')}</option>
+                              <option>{t('Marketing y Comunicaciones', 'Marketing & Comms')}</option>
+                              <option>{t('Ventas y Comercial', 'Sales & Business Dev')}</option>
+                              <option>{t('Finanzas y Contabilidad', 'Finance & Accounting')}</option>
+                              <option>{t('Recursos Humanos', 'Human Resources')}</option>
+                              <option>{t('Operaciones', 'Operations')}</option>
+                              <option>{t('Otro', 'Other')}</option>
                             </select>
                           </div>
                           <div className="fg">
-                            <label>Años de experiencia</label>
+                            <label>{t('Años de experiencia', 'Years of experience')}</label>
                             <select value={cex} onChange={(e) => setCex(e.target.value)}>
-                              <option value="" disabled>
-                                Seleccioná
-                              </option>
-                              <option>Sin experiencia</option>
-                              <option>1–2 años</option>
-                              <option>3–5 años</option>
-                              <option>5–10 años</option>
-                              <option>10+ años</option>
+                              <option value="" disabled>{t('Seleccioná', 'Select')}</option>
+                              <option>{t('Sin experiencia', 'No experience')}</option>
+                              <option>{t('1–2 años', '1–2 years')}</option>
+                              <option>{t('3–5 años', '3–5 years')}</option>
+                              <option>{t('5–10 años', '5–10 years')}</option>
+                              <option>{t('10+ años', '10+ years')}</option>
                             </select>
                           </div>
                           <div className="fg">
-                            <label>Pretensión salarial</label>
+                            <label>{t('Pretensión salarial', 'Salary expectation')}</label>
                             <select value={csal} onChange={(e) => setCsal(e.target.value)}>
-                              <option value="" disabled>
-                                Rango mensual
-                              </option>
-                              <option>Hasta $2M</option>
-                              <option>$2M–$4M</option>
-                              <option>$4M–$7M</option>
-                              <option>$7M–$12M</option>
-                              <option>$12M+</option>
+                              <option value="" disabled>{t('Rango mensual', 'Monthly range')}</option>
+                              <option>Hasta $2M</option><option>$2M–$4M</option>
+                              <option>$4M–$7M</option><option>$7M–$12M</option><option>$12M+</option>
                             </select>
                           </div>
                           <div className="fg fg-full">
-                            <label>LinkedIn (opcional)</label>
-                            <input
-                              type="url"
-                              value={cli}
-                              onChange={(e) => setCli(e.target.value)}
-                              placeholder="linkedin.com/in/tu-perfil"
-                            />
+                            <label>{t('LinkedIn (opcional)', 'LinkedIn (optional)')}</label>
+                            <input type="url" value={cli} onChange={(e) => setCli(e.target.value)} placeholder="linkedin.com/in/your-profile" />
                           </div>
-                          <div
-                            className="fg fg-full"
-                            style={{ display: 'flex', gap: '.5rem', marginTop: '.3rem' }}
-                          >
-                            <button
-                              className="btn btn-outline"
-                              onClick={() => nextCStep(1)}
-                              style={{ flex: 1, padding: 11 }}
-                            >
-                              ← Atrás
+                          <div className="fg fg-full" style={{ display: 'flex', gap: '.5rem', marginTop: '.3rem' }}>
+                            <button className="btn btn-outline" onClick={() => nextCStep(1)} style={{ flex: 1, padding: 11 }}>
+                              {t('← Atrás', '← Back')}
                             </button>
-                            <button
-                              className="submit-btn"
-                              onClick={() => nextCStep(3)}
-                              style={{ flex: 2, marginTop: 0 }}
-                            >
-                              Continuar →
+                            <button className="submit-btn" onClick={() => nextCStep(3)} style={{ flex: 2, marginTop: 0 }}>
+                              {t('Continuar →', 'Continue →')}
                             </button>
                           </div>
                         </div>
@@ -624,72 +563,36 @@ export default function AppPage() {
 
                     {cStep === 3 && (
                       <div>
-                        <div className="ob-form-title">Habilidades clave</div>
-                        <div className="ob-form-sub">Paso 3 de 3 · ¡Casi listo!</div>
+                        <div className="ob-form-title">{t('Habilidades clave', 'Key skills')}</div>
+                        <div className="ob-form-sub">{t('Paso 3 de 3 · ¡Casi listo!', 'Step 3 of 3 · Almost done!')}</div>
                         <div className="form-grid">
                           <div className="fg fg-full">
-                            <label>Habilidades</label>
+                            <label>{t('Habilidades', 'Skills')}</label>
                             <div className="skill-row">
-                              <input
-                                type="text"
-                                value={cSkInput}
-                                onChange={(e) => setCSkInput(e.target.value)}
-                                onKeyDown={onSkKey('c')}
-                                placeholder="React, Excel, Photoshop…"
-                              />
-                              <button className="add-sk-btn" onClick={() => addSkill('c')}>
-                                +
-                              </button>
+                              <input type="text" value={cSkInput} onChange={(e) => setCSkInput(e.target.value)} onKeyDown={onSkKey('c')} placeholder="React, Excel, Photoshop…" />
+                              <button className="add-sk-btn" onClick={() => addSkill('c')}>+</button>
                             </div>
                             <div className="sk-tags">
                               {cSkills.map((s) => (
-                                <span
-                                  key={s}
-                                  className="sk-tag"
-                                  onClick={() => removeSkill('c', s)}
-                                >
-                                  {s} ×
-                                </span>
+                                <span key={s} className="sk-tag" onClick={() => removeSkill('c', s)}>{s} ×</span>
                               ))}
                             </div>
                           </div>
                           <div className="fg fg-full">
-                            <label>Nota adicional (opcional)</label>
-                            <textarea
-                              value={cnote}
-                              onChange={(e) => setCnote(e.target.value)}
-                              placeholder="¿Qué tipo de empresa buscás?"
-                            />
+                            <label>{t('Nota adicional (opcional)', 'Additional note (optional)')}</label>
+                            <textarea value={cnote} onChange={(e) => setCnote(e.target.value)} placeholder={t('¿Qué tipo de empresa buscás?', 'What type of company are you looking for?')} />
                           </div>
-                          <div
-                            className="fg fg-full"
-                            style={{ display: 'flex', gap: '.5rem', marginTop: '.3rem' }}
-                          >
-                            <button
-                              className="btn btn-outline"
-                              onClick={() => nextCStep(2)}
-                              style={{ flex: 1, padding: 11 }}
-                            >
-                              ← Atrás
+                          <div className="fg fg-full" style={{ display: 'flex', gap: '.5rem', marginTop: '.3rem' }}>
+                            <button className="btn btn-outline" onClick={() => nextCStep(2)} style={{ flex: 1, padding: 11 }}>
+                              {t('← Atrás', '← Back')}
                             </button>
-                            <button
-                              className="submit-btn"
-                              disabled={submitting}
-                              onClick={submitCandidate}
-                              style={{ flex: 2, marginTop: 0 }}
-                            >
-                              {submitting ? 'Guardando…' : 'Encontrar mis matches →'}
+                            <button className="submit-btn" disabled={submitting} onClick={submitCandidate} style={{ flex: 2, marginTop: 0 }}>
+                              {submitting ? t('Guardando…', 'Saving…') : t('Encontrar mis matches →', 'Find my matches →')}
                             </button>
                           </div>
                           <div className="fg fg-full">
-                            <p
-                              style={{
-                                fontSize: '.64rem',
-                                color: 'var(--ink-45)',
-                                textAlign: 'center',
-                              }}
-                            >
-                              Al registrarte aceptás los términos. Nunca enviamos spam.
+                            <p style={{ fontSize: '.64rem', color: 'var(--ink-45)', textAlign: 'center' }}>
+                              {t('Al registrarte aceptás los términos. Nunca enviamos spam.', 'By signing up you accept the terms. We never send spam.')}
                             </p>
                           </div>
                         </div>
@@ -701,112 +604,62 @@ export default function AppPage() {
                     {coStep === 1 && (
                       <div>
                         <div className="ob-form-title">{t('Registrar mi empresa', 'Register my company')}</div>
-                        <div className="ob-form-sub">
-                          Accede al top 1% del talento colombiano
-                        </div>
+                        <div className="ob-form-sub">{t('Accede al top 1% del talento colombiano', 'Access the top 1% of Colombian talent')}</div>
                         <div className="form-grid">
                           <div className="fg">
-                            <label>Nombre *</label>
-                            <input
-                              type="text"
-                              value={cofn}
-                              onChange={(e) => setCofn(e.target.value)}
-                              placeholder="Ana"
-                            />
+                            <label>{t('Nombre *', 'First name *')}</label>
+                            <input type="text" value={cofn} onChange={(e) => setCofn(e.target.value)} placeholder={t('Ana', 'Ana')} />
                           </div>
                           <div className="fg">
-                            <label>Apellido *</label>
-                            <input
-                              type="text"
-                              value={coln}
-                              onChange={(e) => setColn(e.target.value)}
-                              placeholder="García"
-                            />
+                            <label>{t('Apellido *', 'Last name *')}</label>
+                            <input type="text" value={coln} onChange={(e) => setColn(e.target.value)} placeholder={t('García', 'Garcia')} />
                           </div>
                           <div className="fg fg-full">
-                            <label>Email corporativo *</label>
-                            <input
-                              type="email"
-                              value={coem}
-                              onChange={(e) => setCoem(e.target.value)}
-                              placeholder="ana@empresa.com"
-                            />
+                            <label>{t('Email corporativo *', 'Corporate email *')}</label>
+                            <input type="email" value={coem} onChange={(e) => setCoem(e.target.value)} placeholder={t('ana@empresa.com', 'ana@company.com')} />
                           </div>
                           <div className="fg fg-full">
-                            <label>Empresa *</label>
-                            <input
-                              type="text"
-                              value={coname}
-                              onChange={(e) => setConame(e.target.value)}
-                              placeholder="Acme Corp"
-                            />
+                            <label>{t('Empresa *', 'Company *')}</label>
+                            <input type="text" value={coname} onChange={(e) => setConame(e.target.value)} placeholder="Acme Corp" />
                           </div>
                           <div className="fg">
-                            <label>Industria</label>
-                            <select
-                              value={coind}
-                              onChange={(e) => setCoind(e.target.value)}
-                            >
-                              <option value="" disabled>
-                                Seleccioná
-                              </option>
-                              <option>Tecnología</option>
-                              <option>Finanzas</option>
+                            <label>{t('Industria', 'Industry')}</label>
+                            <select value={coind} onChange={(e) => setCoind(e.target.value)}>
+                              <option value="" disabled>{t('Seleccioná', 'Select')}</option>
+                              <option>{t('Tecnología', 'Technology')}</option>
+                              <option>{t('Finanzas', 'Finance')}</option>
                               <option>Retail</option>
-                              <option>Salud</option>
-                              <option>Educación</option>
-                              <option>Manufactura</option>
-                              <option>Servicios</option>
-                              <option>Otra</option>
+                              <option>{t('Salud', 'Healthcare')}</option>
+                              <option>{t('Educación', 'Education')}</option>
+                              <option>{t('Manufactura', 'Manufacturing')}</option>
+                              <option>{t('Servicios', 'Services')}</option>
+                              <option>{t('Otra', 'Other')}</option>
                             </select>
                           </div>
                           <div className="fg">
-                            <label>Tamaño</label>
-                            <select
-                              value={cosize}
-                              onChange={(e) => setCosize(e.target.value)}
-                            >
-                              <option value="" disabled>
-                                Empleados
-                              </option>
-                              <option>1–10</option>
-                              <option>11–50</option>
-                              <option>51–200</option>
-                              <option>200–500</option>
-                              <option>500+</option>
+                            <label>{t('Tamaño', 'Company size')}</label>
+                            <select value={cosize} onChange={(e) => setCosize(e.target.value)}>
+                              <option value="" disabled>{t('Empleados', 'Employees')}</option>
+                              <option>1–10</option><option>11–50</option>
+                              <option>51–200</option><option>200–500</option><option>500+</option>
                             </select>
                           </div>
                           <div className="fg">
-                            <label>Ciudad</label>
-                            <select
-                              value={cocity}
-                              onChange={(e) => setCocity(e.target.value)}
-                            >
-                              <option value="" disabled>
-                                Seleccioná
-                              </option>
-                              <option>Cali</option>
-                              <option>Bogotá</option>
-                              <option>Medellín</option>
-                              <option>Barranquilla</option>
-                              <option>Otra</option>
+                            <label>{t('Ciudad', 'City')}</label>
+                            <select value={cocity} onChange={(e) => setCocity(e.target.value)}>
+                              <option value="" disabled>{t('Seleccioná', 'Select')}</option>
+                              <option>Cali</option><option>Bogotá</option>
+                              <option>Medellín</option><option>Barranquilla</option>
+                              <option>{t('Otra', 'Other')}</option>
                             </select>
                           </div>
                           <div className="fg">
-                            <label>WhatsApp</label>
-                            <input
-                              type="tel"
-                              value={cowp}
-                              onChange={(e) => setCowp(e.target.value)}
-                              placeholder="+57 300 000 0000"
-                            />
+                            <label>{t('WhatsApp', 'WhatsApp')}</label>
+                            <input type="tel" value={cowp} onChange={(e) => setCowp(e.target.value)} placeholder="+57 300 000 0000" />
                           </div>
                           <div className="fg fg-full" style={{ marginTop: '.3rem' }}>
-                            <button
-                              className="submit-btn"
-                              onClick={() => nextCoStep(2)}
-                            >
-                              Continuar →
+                            <button className="submit-btn" onClick={() => nextCoStep(2)}>
+                              {t('Continuar →', 'Continue →')}
                             </button>
                           </div>
                         </div>
@@ -815,129 +668,75 @@ export default function AppPage() {
 
                     {coStep === 2 && (
                       <div>
-                        <div className="ob-form-title">Tu primera vacante</div>
-                        <div className="ob-form-sub">Paso 2 de 2 · Publicá tu oferta</div>
+                        <div className="ob-form-title">{t('Tu primera vacante', 'Your first job listing')}</div>
+                        <div className="ob-form-sub">{t('Paso 2 de 2 · Publicá tu oferta', 'Step 2 of 2 · Post your role')}</div>
                         <div className="form-grid">
                           <div className="fg fg-full">
-                            <label>Cargo *</label>
-                            <input
-                              type="text"
-                              value={jobtitle}
-                              onChange={(e) => setJobtitle(e.target.value)}
-                              placeholder="Senior UX Designer"
-                            />
+                            <label>{t('Cargo *', 'Job title *')}</label>
+                            <input type="text" value={jobtitle} onChange={(e) => setJobtitle(e.target.value)} placeholder="Senior UX Designer" />
                           </div>
                           <div className="fg">
-                            <label>Modalidad</label>
-                            <select
-                              value={jobmod}
-                              onChange={(e) => setJobmod(e.target.value)}
-                            >
-                              <option value="" disabled>
-                                Seleccioná
-                              </option>
-                              <option>Presencial</option>
-                              <option>Remoto</option>
-                              <option>Híbrido</option>
+                            <label>{t('Modalidad', 'Work mode')}</label>
+                            <select value={jobmod} onChange={(e) => setJobmod(e.target.value)}>
+                              <option value="" disabled>{t('Seleccioná', 'Select')}</option>
+                              <option>{t('Presencial', 'On-site')}</option>
+                              <option>{t('Remoto', 'Remote')}</option>
+                              <option>{t('Híbrido', 'Hybrid')}</option>
                             </select>
                           </div>
                           <div className="fg">
-                            <label>Ciudad</label>
-                            <select
-                              value={jobcity}
-                              onChange={(e) => setJobcity(e.target.value)}
-                            >
-                              <option value="" disabled>
-                                Ciudad
-                              </option>
-                              <option>Cali</option>
-                              <option>Bogotá</option>
-                              <option>Medellín</option>
-                              <option>Otra</option>
+                            <label>{t('Ciudad', 'City')}</label>
+                            <select value={jobcity} onChange={(e) => setJobcity(e.target.value)}>
+                              <option value="" disabled>{t('Ciudad', 'City')}</option>
+                              <option>Cali</option><option>Bogotá</option>
+                              <option>Medellín</option><option>{t('Otra', 'Other')}</option>
                             </select>
                           </div>
                           <div className="fg">
-                            <label>Área</label>
-                            <select
-                              value={jobarea}
-                              onChange={(e) => setJobarea(e.target.value)}
-                            >
-                              <option value="" disabled>
-                                Área
-                              </option>
-                              <option>Tecnología</option>
-                              <option>Diseño</option>
+                            <label>{t('Área', 'Area')}</label>
+                            <select value={jobarea} onChange={(e) => setJobarea(e.target.value)}>
+                              <option value="" disabled>{t('Área', 'Area')}</option>
+                              <option>{t('Tecnología', 'Technology')}</option>
+                              <option>{t('Diseño', 'Design')}</option>
                               <option>Marketing</option>
-                              <option>Ventas</option>
-                              <option>Finanzas</option>
-                              <option>RRHH</option>
-                              <option>Operaciones</option>
-                              <option>Otra</option>
+                              <option>{t('Ventas', 'Sales')}</option>
+                              <option>{t('Finanzas', 'Finance')}</option>
+                              <option>{t('RRHH', 'HR')}</option>
+                              <option>{t('Operaciones', 'Operations')}</option>
+                              <option>{t('Otra', 'Other')}</option>
                             </select>
                           </div>
                           <div className="fg">
-                            <label>Salario mensual</label>
-                            <select
-                              value={jobsal}
-                              onChange={(e) => setJobsal(e.target.value)}
-                            >
-                              <option value="" disabled>
-                                Rango
-                              </option>
-                              <option>Hasta $2M</option>
-                              <option>$2M–$4M</option>
-                              <option>$4M–$7M</option>
-                              <option>$7M–$12M</option>
-                              <option>$12M+</option>
+                            <label>{t('Salario mensual', 'Monthly salary')}</label>
+                            <select value={jobsal} onChange={(e) => setJobsal(e.target.value)}>
+                              <option value="" disabled>{t('Rango', 'Range')}</option>
+                              <option>Hasta $2M</option><option>$2M–$4M</option>
+                              <option>$4M–$7M</option><option>$7M–$12M</option><option>$12M+</option>
                             </select>
                           </div>
                           <div className="fg fg-full">
-                            <label>Descripción</label>
-                            <textarea
-                              value={jobdesc}
-                              onChange={(e) => setJobdesc(e.target.value)}
-                              placeholder="¿Qué hace este rol? ¿Qué buscás en el candidato ideal?"
-                            />
+                            <label>{t('Descripción', 'Description')}</label>
+                            <textarea value={jobdesc} onChange={(e) => setJobdesc(e.target.value)} placeholder={t('¿Qué hace este rol? ¿Qué buscás en el candidato ideal?', 'What does this role do? What are you looking for in the ideal candidate?')} />
                           </div>
                           <div className="fg fg-full">
-                            <label>Habilidades requeridas</label>
+                            <label>{t('Habilidades requeridas', 'Required skills')}</label>
                             <div className="skill-row">
-                              <input
-                                type="text"
-                                value={coSkInput}
-                                onChange={(e) => setCoSkInput(e.target.value)}
-                                onKeyDown={onSkKey('co')}
-                                placeholder="Figma, React, Python…"
-                              />
-                              <button
-                                className="add-sk-btn"
-                                onClick={() => addSkill('co')}
-                              >
-                                +
-                              </button>
+                              <input type="text" value={coSkInput} onChange={(e) => setCoSkInput(e.target.value)} onKeyDown={onSkKey('co')} placeholder="Figma, React, Python…" />
+                              <button className="add-sk-btn" onClick={() => addSkill('co')}>+</button>
                             </div>
                             <div className="sk-tags">
                               {coSkills.map((s) => (
-                                <span
-                                  key={s}
-                                  className="sk-tag"
-                                  onClick={() => removeSkill('co', s)}
-                                >
-                                  {s} ×
-                                </span>
+                                <span key={s} className="sk-tag" onClick={() => removeSkill('co', s)}>{s} ×</span>
                               ))}
                             </div>
                           </div>
-                          <div
-                            className="fg fg-full"
-                            style={{ display: 'flex', gap: '.5rem', marginTop: '.3rem' }}
-                          >
+                          <div className="fg fg-full" style={{ display: 'flex', gap: '.5rem', marginTop: '.3rem' }}>
                             <button
                               className="btn btn-outline"
                               onClick={() => nextCoStep(1)}
                               style={{ flex: 1, padding: 11 }}
                             >
-                              ← Atrás
+                              {t('← Atrás', '← Back')}
                             </button>
                             <button
                               className="submit-btn"
@@ -945,7 +744,7 @@ export default function AppPage() {
                               onClick={submitCompany}
                               style={{ flex: 2, marginTop: 0 }}
                             >
-                              {submitting ? 'Guardando…' : 'Publicar y buscar matches →'}
+                              {submitting ? t('Guardando…', 'Saving…') : t('Publicar y buscar matches →', 'Post and find matches →')}
                             </button>
                           </div>
                         </div>
