@@ -4,35 +4,40 @@ import Image from 'next/image'
 import { useState } from 'react'
 import { useLang } from '@/lib/LangContext'
 
-// filter: null = default grayscale, 'invert' = white logo on white bg, 'dark' = force very dark, 'washbg' = remove baked-in background
+// filter: null = default grayscale, 'invert' = white logo on dark bg, 'dark' = force very dark
+// hasBg: true = image has a baked-in background — use mix-blend-mode:multiply to remove it
 const CHIPS = [
-  { i: 'DS', n: 'Daniela Salcedo', bg: '#EA6440', logo: '/daniela-salcedo.png', filter: 'invert'  },
-  { i: 'HP', n: 'helppeople',      bg: '#1B3B3E', logo: '/helppeople.png',       filter: null      },
-  { i: 'EPI', n: 'EPI',            bg: '#2D6B70', logo: '/epi.png',              filter: null      },
-  { i: 'AG', n: 'Agroup',          bg: '#264D51', logo: '/agroup.png',           filter: null      },
-  { i: 'OH', n: 'Oh Honey',        bg: '#F0A070', logo: '/oh-honey.png',         filter: 'washbg'  },
-  { i: 'AS', n: 'Asecoemg',        bg: '#3A6B6E', logo: '/Asecoemg.jpg',         filter: 'washbg'  },
-  { i: 'PP', n: 'Panela Palestina',bg: '#8B5E3C', logo: '/panela-palestina.png', filter: 'washbg'  },
-  { i: 'AF', n: 'Antojo Frutal',   bg: '#6B8E44', logo: '/antojo-frutal.png',    filter: 'washbg'  },
-  { i: 'FR', n: 'Frat',            bg: '#1B3B3E', logo: '/frat.png',             filter: 'washbg'  },
-  { i: 'AV', n: 'Acevalco',        bg: '#2D4A6E', logo: '/acevalco.png',         filter: 'dark'    },
+  { i: 'DS', n: 'Daniela Salcedo', bg: '#EA6440', logo: '/daniela-salcedo.png', filter: 'invert', hasBg: false },
+  { i: 'HP', n: 'helppeople',      bg: '#1B3B3E', logo: '/helppeople.png',       filter: null,     hasBg: false },
+  { i: 'EPI', n: 'EPI',            bg: '#2D6B70', logo: '/epi.png',              filter: null,     hasBg: false },
+  { i: 'AG', n: 'Agroup',          bg: '#264D51', logo: '/agroup.png',           filter: null,     hasBg: false },
+  { i: 'OH', n: 'Oh Honey',        bg: '#F0A070', logo: '/oh-honey.png',         filter: null,     hasBg: true  },
+  { i: 'AS', n: 'Asecoemg',        bg: '#3A6B6E', logo: '/Asecoemg.jpg',         filter: null,     hasBg: true  },
+  { i: 'PP', n: 'Panela Palestina',bg: '#8B5E3C', logo: '/panela-palestina.png', filter: null,     hasBg: true  },
+  { i: 'AF', n: 'Antojo Frutal',   bg: '#6B8E44', logo: '/antojo-frutal.png',    filter: null,     hasBg: true  },
+  { i: 'FR', n: 'Frat',            bg: '#1B3B3E', logo: '/frat.png',             filter: null,     hasBg: false },
+  { i: 'AV', n: 'Acevalco',        bg: '#2D4A6E', logo: '/acevalco.png',         filter: 'dark',   hasBg: false },
 ]
 
 const FILTERS: Record<string, string> = {
-  invert:  'grayscale(100%) invert(1) brightness(0.85)',
-  dark:    'grayscale(100%) brightness(0.3) contrast(1.4)',
-  washbg:  'grayscale(100%) brightness(3) contrast(4)',
-  null:    'grayscale(100%) brightness(0.55)',
+  invert: 'grayscale(100%) invert(1) brightness(0.85)',
+  dark:   'grayscale(100%) brightness(0.3) contrast(1.4)',
+  null:   'grayscale(100%) brightness(0.55)',
 }
 
 function LogoChip({ chip }: { chip: typeof CHIPS[number] }) {
   const [imgFailed, setImgFailed] = useState(false)
-  const cssFilter = FILTERS[chip.filter ?? 'null']
+  const cssFilter = chip.hasBg
+    ? 'grayscale(100%) brightness(1.1) contrast(1.3)'
+    : FILTERS[chip.filter ?? 'null']
 
   return (
     <div className="logo-chip">
       {!imgFailed ? (
-        <div className="logo-img-wrap">
+        <div
+          className="logo-img-wrap"
+          style={chip.hasBg ? { mixBlendMode: 'multiply' } : undefined}
+        >
           <Image
             src={chip.logo}
             alt={chip.n}
