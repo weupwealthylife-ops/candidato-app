@@ -102,6 +102,8 @@ type CandView = 'dashboard' | 'jobs' | 'matches' | 'profile'
 type CompView = 'codashboard' | 'matches' | 'post' | 'talent'
 
 export default function AppPage() {
+  const [appLang, setAppLang] = useState<'es' | 'en'>('es')
+  const t = (es: string, en: string) => appLang === 'es' ? es : en
   const [userType, setUserType] = useState<UserType>('candidate')
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null)
   const [view, setView] = useState<'onboard' | 'app'>('onboard')
@@ -357,29 +359,23 @@ export default function AppPage() {
     return (
       <>
         <div id="viewOnboard" className="view active">
+          <div style={{ position: 'fixed', top: 16, right: 20, zIndex: 300 }}>
+            <div className="lang-pill">
+              <button className={appLang === 'es' ? 'on' : ''} onClick={() => setAppLang('es')}>ES</button>
+              <button className={appLang === 'en' ? 'on' : ''} onClick={() => setAppLang('en')}>EN</button>
+            </div>
+          </div>
           <div className="onboard-wrap">
             <div className="onboard-card">
               <div className="onboard-left">
                 <div className="ol-content">
-                  <div
-                    style={{
-                      width: 52,
-                      height: 52,
-                      borderRadius: 12,
-                      background:
-                        'linear-gradient(135deg,rgba(255,255,255,.12),rgba(255,255,255,.04))',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: 'white',
-                      fontFamily: 'var(--head)',
-                      fontWeight: 800,
-                      fontSize: '1.4rem',
-                      marginBottom: '.4rem',
-                    }}
-                  >
-                    C
-                  </div>
+                  <Image
+                    src="/bird-logo.png"
+                    alt="Candidato"
+                    width={52}
+                    height={52}
+                    style={{ objectFit: 'contain', marginBottom: '.4rem' }}
+                  />
                   <div
                     style={{
                       fontFamily: 'var(--head)',
@@ -392,33 +388,39 @@ export default function AppPage() {
                   >
                     Candidato<sup style={{ fontSize: '.55em' }}>®</sup>
                   </div>
-                  <div className="ol-eyebrow">Candidato® — Plataforma</div>
+                  <div className="ol-eyebrow">Candidato® — {t('Plataforma', 'Platform')}</div>
                   <h1 className="ol-title">
                     {isC ? (
                       <>
-                        El talento que
+                        {t('El talento que', 'The talent that')}
                         <br />
-                        <span>estaba destinado.</span>
+                        <span>{t('estaba destinado.', 'was meant to be.')}</span>
                       </>
                     ) : (
                       <>
-                        Encontrá el talento
+                        {t('Encontrá el talento', 'Find the talent')}
                         <br />
-                        <span>que necesitás.</span>
+                        <span>{t('que necesitás.', 'you need.')}</span>
                       </>
                     )}
                   </h1>
                   <p className="ol-sub">
                     {isC
-                      ? 'Tu próxima oportunidad ya existe — solo falta que te encuentre. Nuestra IA analiza tu perfil y te conecta con las empresas que realmente encajan.'
-                      : 'Accedé al top 1% del talento colombiano. IA que preselecciona los candidatos más compatibles con tu empresa.'}
+                      ? t(
+                          'Tu próxima oportunidad ya existe — solo falta que te encuentre. Nuestra IA analiza tu perfil y te conecta con las empresas que realmente encajan.',
+                          'Your next opportunity already exists — it just needs to find you. Our AI analyses your profile and connects you with companies that truly fit.',
+                        )
+                      : t(
+                          'Accedé al top 1% del talento colombiano. IA que preselecciona los candidatos más compatibles con tu empresa.',
+                          'Access the top 1% of Colombian talent. AI that pre-screens the most compatible candidates for your company.',
+                        )}
                   </p>
                 </div>
                 <div className="ol-proof">
-                  <div className="ol-proof-item">⚡ Match inteligente en 24 horas</div>
-                  <div className="ol-proof-item">🔒 Perfil 100% privado y seguro</div>
-                  <div className="ol-proof-item">🎯 Solo oportunidades relevantes</div>
-                  <div className="ol-proof-item">✓ Gratis para candidatos</div>
+                  <div className="ol-proof-item">⚡ {t('Match inteligente en 24 horas', 'Intelligent match in 24 hours')}</div>
+                  <div className="ol-proof-item">🔒 {t('Perfil 100% privado y seguro', '100% private and secure profile')}</div>
+                  <div className="ol-proof-item">🎯 {t('Solo oportunidades relevantes', 'Only relevant opportunities')}</div>
+                  <div className="ol-proof-item">✓ {t('Gratis para candidatos', 'Free for candidates')}</div>
                 </div>
               </div>
 
@@ -431,7 +433,7 @@ export default function AppPage() {
                       setCStep(1)
                     }}
                   >
-                    👤 <span>Soy candidato</span>
+                    👤 <span>{t('Soy candidato', "I'm a candidate")}</span>
                   </button>
                   <button
                     className={`ob-type-btn${!isC ? ' active' : ''}`}
@@ -440,7 +442,7 @@ export default function AppPage() {
                       setCoStep(1)
                     }}
                   >
-                    🏢 <span>Soy empresa</span>
+                    🏢 <span>{t('Soy empresa', "I'm a company")}</span>
                   </button>
                 </div>
 
@@ -459,7 +461,7 @@ export default function AppPage() {
                   <div>
                     {cStep === 1 && (
                       <div>
-                        <div className="ob-form-title">Crear mi perfil</div>
+                        <div className="ob-form-title">{t('Crear mi perfil', 'Create my profile')}</div>
                         <div className="ob-form-sub">Gratis · Sin compromiso · 3 minutos</div>
                         <div className="form-grid">
                           <div className="fg">
@@ -698,7 +700,7 @@ export default function AppPage() {
                   <div>
                     {coStep === 1 && (
                       <div>
-                        <div className="ob-form-title">Registrar mi empresa</div>
+                        <div className="ob-form-title">{t('Registrar mi empresa', 'Register my company')}</div>
                         <div className="ob-form-sub">
                           Accede al top 1% del talento colombiano
                         </div>
@@ -1009,7 +1011,7 @@ export default function AppPage() {
                 textDecoration: 'none',
               }}
             >
-              ← Inicio
+              {t('← Inicio', '← Home')}
             </a>
             <Image
               src="/bird-logo.png"
@@ -1083,8 +1085,12 @@ export default function AppPage() {
             )}
           </div>
           <div className="topbar-right">
+            <div className="lang-pill">
+              <button className={appLang === 'es' ? 'on' : ''} onClick={() => setAppLang('es')}>ES</button>
+              <button className={appLang === 'en' ? 'on' : ''} onClick={() => setAppLang('en')}>EN</button>
+            </div>
             <button className="btn btn-outline btn-sm" onClick={logout}>
-              Salir
+              {t('Salir', 'Log out')}
             </button>
             <div className="user-ava">{name.substring(0, 2).toUpperCase()}</div>
           </div>
@@ -1124,7 +1130,7 @@ export default function AppPage() {
                   Cuenta
                 </span>
                 <button className="nav-item" onClick={logout}>
-                  <span className="ni-ico">←</span> Salir
+                  <span className="ni-ico">←</span> {t('Salir', 'Log out')}
                 </button>
               </>
             ) : (
@@ -1162,7 +1168,7 @@ export default function AppPage() {
                   <span className="ni-ico">💳</span> Plan Pro
                 </button>
                 <button className="nav-item" onClick={logout}>
-                  <span className="ni-ico">←</span> Salir
+                  <span className="ni-ico">←</span> {t('Salir', 'Log out')}
                 </button>
               </>
             )}
