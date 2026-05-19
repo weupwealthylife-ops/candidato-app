@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, KeyboardEvent } from 'react'
+import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 
 type UserType = 'candidate' | 'company'
@@ -1010,16 +1011,12 @@ export default function AppPage() {
             >
               ← Inicio
             </a>
-            <span
-              aria-hidden
-              style={{
-                width: 28,
-                height: 28,
-                borderRadius: 6,
-                background:
-                  'linear-gradient(135deg,var(--forest),var(--coral))',
-                display: 'inline-block',
-              }}
+            <Image
+              src="/bird-logo.png"
+              alt="Candidato"
+              width={28}
+              height={28}
+              style={{ objectFit: 'contain' }}
             />
             <span
               style={{
