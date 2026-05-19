@@ -411,8 +411,8 @@ export default function AppPage() {
                           'Your next opportunity already exists — it just needs to find you. Our AI analyses your profile and connects you with companies that truly fit.',
                         )
                       : t(
-                          'Accedé al top 1% del talento colombiano. IA que preselecciona los candidatos más compatibles con tu empresa.',
-                          'Access the top 1% of Colombian talent. AI that pre-screens the most compatible candidates for your company.',
+                          'El talento que necesitás ya está aquí. Nuestra IA filtra, analiza y te entrega solo los perfiles que realmente encajan con tu vacante — sin ruido, sin pérdida de tiempo.',
+                          'The talent you need is already here. Our AI filters, analyses and delivers only the profiles that truly fit your role — no noise, no wasted time.',
                         )}
                   </p>
                 </div>
