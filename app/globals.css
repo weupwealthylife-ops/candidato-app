@@ -336,6 +336,10 @@ button:focus-visible,input:focus-visible,select:focus-visible,.btn:focus-visible
   font-size:.78rem;font-weight:600;color:var(--ink-70);
   letter-spacing:-.01em;
 }
+.logo-img-wrap{
+  display:flex;align-items:center;justify-content:center;
+  min-width:60px;max-width:120px;height:36px;
+}
 
 
 
