@@ -15,14 +15,15 @@ const CHIPS = [
   { i: 'AS', n: 'Asecoemg',        bg: '#3A6B6E', logo: '/Asecoemg.jpg',         filter: null,     hasBg: true  },
   { i: 'PP', n: 'Panela Palestina',bg: '#8B5E3C', logo: '/panela-palestina.png', filter: null,     hasBg: true  },
   { i: 'AF', n: 'Antojo Frutal',   bg: '#6B8E44', logo: '/antojo-frutal.png',    filter: null,     hasBg: true  },
-  { i: 'FR', n: 'Frat',            bg: '#1B3B3E', logo: '/frat.png',             filter: null,     hasBg: false },
+  { i: 'FR', n: 'Frat',            bg: '#1B3B3E', logo: '/frat.png',             filter: 'bgremove', hasBg: false },
   { i: 'AV', n: 'Acevalco',        bg: '#2D4A6E', logo: '/acevalco.png',         filter: 'dark',   hasBg: false },
 ]
 
 const FILTERS: Record<string, string> = {
-  invert: 'grayscale(100%) invert(1) brightness(0.85)',
-  dark:   'grayscale(100%) brightness(0.3) contrast(1.4)',
-  null:   'grayscale(100%) brightness(0.55)',
+  invert:   'grayscale(100%) invert(1) brightness(0.85)',
+  dark:     'grayscale(100%) brightness(0.3) contrast(1.4)',
+  bgremove: 'grayscale(100%) brightness(4) contrast(6)',
+  null:     'grayscale(100%) brightness(0.55)',
 }
 
 function LogoChip({ chip }: { chip: typeof CHIPS[number] }) {
