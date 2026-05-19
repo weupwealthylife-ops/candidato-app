@@ -338,7 +338,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,.btn:focus-visible
 }
 .logo-img-wrap{
   display:flex;align-items:center;justify-content:center;
-  min-width:60px;max-width:120px;height:36px;
+  width:120px;height:36px;flex-shrink:0;
 }
 
 

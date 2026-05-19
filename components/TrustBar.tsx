@@ -8,7 +8,7 @@ import { useLang } from '@/lib/LangContext'
 const CHIPS = [
   { i: 'DS', n: 'Daniela Salcedo', bg: '#EA6440', logo: '/daniela-salcedo.png', filter: 'invert' },
   { i: 'HP', n: 'helppeople',      bg: '#1B3B3E', logo: '/helppeople.png',       filter: null },
-  { i: 'EPI', n: 'EPI',            bg: '#2D6B70', logo: '/epi.png',              filter: null,   showName: true },
+  { i: 'EPI', n: 'EPI',            bg: '#2D6B70', logo: '/epi.png',              filter: null },
   { i: 'AG', n: 'Agroup',          bg: '#264D51', logo: '/agroup.png',           filter: null },
   { i: 'OH', n: 'Oh Honey',        bg: '#F0A070', logo: '/oh-honey.png',         filter: null },
   { i: 'AS', n: 'Asecoemg',        bg: '#3A6B6E', logo: '/Asecoemg.jpg',         filter: null },
@@ -37,16 +37,16 @@ function LogoChip({ chip }: { chip: typeof CHIPS[number] }) {
             alt={chip.n}
             width={120}
             height={40}
-            style={{ objectFit: 'contain', width: 'auto', height: 36, filter: cssFilter }}
+            style={{ objectFit: 'contain', width: '100%', height: '100%', filter: cssFilter }}
             onError={() => setImgFailed(true)}
           />
         </div>
       ) : (
-        <div className="logo-init" style={{ background: chip.bg }}>
-          {chip.i}
-        </div>
+        <>
+          <div className="logo-init" style={{ background: chip.bg }}>{chip.i}</div>
+          <span className="logo-name">{chip.n}</span>
+        </>
       )}
-      {(imgFailed || chip.showName) && <span className="logo-name">{chip.n}</span>}
     </div>
   )
 }
