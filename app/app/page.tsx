@@ -410,7 +410,7 @@ export default function AppPage() {
                   </h1>
                   <p className="ol-sub">
                     {isC
-                      ? 'Conectamos candidatos calificados con las mejores empresas de Colombia. IA que encuentra el match perfecto.'
+                      ? 'Tu próxima oportunidad ya existe — solo falta que te encuentre. Nuestra IA analiza tu perfil y te conecta con las empresas que realmente encajan.'
                       : 'Accedé al top 1% del talento colombiano. IA que preselecciona los candidatos más compatibles con tu empresa.'}
                   </p>
                 </div>
