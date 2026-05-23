@@ -204,8 +204,6 @@ export default function AppPage() {
     if (n > 1) {
       if (!cfn.trim())
         return showToast('Campo requerido', 'Ingresá tu nombre', '⚠️')
-      if (!cem.trim())
-        return showToast('Campo requerido', 'Ingresá tu email', '⚠️')
     }
     setCStep(n)
   }
@@ -214,18 +212,8 @@ export default function AppPage() {
     if (n > 1) {
       if (!cofn.trim())
         return showToast('Campo requerido', 'Ingresá tu nombre', '⚠️')
-      if (!coem.trim())
-        return showToast(
-          'Campo requerido',
-          'Ingresá tu email corporativo',
-          '⚠️'
-        )
       if (!coname.trim())
-        return showToast(
-          'Campo requerido',
-          'Ingresá el nombre de tu empresa',
-          '⚠️'
-        )
+        return showToast('Campo requerido', 'Ingresá el nombre de tu empresa', '⚠️')
     }
     setCoStep(n)
   }
@@ -455,6 +443,7 @@ export default function AppPage() {
               </div>
 
               <div className="onboard-right">
+              <div className="onboard-right-inner">
 
                 {/* Small type switch — only shown during registration steps */}
                 {phase === 'register' && (
@@ -485,29 +474,31 @@ export default function AppPage() {
                       {t('Elegí tu perfil para continuar.', 'Choose your profile to continue.')}
                     </p>
 
-                    <div className="ob-role-cards">
-                      <button
-                        className={`ob-role-card${isC ? ' active' : ''}`}
-                        onClick={() => { setUserType('candidate'); setGateEmail('') }}
-                      >
-                        <div className="ob-role-ico-wrap">👤</div>
-                        <div className="ob-role-body">
-                          <div className="ob-role-title">{t('Soy candidato', "I'm a candidate")}</div>
-                          <div className="ob-role-desc">{t('Encontrá trabajo con matching por IA · Gratis', 'Find jobs with AI matching · Free')}</div>
-                        </div>
-                        <div className={`ob-role-dot${isC ? ' on' : ''}`}></div>
-                      </button>
-                      <button
-                        className={`ob-role-card${!isC ? ' active' : ''}`}
-                        onClick={() => { setUserType('company'); setGateEmail('') }}
-                      >
-                        <div className="ob-role-ico-wrap">🏢</div>
-                        <div className="ob-role-body">
-                          <div className="ob-role-title">{t('Soy empresa', "I'm a company")}</div>
-                          <div className="ob-role-desc">{t('Accedé al top 1% del talento colombiano', 'Access the top 1% of Colombian talent')}</div>
-                        </div>
-                        <div className={`ob-role-dot${!isC ? ' on' : ''}`}></div>
-                      </button>
+                    <div className="ob-role-cards-wrap">
+                      <div className="ob-role-cards">
+                        <button
+                          className={`ob-role-card${isC ? ' active' : ''}`}
+                          onClick={() => { setUserType('candidate'); setGateEmail('') }}
+                        >
+                          <div className="ob-role-ico-wrap">👤</div>
+                          <div className="ob-role-body">
+                            <div className="ob-role-title">{t('Soy candidato', "I'm a candidate")}</div>
+                            <div className="ob-role-desc">{t('Encontrá trabajo con IA · Gratis', 'Find jobs with AI · Free')}</div>
+                          </div>
+                          <div className={`ob-role-dot${isC ? ' on' : ''}`}></div>
+                        </button>
+                        <button
+                          className={`ob-role-card${!isC ? ' active' : ''}`}
+                          onClick={() => { setUserType('company'); setGateEmail('') }}
+                        >
+                          <div className="ob-role-ico-wrap">🏢</div>
+                          <div className="ob-role-body">
+                            <div className="ob-role-title">{t('Soy empresa', "I'm a company")}</div>
+                            <div className="ob-role-desc">{t('Top 1% del talento colombiano', 'Top 1% Colombian talent')}</div>
+                          </div>
+                          <div className={`ob-role-dot${!isC ? ' on' : ''}`}></div>
+                        </button>
+                      </div>
                     </div>
 
                     <div className="ob-gate-divider">
@@ -568,15 +559,12 @@ export default function AppPage() {
 
                 <div className="ob-steps">
                   {(isC
-                    ? [t('Datos', 'Info'), t('Experiencia', 'Experience'), t('Habilidades', 'Skills')]
-                    : [t('Empresa', 'Company'), t('Vacante', 'Listing')]
+                    ? [t('Tu perfil', 'Your profile'), t('Experiencia', 'Experience'), t('Habilidades', 'Skills')]
+                    : [t('Tu empresa', 'Your company'), t('Tu vacante', 'Your listing')]
                   ).map((label, i) => (
-                    <div
-                      key={i}
-                      className={`ob-step ${i + 1 < current ? 'done' : i + 1 === current ? 'active' : ''}`}
-                    >
-                      <div className="ob-step-bar"></div>
-                      <span className="ob-step-lbl">{i + 1 < current ? '✓' : `${i + 1}`} {label}</span>
+                    <div key={i} className={`ob-step ${i + 1 < current ? 'done' : i + 1 === current ? 'active' : ''}`}>
+                      <div className="ob-step-num">{i + 1 < current ? '✓' : i + 1}</div>
+                      <span className="ob-step-lbl">{label}</span>
                     </div>
                   ))}
                 </div>
@@ -585,22 +573,18 @@ export default function AppPage() {
                   <div>
                     {cStep === 1 && (
                       <div>
-                        <div className="ob-form-title">{t('Crear mi perfil', 'Create my profile')}</div>
-                        <div className="ob-form-sub">{t('Gratis · Sin compromiso · 3 minutos', 'Free · No commitment · 3 minutes')}</div>
+                        <div className="ob-form-title">{t('Sobre vos', 'About you')}</div>
+                        <div className="ob-form-sub">{gateEmail} · {t('Gratis · 3 minutos', 'Free · 3 minutes')}</div>
                         <div className="form-grid">
                           <div className="fg">
                             <label>{t('Nombre *', 'First name *')}</label>
-                            <input type="text" value={cfn} onChange={(e) => setCfn(e.target.value)} placeholder={t('Daniela', 'Jane')} />
+                            <input type="text" value={cfn} onChange={(e) => setCfn(e.target.value)} placeholder={t('Daniela', 'Jane')} autoFocus />
                           </div>
                           <div className="fg">
                             <label>{t('Apellido *', 'Last name *')}</label>
                             <input type="text" value={cln} onChange={(e) => setCln(e.target.value)} placeholder={t('Martínez', 'Smith')} />
                           </div>
-                          <div className="fg fg-full">
-                            <label>{t('Email *', 'Email *')}</label>
-                            <input type="email" value={cem} onChange={(e) => setCem(e.target.value)} placeholder={t('daniela@email.com', 'jane@email.com')} />
-                          </div>
-                          <div className="fg fg-full">
+                          <div className="fg">
                             <label>{t('WhatsApp', 'WhatsApp')}</label>
                             <input type="tel" value={cph} onChange={(e) => setCph(e.target.value)} placeholder="+57 300 000 0000" />
                           </div>
@@ -613,8 +597,8 @@ export default function AppPage() {
                               <option>{t('Otra', 'Other')}</option>
                             </select>
                           </div>
-                          <div className="fg">
-                            <label>{t('Modalidad', 'Work mode')}</label>
+                          <div className="fg fg-full">
+                            <label>{t('Modalidad preferida', 'Preferred work mode')}</label>
                             <select value={cmo} onChange={(e) => setCmo(e.target.value)}>
                               <option value="" disabled>{t('Seleccioná', 'Select')}</option>
                               <option>{t('Presencial', 'On-site')}</option>
@@ -622,7 +606,7 @@ export default function AppPage() {
                               <option>{t('Híbrido', 'Hybrid')}</option>
                             </select>
                           </div>
-                          <div className="fg fg-full" style={{ marginTop: '.3rem' }}>
+                          <div className="fg fg-full" style={{ marginTop: '.4rem' }}>
                             <button className="submit-btn" onClick={() => nextCStep(2)}>
                               {t('Continuar →', 'Continue →')}
                             </button>
@@ -633,13 +617,13 @@ export default function AppPage() {
 
                     {cStep === 2 && (
                       <div>
-                        <div className="ob-form-title">{t('Experiencia profesional', 'Professional experience')}</div>
-                        <div className="ob-form-sub">{t('Paso 2 de 3', 'Step 2 of 3')}</div>
+                        <div className="ob-form-title">{t('Tu experiencia', 'Your experience')}</div>
+                        <div className="ob-form-sub">{t('Esto define qué matches te enviamos.', 'This defines which matches we send you.')}</div>
                         <div className="form-grid">
                           <div className="fg fg-full">
-                            <label>{t('Área profesional', 'Professional area')}</label>
+                            <label>{t('Área profesional *', 'Professional area *')}</label>
                             <select value={car} onChange={(e) => setCar(e.target.value)}>
-                              <option value="" disabled>{t('Seleccioná', 'Select')}</option>
+                              <option value="" disabled>{t('Seleccioná tu área', 'Select your area')}</option>
                               <option>{t('Tecnología / IT', 'Technology / IT')}</option>
                               <option>{t('Diseño UX/UI', 'UX/UI Design')}</option>
                               <option>{t('Marketing y Comunicaciones', 'Marketing & Comms')}</option>
@@ -651,9 +635,9 @@ export default function AppPage() {
                             </select>
                           </div>
                           <div className="fg">
-                            <label>{t('Años de experiencia', 'Years of experience')}</label>
+                            <label>{t('Experiencia', 'Experience')}</label>
                             <select value={cex} onChange={(e) => setCex(e.target.value)}>
-                              <option value="" disabled>{t('Seleccioná', 'Select')}</option>
+                              <option value="" disabled>{t('Años', 'Years')}</option>
                               <option>{t('Sin experiencia', 'No experience')}</option>
                               <option>{t('1–2 años', '1–2 years')}</option>
                               <option>{t('3–5 años', '3–5 years')}</option>
@@ -664,20 +648,18 @@ export default function AppPage() {
                           <div className="fg">
                             <label>{t('Pretensión salarial', 'Salary expectation')}</label>
                             <select value={csal} onChange={(e) => setCsal(e.target.value)}>
-                              <option value="" disabled>{t('Rango mensual', 'Monthly range')}</option>
+                              <option value="" disabled>{t('Mensual', 'Monthly')}</option>
                               <option>Hasta $2M</option><option>$2M–$4M</option>
                               <option>$4M–$7M</option><option>$7M–$12M</option><option>$12M+</option>
                             </select>
                           </div>
                           <div className="fg fg-full">
-                            <label>{t('LinkedIn (opcional)', 'LinkedIn (optional)')}</label>
-                            <input type="url" value={cli} onChange={(e) => setCli(e.target.value)} placeholder="linkedin.com/in/your-profile" />
+                            <label>{t('LinkedIn', 'LinkedIn')} <span style={{color:'var(--ink-45)',fontWeight:400}}>{t('(opcional)', '(optional)')}</span></label>
+                            <input type="url" value={cli} onChange={(e) => setCli(e.target.value)} placeholder="linkedin.com/in/tu-perfil" />
                           </div>
-                          <div className="fg fg-full" style={{ display: 'flex', gap: '.5rem', marginTop: '.3rem' }}>
-                            <button className="btn btn-outline" onClick={() => nextCStep(1)} style={{ flex: 1, padding: 11 }}>
-                              {t('← Atrás', '← Back')}
-                            </button>
-                            <button className="submit-btn" onClick={() => nextCStep(3)} style={{ flex: 2, marginTop: 0 }}>
+                          <div className="fg fg-full" style={{ display: 'flex', gap: '.6rem', marginTop: '.4rem', alignItems: 'center' }}>
+                            <button className="ob-back-link" onClick={() => nextCStep(1)}>{t('← Atrás', '← Back')}</button>
+                            <button className="submit-btn" onClick={() => nextCStep(3)} style={{ flex: 1, marginTop: 0 }}>
                               {t('Continuar →', 'Continue →')}
                             </button>
                           </div>
@@ -687,8 +669,8 @@ export default function AppPage() {
 
                     {cStep === 3 && (
                       <div>
-                        <div className="ob-form-title">{t('Habilidades clave', 'Key skills')}</div>
-                        <div className="ob-form-sub">{t('Paso 3 de 3 · ¡Casi listo!', 'Step 3 of 3 · Almost done!')}</div>
+                        <div className="ob-form-title">{t('¿Qué sabés hacer?', 'What are you good at?')}</div>
+                        <div className="ob-form-sub">{t('Agregá tus principales habilidades para mejorar tus matches.', 'Add your main skills to improve your matches.')}</div>
                         <div className="form-grid">
                           <div className="fg fg-full">
                             <label>{t('Habilidades', 'Skills')}</label>
@@ -696,22 +678,22 @@ export default function AppPage() {
                               <input type="text" value={cSkInput} onChange={(e) => setCSkInput(e.target.value)} onKeyDown={onSkKey('c')} placeholder="React, Excel, Photoshop…" />
                               <button className="add-sk-btn" onClick={() => addSkill('c')}>+</button>
                             </div>
-                            <div className="sk-tags">
-                              {cSkills.map((s) => (
-                                <span key={s} className="sk-tag" onClick={() => removeSkill('c', s)}>{s} ×</span>
-                              ))}
-                            </div>
+                            {cSkills.length > 0 && (
+                              <div className="sk-tags">
+                                {cSkills.map((s) => (
+                                  <span key={s} className="sk-tag" onClick={() => removeSkill('c', s)}>{s} ×</span>
+                                ))}
+                              </div>
+                            )}
                           </div>
                           <div className="fg fg-full">
-                            <label>{t('Nota adicional (opcional)', 'Additional note (optional)')}</label>
-                            <textarea value={cnote} onChange={(e) => setCnote(e.target.value)} placeholder={t('¿Qué tipo de empresa buscás?', 'What type of company are you looking for?')} />
+                            <label>{t('Nota', 'Note')} <span style={{color:'var(--ink-45)',fontWeight:400}}>{t('(opcional)', '(optional)')}</span></label>
+                            <textarea value={cnote} onChange={(e) => setCnote(e.target.value)} placeholder={t('¿Qué tipo de empresa buscás?', 'What type of company are you looking for?')} rows={3} />
                           </div>
-                          <div className="fg fg-full" style={{ display: 'flex', gap: '.5rem', marginTop: '.3rem' }}>
-                            <button className="btn btn-outline" onClick={() => nextCStep(2)} style={{ flex: 1, padding: 11 }}>
-                              {t('← Atrás', '← Back')}
-                            </button>
-                            <button className="submit-btn" disabled={submitting} onClick={submitCandidate} style={{ flex: 2, marginTop: 0 }}>
-                              {submitting ? t('Guardando…', 'Saving…') : t('Encontrar mis matches →', 'Find my matches →')}
+                          <div className="fg fg-full" style={{ display: 'flex', gap: '.6rem', marginTop: '.4rem', alignItems: 'center' }}>
+                            <button className="ob-back-link" onClick={() => nextCStep(2)}>{t('← Atrás', '← Back')}</button>
+                            <button className="submit-btn" disabled={submitting} onClick={submitCandidate} style={{ flex: 1, marginTop: 0 }}>
+                              {submitting ? t('Guardando…', 'Saving…') : t('Ver mis matches →', 'See my matches →')}
                             </button>
                           </div>
                           <div className="fg fg-full">
@@ -727,20 +709,16 @@ export default function AppPage() {
                   <div>
                     {coStep === 1 && (
                       <div>
-                        <div className="ob-form-title">{t('Registrar mi empresa', 'Register my company')}</div>
-                        <div className="ob-form-sub">{t('Accede al top 1% del talento colombiano', 'Access the top 1% of Colombian talent')}</div>
+                        <div className="ob-form-title">{t('Tu empresa', 'Your company')}</div>
+                        <div className="ob-form-sub">{gateEmail} · {t('Top 1% del talento colombiano', 'Top 1% Colombian talent')}</div>
                         <div className="form-grid">
                           <div className="fg">
                             <label>{t('Nombre *', 'First name *')}</label>
-                            <input type="text" value={cofn} onChange={(e) => setCofn(e.target.value)} placeholder={t('Ana', 'Ana')} />
+                            <input type="text" value={cofn} onChange={(e) => setCofn(e.target.value)} placeholder={t('Ana', 'Ana')} autoFocus />
                           </div>
                           <div className="fg">
                             <label>{t('Apellido *', 'Last name *')}</label>
                             <input type="text" value={coln} onChange={(e) => setColn(e.target.value)} placeholder={t('García', 'Garcia')} />
-                          </div>
-                          <div className="fg fg-full">
-                            <label>{t('Email corporativo *', 'Corporate email *')}</label>
-                            <input type="email" value={coem} onChange={(e) => setCoem(e.target.value)} placeholder={t('ana@empresa.com', 'ana@company.com')} />
                           </div>
                           <div className="fg fg-full">
                             <label>{t('Empresa *', 'Company *')}</label>
@@ -781,7 +759,7 @@ export default function AppPage() {
                             <label>{t('WhatsApp', 'WhatsApp')}</label>
                             <input type="tel" value={cowp} onChange={(e) => setCowp(e.target.value)} placeholder="+57 300 000 0000" />
                           </div>
-                          <div className="fg fg-full" style={{ marginTop: '.3rem' }}>
+                          <div className="fg fg-full" style={{ marginTop: '.4rem' }}>
                             <button className="submit-btn" onClick={() => nextCoStep(2)}>
                               {t('Continuar →', 'Continue →')}
                             </button>
@@ -792,12 +770,12 @@ export default function AppPage() {
 
                     {coStep === 2 && (
                       <div>
-                        <div className="ob-form-title">{t('Tu primera vacante', 'Your first job listing')}</div>
-                        <div className="ob-form-sub">{t('Paso 2 de 2 · Publicá tu oferta', 'Step 2 of 2 · Post your role')}</div>
+                        <div className="ob-form-title">{t('Tu primera vacante', 'Your first listing')}</div>
+                        <div className="ob-form-sub">{t('El algoritmo buscará los mejores candidatos automáticamente.', 'The algorithm will find the best candidates automatically.')}</div>
                         <div className="form-grid">
                           <div className="fg fg-full">
                             <label>{t('Cargo *', 'Job title *')}</label>
-                            <input type="text" value={jobtitle} onChange={(e) => setJobtitle(e.target.value)} placeholder="Senior UX Designer" />
+                            <input type="text" value={jobtitle} onChange={(e) => setJobtitle(e.target.value)} placeholder="Senior UX Designer" autoFocus />
                           </div>
                           <div className="fg">
                             <label>{t('Modalidad', 'Work mode')}</label>
@@ -830,8 +808,8 @@ export default function AppPage() {
                               <option>{t('Otra', 'Other')}</option>
                             </select>
                           </div>
-                          <div className="fg">
-                            <label>{t('Salario mensual', 'Monthly salary')}</label>
+                          <div className="fg fg-full">
+                            <label>{t('Salario mensual', 'Monthly salary')} <span style={{color:'var(--ink-45)',fontWeight:400}}>{t('(opcional)', '(optional)')}</span></label>
                             <select value={jobsal} onChange={(e) => setJobsal(e.target.value)}>
                               <option value="" disabled>{t('Rango', 'Range')}</option>
                               <option>Hasta $2M</option><option>$2M–$4M</option>
@@ -839,37 +817,38 @@ export default function AppPage() {
                             </select>
                           </div>
                           <div className="fg fg-full">
-                            <label>{t('Descripción', 'Description')}</label>
-                            <textarea value={jobdesc} onChange={(e) => setJobdesc(e.target.value)} placeholder={t('¿Qué hace este rol? ¿Qué buscás en el candidato ideal?', 'What does this role do? What are you looking for in the ideal candidate?')} />
-                          </div>
-                          <div className="fg fg-full">
-                            <label>{t('Habilidades requeridas', 'Required skills')}</label>
+                            <label>{t('Habilidades requeridas', 'Required skills')} <span style={{color:'var(--ink-45)',fontWeight:400}}>{t('(opcional)', '(optional)')}</span></label>
                             <div className="skill-row">
                               <input type="text" value={coSkInput} onChange={(e) => setCoSkInput(e.target.value)} onKeyDown={onSkKey('co')} placeholder="Figma, React, Python…" />
                               <button className="add-sk-btn" onClick={() => addSkill('co')}>+</button>
                             </div>
-                            <div className="sk-tags">
-                              {coSkills.map((s) => (
-                                <span key={s} className="sk-tag" onClick={() => removeSkill('co', s)}>{s} ×</span>
-                              ))}
-                            </div>
+                            {coSkills.length > 0 && (
+                              <div className="sk-tags">
+                                {coSkills.map((s) => (
+                                  <span key={s} className="sk-tag" onClick={() => removeSkill('co', s)}>{s} ×</span>
+                                ))}
+                              </div>
+                            )}
                           </div>
-                          <div className="fg fg-full" style={{ display: 'flex', gap: '.5rem', marginTop: '.3rem' }}>
-                            <button
-                              className="btn btn-outline"
-                              onClick={() => nextCoStep(1)}
-                              style={{ flex: 1, padding: 11 }}
-                            >
-                              {t('← Atrás', '← Back')}
-                            </button>
+                          <div className="fg fg-full">
+                            <label>{t('Descripción', 'Description')} <span style={{color:'var(--ink-45)',fontWeight:400}}>{t('(opcional)', '(optional)')}</span></label>
+                            <textarea value={jobdesc} onChange={(e) => setJobdesc(e.target.value)} placeholder={t('¿Qué hace este rol? ¿Qué buscás en el candidato ideal?', 'What does this role do? What are you looking for in the ideal candidate?')} rows={3} />
+                          </div>
+                          <div className="fg fg-full" style={{ display: 'flex', gap: '.6rem', marginTop: '.4rem', alignItems: 'center' }}>
+                            <button className="ob-back-link" onClick={() => nextCoStep(1)}>{t('← Atrás', '← Back')}</button>
                             <button
                               className="submit-btn"
                               disabled={submitting}
                               onClick={submitCompany}
-                              style={{ flex: 2, marginTop: 0 }}
+                              style={{ flex: 1, marginTop: 0 }}
                             >
-                              {submitting ? t('Guardando…', 'Saving…') : t('Publicar y buscar matches →', 'Post and find matches →')}
+                              {submitting ? t('Guardando…', 'Saving…') : t('Publicar vacante →', 'Post listing →')}
                             </button>
+                          </div>
+                          <div className="fg fg-full">
+                            <p style={{ fontSize: '.64rem', color: 'var(--ink-45)', textAlign: 'center' }}>
+                              {t('Al registrarte aceptás los términos. Sin spam, sin compromisos.', 'By signing up you accept the terms. No spam, no commitments.')}
+                            </p>
                           </div>
                         </div>
                       </div>
@@ -878,6 +857,7 @@ export default function AppPage() {
                 )}
 
                 </>}
+              </div>{/* onboard-right-inner */}
               </div>
             </div>
           </div>
