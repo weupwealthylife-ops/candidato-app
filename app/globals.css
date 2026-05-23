@@ -1174,10 +1174,14 @@ footer{
 .ob-type-btn.active{background:var(--white);color:var(--forest);box-shadow:0 1px 4px rgba(14,30,32,.1)}
 .ob-form-title{font-family:var(--head);font-size:1.02rem;font-weight:700;color:var(--ink);letter-spacing:-.02em;margin-bottom:.18rem}
 .ob-form-sub{font-size:.73rem;color:var(--ink-45);margin-bottom:1.1rem}
-.ob-steps{display:flex;gap:4px;margin-bottom:1.2rem}
-.ob-step{height:3px;border-radius:10px;flex:1;background:var(--line);transition:background .3s}
-.ob-step.done{background:var(--forest)}
-.ob-step.active{background:var(--coral)}
+.ob-steps{display:flex;gap:6px;margin-bottom:1.4rem}
+.ob-step{flex:1;display:flex;flex-direction:column;gap:4px}
+.ob-step-bar{height:3px;border-radius:10px;background:var(--line);transition:background .3s}
+.ob-step.done .ob-step-bar{background:var(--forest)}
+.ob-step.active .ob-step-bar{background:var(--coral)}
+.ob-step-lbl{font-size:.62rem;font-weight:600;color:var(--ink-45);letter-spacing:.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ob-step.active .ob-step-lbl{color:var(--coral)}
+.ob-step.done .ob-step-lbl{color:var(--forest)}
 
 /* ── PAGE HEAD ── */
 .page-head{margin-bottom:1.3rem}

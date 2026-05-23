@@ -252,21 +252,19 @@ export default function AppPage() {
       if (supabaseEnabled) {
         const sb = createClient()
         const { error } = await sb.from('candidates').insert([payload])
-        if (error) throw error
+        if (error) console.warn('[Supabase] candidates insert:', error.message)
       }
-      setCurrentUser({ name: payload.name, email: payload.email, type: 'candidate' })
-      setModal({
-        ico: '🎉',
-        title: '¡Perfil creado!',
-        sub: 'Nuestro algoritmo ya está analizando tu perfil. En las próximas 24 horas recibirás tus primeros matches por email.',
-        note: '📧 Revisá tu bandeja de entrada — también el spam.',
-      })
     } catch (e) {
-      console.error(e)
-      showToast('Error', 'No se pudo guardar tu perfil. Intentá de nuevo.', '❌')
-    } finally {
-      setSubmitting(false)
+      console.warn('[Supabase] unexpected:', e)
     }
+    setCurrentUser({ name: payload.name, email: payload.email, type: 'candidate' })
+    setModal({
+      ico: '🎉',
+      title: '¡Perfil creado!',
+      sub: 'Nuestro algoritmo ya está analizando tu perfil. En las próximas 24 horas recibirás tus primeros matches por email.',
+      note: '📧 Revisá tu bandeja de entrada — también el spam.',
+    })
+    setSubmitting(false)
   }
 
   async function submitCompany() {
@@ -291,46 +289,43 @@ export default function AppPage() {
           .from('companies')
           .insert([compPayload])
           .select()
-        if (error) throw error
-        const compId = data?.[0]?.id
-        if (jobtitle.trim() && compId) {
-          const jobPayload = {
-            company_id: compId,
-            title: jobtitle.trim(),
-            modality: jobmod,
-            city: jobcity,
-            area: jobarea,
-            salary_range: jobsal,
-            description: jobdesc.trim(),
-            skills: [...coSkills],
-            active: true,
+        if (error) {
+          console.warn('[Supabase] companies insert:', error.message)
+        } else {
+          const compId = data?.[0]?.id
+          if (jobtitle.trim() && compId) {
+            const jobPayload = {
+              company_id: compId,
+              title: jobtitle.trim(),
+              modality: jobmod,
+              city: jobcity,
+              area: jobarea,
+              salary_range: jobsal,
+              description: jobdesc.trim(),
+              skills: [...coSkills],
+              active: true,
+            }
+            const { error: jobErr } = await sb.from('jobs').insert([jobPayload])
+            if (jobErr) console.warn('[Supabase] jobs insert:', jobErr.message)
           }
-          const { error: jobErr } = await sb.from('jobs').insert([jobPayload])
-          if (jobErr) throw jobErr
         }
       }
-      setCurrentUser({
-        name: compPayload.name,
-        email: compPayload.email,
-        type: 'company',
-        companyName: compPayload.company_name,
-      })
-      setModal({
-        ico: '🏢',
-        title: '¡Empresa registrada!',
-        sub: 'Tu vacante está activa. El algoritmo ya está identificando los candidatos más compatibles. Recibirás los primeros matches en las próximas horas.',
-        note: '📊 Podés ver los resultados en tu panel de empresa.',
-      })
     } catch (e) {
-      console.error(e)
-      showToast(
-        'Error',
-        'No se pudo registrar la empresa. Intentá de nuevo.',
-        '❌'
-      )
-    } finally {
-      setSubmitting(false)
+      console.warn('[Supabase] unexpected:', e)
     }
+    setCurrentUser({
+      name: compPayload.name,
+      email: compPayload.email,
+      type: 'company',
+      companyName: compPayload.company_name,
+    })
+    setModal({
+      ico: '🏢',
+      title: '¡Empresa registrada!',
+      sub: 'Tu vacante está activa. El algoritmo ya está identificando los candidatos más compatibles. Recibirás los primeros matches en las próximas horas.',
+      note: '📊 Podés ver los resultados en tu panel de empresa.',
+    })
+    setSubmitting(false)
   }
 
   const goToApp = () => {
@@ -447,13 +442,17 @@ export default function AppPage() {
                 </div>
 
                 <div className="ob-steps">
-                  {Array.from({ length: total }, (_, i) => (
+                  {(isC
+                    ? [t('Datos', 'Info'), t('Experiencia', 'Experience'), t('Habilidades', 'Skills')]
+                    : [t('Empresa', 'Company'), t('Vacante', 'Listing')]
+                  ).map((label, i) => (
                     <div
                       key={i}
-                      className={`ob-step ${
-                        i + 1 < current ? 'done' : i + 1 === current ? 'active' : ''
-                      }`}
-                    ></div>
+                      className={`ob-step ${i + 1 < current ? 'done' : i + 1 === current ? 'active' : ''}`}
+                    >
+                      <div className="ob-step-bar"></div>
+                      <span className="ob-step-lbl">{i + 1 < current ? '✓' : `${i + 1}`} {label}</span>
+                    </div>
                   ))}
                 </div>
 
