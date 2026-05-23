@@ -161,6 +161,12 @@ export default function AppPage() {
   )
   const [submitting, setSubmitting] = useState(false)
 
+  // Email gate phase
+  const [phase, setPhase] = useState<'gate' | 'register' | 'welcome'>('gate')
+  const [gateEmail, setGateEmail] = useState('')
+  const [gateLoading, setGateLoading] = useState(false)
+  const [foundName, setFoundName] = useState('')
+
   useEffect(() => {
     const urlType = new URLSearchParams(window.location.search).get('type')
     if (urlType === 'company') setUserType('company')
@@ -346,6 +352,35 @@ export default function AppPage() {
       }
     }
 
+  async function checkEmailExists() {
+    const email = gateEmail.trim()
+    if (!email || !email.includes('@')) {
+      showToast(t('Email inválido', 'Invalid email'), t('Ingresá un email válido', 'Enter a valid email'), '⚠️')
+      return
+    }
+    setGateLoading(true)
+    try {
+      if (supabaseEnabled) {
+        const sb = createClient()
+        const table = userType === 'candidate' ? 'candidates' : 'companies'
+        const { data } = await sb.from(table).select('name').eq('email', email).maybeSingle()
+        if (data?.name) {
+          setFoundName(data.name)
+          setCurrentUser({ name: data.name, email, type: userType })
+          setGateLoading(false)
+          setPhase('welcome')
+          return
+        }
+      }
+    } catch (e) {
+      console.warn('[Supabase] email check:', e)
+    }
+    if (userType === 'candidate') setCem(email)
+    else setCoem(email)
+    setGateLoading(false)
+    setPhase('register')
+  }
+
   // ── RENDER ONBOARD ──
   if (view === 'onboard') {
     const isC = userType === 'candidate'
@@ -426,6 +461,8 @@ export default function AppPage() {
                     onClick={() => {
                       setUserType('candidate')
                       setCStep(1)
+                      setPhase('gate')
+                      setGateEmail('')
                     }}
                   >
                     👤 <span>{t('Soy candidato', "I'm a candidate")}</span>
@@ -435,11 +472,75 @@ export default function AppPage() {
                     onClick={() => {
                       setUserType('company')
                       setCoStep(1)
+                      setPhase('gate')
+                      setGateEmail('')
                     }}
                   >
                     🏢 <span>{t('Soy empresa', "I'm a company")}</span>
                   </button>
                 </div>
+
+                {/* ── GATE: email check ── */}
+                {phase === 'gate' && (
+                  <div className="ob-gate">
+                    <div className="ob-form-title">
+                      {t('Ingresá tu email para comenzar', 'Enter your email to get started')}
+                    </div>
+                    <div className="ob-form-sub">
+                      {t('Si ya tenés cuenta accedés directo. Si no, te registramos en 3 minutos.', "If you have an account you go straight in. Otherwise we'll register you in 3 minutes.")}
+                    </div>
+                    <div className="form-grid">
+                      <div className="fg fg-full">
+                        <label>{t('Email', 'Email')}</label>
+                        <input
+                          type="email"
+                          value={gateEmail}
+                          onChange={(e) => setGateEmail(e.target.value)}
+                          onKeyDown={(e) => { if (e.key === 'Enter') checkEmailExists() }}
+                          placeholder={isC ? t('daniela@email.com', 'jane@email.com') : t('ana@empresa.com', 'ana@company.com')}
+                          autoFocus
+                        />
+                      </div>
+                      <div className="fg fg-full">
+                        <button className="submit-btn" disabled={gateLoading} onClick={checkEmailExists}>
+                          {gateLoading ? t('Verificando…', 'Checking…') : t('Continuar →', 'Continue →')}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* ── WELCOME BACK ── */}
+                {phase === 'welcome' && (
+                  <div className="ob-gate">
+                    <div className="ob-welcome-avatar">
+                      {foundName?.[0]?.toUpperCase() || '?'}
+                    </div>
+                    <div className="ob-form-title" style={{ marginTop: '.9rem', textAlign: 'center' }}>
+                      {t('¡Bienvenido/a de vuelta!', 'Welcome back!')}
+                    </div>
+                    <div className="ob-form-sub" style={{ textAlign: 'center', marginBottom: '1.4rem' }}>
+                      {foundName} · {gateEmail}
+                    </div>
+                    <button className="submit-btn" onClick={() => setView('app')}>
+                      {t('Ir a mi panel →', 'Go to my dashboard →')}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setCurrentUser(null)
+                        if (userType === 'candidate') setCem(gateEmail)
+                        else setCoem(gateEmail)
+                        setPhase('register')
+                      }}
+                      className="ob-notme-btn"
+                    >
+                      {t('No soy yo — crear cuenta nueva', 'Not me — create new account')}
+                    </button>
+                  </div>
+                )}
+
+                {/* ── REGISTER: multi-step form ── */}
+                {phase === 'register' && <>
 
                 <div className="ob-steps">
                   {(isC
@@ -751,6 +852,8 @@ export default function AppPage() {
                     )}
                   </div>
                 )}
+
+                </>}
               </div>
             </div>
           </div>

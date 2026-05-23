@@ -1183,6 +1183,24 @@ footer{
 .ob-step.active .ob-step-lbl{color:var(--coral)}
 .ob-step.done .ob-step-lbl{color:var(--forest)}
 
+/* ── GATE & WELCOME ── */
+.ob-gate{width:100%}
+.ob-welcome-avatar{
+  width:64px;height:64px;border-radius:50%;
+  background:linear-gradient(135deg,var(--forest),var(--forest-lt));
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--head);font-size:1.6rem;font-weight:700;color:var(--white);
+  margin:0 auto;
+}
+.ob-notme-btn{
+  display:block;margin:.9rem auto 0;
+  background:none;border:none;cursor:pointer;
+  font-size:.72rem;color:var(--ink-45);
+  text-decoration:underline;text-underline-offset:3px;
+  font-family:var(--body);
+}
+.ob-notme-btn:hover{color:var(--ink-70)}
+
 /* ── PAGE HEAD ── */
 .page-head{margin-bottom:1.3rem}
 .page-title{font-family:var(--head);font-size:1.28rem;font-weight:800;color:var(--ink);letter-spacing:-.03em}
