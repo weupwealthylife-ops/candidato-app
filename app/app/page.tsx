@@ -455,50 +455,74 @@ export default function AppPage() {
               </div>
 
               <div className="onboard-right">
-                <div className="ob-type-switch">
-                  <button
-                    className={`ob-type-btn${isC ? ' active' : ''}`}
-                    onClick={() => {
-                      setUserType('candidate')
-                      setCStep(1)
-                      setPhase('gate')
-                      setGateEmail('')
-                    }}
-                  >
-                    👤 <span>{t('Soy candidato', "I'm a candidate")}</span>
-                  </button>
-                  <button
-                    className={`ob-type-btn${!isC ? ' active' : ''}`}
-                    onClick={() => {
-                      setUserType('company')
-                      setCoStep(1)
-                      setPhase('gate')
-                      setGateEmail('')
-                    }}
-                  >
-                    🏢 <span>{t('Soy empresa', "I'm a company")}</span>
-                  </button>
-                </div>
 
-                {/* ── GATE: email check ── */}
+                {/* Small type switch — only shown during registration steps */}
+                {phase === 'register' && (
+                  <div className="ob-type-switch">
+                    <button
+                      className={`ob-type-btn${isC ? ' active' : ''}`}
+                      onClick={() => { setUserType('candidate'); setCStep(1); setPhase('gate'); setGateEmail('') }}
+                    >
+                      👤 <span>{t('Soy candidato', "I'm a candidate")}</span>
+                    </button>
+                    <button
+                      className={`ob-type-btn${!isC ? ' active' : ''}`}
+                      onClick={() => { setUserType('company'); setCoStep(1); setPhase('gate'); setGateEmail('') }}
+                    >
+                      🏢 <span>{t('Soy empresa', "I'm a company")}</span>
+                    </button>
+                  </div>
+                )}
+
+                {/* ── GATE: role cards + email ── */}
                 {phase === 'gate' && (
                   <div className="ob-gate">
-                    <div className="ob-form-title">
-                      {t('Ingresá tu email para comenzar', 'Enter your email to get started')}
+                    <p className="ob-gate-eyebrow">Candidato®</p>
+                    <h2 className="ob-gate-title">
+                      {t('¿Cómo querés usar Candidato?', 'How do you want to use Candidato?')}
+                    </h2>
+                    <p className="ob-gate-sub">
+                      {t('Elegí tu perfil para continuar.', 'Choose your profile to continue.')}
+                    </p>
+
+                    <div className="ob-role-cards">
+                      <button
+                        className={`ob-role-card${isC ? ' active' : ''}`}
+                        onClick={() => { setUserType('candidate'); setGateEmail('') }}
+                      >
+                        <div className="ob-role-ico-wrap">👤</div>
+                        <div className="ob-role-body">
+                          <div className="ob-role-title">{t('Soy candidato', "I'm a candidate")}</div>
+                          <div className="ob-role-desc">{t('Encontrá trabajo con matching por IA · Gratis', 'Find jobs with AI matching · Free')}</div>
+                        </div>
+                        <div className={`ob-role-dot${isC ? ' on' : ''}`}></div>
+                      </button>
+                      <button
+                        className={`ob-role-card${!isC ? ' active' : ''}`}
+                        onClick={() => { setUserType('company'); setGateEmail('') }}
+                      >
+                        <div className="ob-role-ico-wrap">🏢</div>
+                        <div className="ob-role-body">
+                          <div className="ob-role-title">{t('Soy empresa', "I'm a company")}</div>
+                          <div className="ob-role-desc">{t('Accedé al top 1% del talento colombiano', 'Access the top 1% of Colombian talent')}</div>
+                        </div>
+                        <div className={`ob-role-dot${!isC ? ' on' : ''}`}></div>
+                      </button>
                     </div>
-                    <div className="ob-form-sub">
-                      {t('Si ya tenés cuenta accedés directo. Si no, te registramos en 3 minutos.', "If you have an account you go straight in. Otherwise we'll register you in 3 minutes.")}
+
+                    <div className="ob-gate-divider">
+                      <span>{t('Tu email para continuar', 'Your email to continue')}</span>
                     </div>
+
                     <div className="form-grid">
                       <div className="fg fg-full">
-                        <label>{t('Email', 'Email')}</label>
                         <input
                           type="email"
                           value={gateEmail}
                           onChange={(e) => setGateEmail(e.target.value)}
                           onKeyDown={(e) => { if (e.key === 'Enter') checkEmailExists() }}
                           placeholder={isC ? t('daniela@email.com', 'jane@email.com') : t('ana@empresa.com', 'ana@company.com')}
-                          autoFocus
+                          className="ob-gate-input"
                         />
                       </div>
                       <div className="fg fg-full">
@@ -507,34 +531,34 @@ export default function AppPage() {
                         </button>
                       </div>
                     </div>
+                    <p className="ob-gate-hint">
+                      {t('Si ya tenés cuenta accedés directo. Si no, te registramos en 3 minutos.', "Already have an account? You'll go straight in. New? We'll register you in 3 minutes.")}
+                    </p>
                   </div>
                 )}
 
                 {/* ── WELCOME BACK ── */}
                 {phase === 'welcome' && (
-                  <div className="ob-gate">
+                  <div className="ob-gate ob-gate-center">
                     <div className="ob-welcome-avatar">
                       {foundName?.[0]?.toUpperCase() || '?'}
                     </div>
-                    <div className="ob-form-title" style={{ marginTop: '.9rem', textAlign: 'center' }}>
-                      {t('¡Bienvenido/a de vuelta!', 'Welcome back!')}
-                    </div>
-                    <div className="ob-form-sub" style={{ textAlign: 'center', marginBottom: '1.4rem' }}>
-                      {foundName} · {gateEmail}
-                    </div>
-                    <button className="submit-btn" onClick={() => setView('app')}>
+                    <div className="ob-welcome-label">{t('Bienvenido/a de vuelta', 'Welcome back')}</div>
+                    <h2 className="ob-gate-title" style={{ textAlign: 'center', marginTop: '.3rem' }}>
+                      {foundName}
+                    </h2>
+                    <p className="ob-gate-sub" style={{ textAlign: 'center' }}>{gateEmail}</p>
+                    <button className="submit-btn" style={{ marginTop: '1.6rem' }} onClick={() => setView('app')}>
                       {t('Ir a mi panel →', 'Go to my dashboard →')}
                     </button>
                     <button
-                      onClick={() => {
-                        setCurrentUser(null)
-                        if (userType === 'candidate') setCem(gateEmail)
-                        else setCoem(gateEmail)
-                        setPhase('register')
-                      }}
+                      onClick={() => { setCurrentUser(null); if (userType === 'candidate') setCem(gateEmail); else setCoem(gateEmail); setPhase('register') }}
                       className="ob-notme-btn"
                     >
                       {t('No soy yo — crear cuenta nueva', 'Not me — create new account')}
+                    </button>
+                    <button onClick={() => setPhase('gate')} className="ob-notme-btn" style={{ marginTop: '.2rem' }}>
+                      {t('← Volver', '← Back')}
                     </button>
                   </div>
                 )}
