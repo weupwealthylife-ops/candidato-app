@@ -54,7 +54,7 @@ function initials(name: string) {
   return name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase()
 }
 
-type CandView = 'dashboard' | 'jobs' | 'matches' | 'profile'
+type CandView = 'dashboard' | 'jobs' | 'profile' | 'settings'
 type CompView = 'codashboard' | 'matches' | 'post' | 'talent'
 
 export default function AppPage() {
@@ -123,10 +123,15 @@ export default function AppPage() {
   const [submitting, setSubmitting] = useState(false)
 
   // Email gate phase
-  const [phase, setPhase] = useState<'gate' | 'register' | 'welcome'>('gate')
+  const [phase, setPhase] = useState<'gate' | 'register' | 'welcome' | 'verify'>('gate')
   const [gateEmail, setGateEmail] = useState('')
   const [gateLoading, setGateLoading] = useState(false)
   const [foundName, setFoundName] = useState('')
+
+  // CV upload
+  const [cvFile, setCvFile] = useState<File | null>(null)
+  const [cvName, setCvName] = useState('')
+  const [cvUploading, setCvUploading] = useState(false)
 
   useEffect(() => {
     const urlType = new URLSearchParams(window.location.search).get('type')
@@ -216,36 +221,56 @@ export default function AppPage() {
       return
     }
     setSubmitting(true)
-    const payload = {
-      name: `${cfn} ${cln}`.trim(),
-      email: cem.trim(),
-      whatsapp: cph.trim(),
-      city: ccy,
-      modality: cmo,
-      area: car,
-      experience: cex,
-      salary_range: csal,
-      linkedin: cli.trim(),
-      skills: [...cSkills],
-      note: cnote.trim(),
-    }
+    const email = cem.trim().toLowerCase()
+    let cvUrl = ''
+
     try {
-      if (supabaseEnabled) {
-        const sb = createClient()
-        const { error } = await sb.from('candidates').insert([payload])
-        if (error) console.warn('[Supabase] candidates insert:', error.message)
+      const sb = createClient()
+
+      // Upload CV if attached
+      if (cvFile) {
+        setCvUploading(true)
+        const ext = cvFile.name.split('.').pop()
+        const path = `cvs/${Date.now()}-${email.replace(/[@.]/g, '_')}.${ext}`
+        const { data: upData } = await sb.storage.from('candidatos').upload(path, cvFile, { upsert: true })
+        if (upData?.path) {
+          const { data: urlData } = sb.storage.from('candidatos').getPublicUrl(upData.path)
+          cvUrl = urlData?.publicUrl || ''
+        }
+        setCvUploading(false)
       }
+
+      const payload = {
+        name: `${cfn} ${cln}`.trim(),
+        email,
+        whatsapp: cph.trim(),
+        city: ccy,
+        modality: cmo,
+        area: car,
+        experience: cex,
+        salary_range: csal,
+        linkedin: cli.trim(),
+        skills: [...cSkills],
+        note: cnote.trim(),
+        cv_url: cvUrl || null,
+        verified: false,
+      }
+      const { error } = await sb.from('candidates').insert([payload])
+      if (error) console.warn('[Supabase] candidates insert:', error.message)
+
+      // Trigger verification email via Supabase Auth
+      await sb.auth.signUp({
+        email,
+        password: crypto.randomUUID(),
+        options: { emailRedirectTo: `${window.location.origin}/auth/callback?next=/app` },
+      })
     } catch (e) {
       console.warn('[Supabase] unexpected:', e)
     }
-    setCurrentUser({ name: payload.name, email: payload.email, type: 'candidate' })
-    setModal({
-      ico: '✓',
-      title: '¡Perfil creado!',
-      sub: 'Nuestro algoritmo ya está analizando tu perfil. En las próximas 24 horas recibirás tus primeros matches por email.',
-      note: 'Revisá tu bandeja de entrada — también el spam.',
-    })
+
+    setCurrentUser({ name: `${cfn} ${cln}`.trim(), email, type: 'candidate' })
     setSubmitting(false)
+    setPhase('verify')
   }
 
   async function submitCompany() {
@@ -254,59 +279,58 @@ export default function AppPage() {
       return
     }
     setSubmitting(true)
+    const email = coem.trim().toLowerCase()
     const compPayload = {
       name: `${cofn} ${coln}`.trim(),
-      email: coem.trim(),
+      email,
       company_name: coname.trim(),
       industry: coind,
       size: cosize,
       city: cocity,
       whatsapp: cowp.trim(),
+      verified: false,
     }
     try {
-      if (supabaseEnabled) {
-        const sb = createClient()
-        const { data, error } = await sb
-          .from('companies')
-          .insert([compPayload])
-          .select()
-        if (error) {
-          console.warn('[Supabase] companies insert:', error.message)
-        } else {
-          const compId = data?.[0]?.id
-          if (jobtitle.trim() && compId) {
-            const jobPayload = {
-              company_id: compId,
-              title: jobtitle.trim(),
-              modality: jobmod,
-              city: jobcity,
-              area: jobarea,
-              salary_range: jobsal,
-              description: jobdesc.trim(),
-              skills: [...coSkills],
-              active: true,
-            }
-            const { error: jobErr } = await sb.from('jobs').insert([jobPayload])
-            if (jobErr) console.warn('[Supabase] jobs insert:', jobErr.message)
+      const sb = createClient()
+      const { data, error } = await sb.from('companies').insert([compPayload]).select()
+      if (error) {
+        console.warn('[Supabase] companies insert:', error.message)
+      } else {
+        const compId = data?.[0]?.id
+        if (jobtitle.trim() && compId) {
+          const jobPayload = {
+            company_id: compId,
+            title: jobtitle.trim(),
+            modality: jobmod,
+            city: jobcity,
+            area: jobarea,
+            salary_range: jobsal,
+            description: jobdesc.trim(),
+            skills: [...coSkills],
+            active: true,
           }
+          const { error: jobErr } = await sb.from('jobs').insert([jobPayload])
+          if (jobErr) console.warn('[Supabase] jobs insert:', jobErr.message)
         }
       }
+
+      // Trigger verification email
+      await sb.auth.signUp({
+        email,
+        password: crypto.randomUUID(),
+        options: { emailRedirectTo: `${window.location.origin}/auth/callback?next=/app` },
+      })
     } catch (e) {
       console.warn('[Supabase] unexpected:', e)
     }
     setCurrentUser({
       name: compPayload.name,
-      email: compPayload.email,
+      email,
       type: 'company',
       companyName: compPayload.company_name,
     })
-    setModal({
-      ico: '✓',
-      title: '¡Empresa registrada!',
-      sub: 'Tu vacante está activa. El algoritmo ya está identificando los candidatos más compatibles. Recibirás los primeros matches en las próximas horas.',
-      note: 'Podés ver los resultados en tu panel de empresa.',
-    })
     setSubmitting(false)
+    setPhase('verify')
   }
 
   const goToApp = () => {
@@ -337,28 +361,38 @@ export default function AppPage() {
     }
 
   async function checkEmailExists() {
-    const email = gateEmail.trim()
+    const email = gateEmail.trim().toLowerCase()
     if (!email || !email.includes('@')) {
       showToast(t('Email inválido', 'Invalid email'), t('Ingresá un email válido', 'Enter a valid email'), '⚠️')
       return
     }
     setGateLoading(true)
     try {
-      if (supabaseEnabled) {
-        const sb = createClient()
-        const table = userType === 'candidate' ? 'candidates' : 'companies'
-        const { data } = await sb.from(table).select('name').eq('email', email).maybeSingle()
-        if (data?.name) {
-          setFoundName(data.name)
-          setCurrentUser({ name: data.name, email, type: userType })
-          setGateLoading(false)
-          setPhase('welcome')
-          return
-        }
+      const sb = createClient()
+      // Check candidates table first
+      const { data: cand } = await sb.from('candidates').select('name').eq('email', email).maybeSingle()
+      if (cand?.name) {
+        setFoundName(cand.name)
+        setCurrentUser({ name: cand.name, email, type: 'candidate' })
+        setUserType('candidate')
+        setGateLoading(false)
+        setPhase('welcome')
+        return
+      }
+      // Check companies table
+      const { data: comp } = await sb.from('companies').select('name,company_name').eq('email', email).maybeSingle()
+      if (comp?.name) {
+        setFoundName(comp.name)
+        setCurrentUser({ name: comp.name, email, type: 'company', companyName: comp.company_name })
+        setUserType('company')
+        setGateLoading(false)
+        setPhase('welcome')
+        return
       }
     } catch (e) {
       console.warn('[Supabase] email check:', e)
     }
+    // New user — prefill email and go to registration
     if (userType === 'candidate') setCem(email)
     else setCoem(email)
     setGateLoading(false)
@@ -527,26 +561,63 @@ export default function AppPage() {
                 {/* ── WELCOME BACK ── */}
                 {phase === 'welcome' && (
                   <div className="ob-gate ob-gate-center">
-                    <div className="ob-welcome-avatar">
-                      {foundName?.[0]?.toUpperCase() || '?'}
-                    </div>
+                    <div className="ob-welcome-avatar">{foundName?.[0]?.toUpperCase() || '?'}</div>
                     <div className="ob-welcome-label">{t('Bienvenido/a de vuelta', 'Welcome back')}</div>
-                    <h2 className="ob-gate-title" style={{ textAlign: 'center', marginTop: '.3rem' }}>
-                      {foundName}
+                    <h2 className="ob-gate-title" style={{ textAlign: 'center', marginTop: '.2rem' }}>
+                      {foundName.split(' ')[0]}
                     </h2>
-                    <p className="ob-gate-sub" style={{ textAlign: 'center' }}>{gateEmail}</p>
-                    <button className="submit-btn" style={{ marginTop: '1.6rem' }} onClick={() => enterApp({ name: foundName, email: gateEmail, type: userType })}>
+                    <p className="ob-gate-sub" style={{ textAlign: 'center', marginBottom: '1.6rem' }}>{gateEmail}</p>
+                    <button className="submit-btn" onClick={() => enterApp({ name: foundName, email: gateEmail, type: userType })}>
                       {t('Ir a mi panel →', 'Go to my dashboard →')}
                     </button>
+                    <div className="ob-divider-thin"></div>
+                    <p className="ob-gate-hint" style={{ marginTop: 0 }}>
+                      {t('¿No sos vos?', 'Not you?')}
+                    </p>
                     <button
                       onClick={() => { setCurrentUser(null); if (userType === 'candidate') setCem(gateEmail); else setCoem(gateEmail); setPhase('register') }}
                       className="ob-notme-btn"
                     >
-                      {t('No soy yo — crear cuenta nueva', 'Not me — create new account')}
+                      {t('Crear cuenta nueva con este email', 'Create new account with this email')}
                     </button>
-                    <button onClick={() => setPhase('gate')} className="ob-notme-btn" style={{ marginTop: '.2rem' }}>
-                      {t('← Volver', '← Back')}
+                    <button onClick={() => { setPhase('gate'); setGateEmail('') }} className="ob-notme-btn">
+                      {t('← Usar otro email', '← Use a different email')}
                     </button>
+                  </div>
+                )}
+
+                {/* ── VERIFY EMAIL ── */}
+                {phase === 'verify' && (
+                  <div className="ob-gate ob-gate-center">
+                    <div className="ob-verify-ico">✉</div>
+                    <h2 className="ob-gate-title" style={{ textAlign: 'center', marginTop: '.6rem' }}>
+                      {t('Verificá tu email', 'Verify your email')}
+                    </h2>
+                    <p className="ob-gate-sub" style={{ textAlign: 'center' }}>
+                      {t(`Enviamos un enlace de activación a`, `We sent an activation link to`)}
+                      <br />
+                      <strong>{currentUser?.email}</strong>
+                    </p>
+                    <div className="ob-verify-steps">
+                      <div className="ob-verify-step">
+                        <span className="ob-vstep-num">1</span>
+                        <span>{t('Abrí tu bandeja de entrada', 'Open your inbox')}</span>
+                      </div>
+                      <div className="ob-verify-step">
+                        <span className="ob-vstep-num">2</span>
+                        <span>{t('Buscá el email de Candidato®', 'Look for the email from Candidato®')}</span>
+                      </div>
+                      <div className="ob-verify-step">
+                        <span className="ob-vstep-num">3</span>
+                        <span>{t('Hacé clic en "Activar cuenta"', 'Click "Activate account"')}</span>
+                      </div>
+                    </div>
+                    <button className="submit-btn" style={{ marginTop: '1.4rem' }} onClick={() => { goToApp() }}>
+                      {t('Ya verifiqué — ir a mi panel →', 'I verified — go to my dashboard →')}
+                    </button>
+                    <p className="ob-gate-hint">
+                      {t('¿No llegó? Revisá la carpeta de spam.', "Didn't arrive? Check your spam folder.")}
+                    </p>
                   </div>
                 )}
 
@@ -684,17 +755,48 @@ export default function AppPage() {
                           </div>
                           <div className="fg fg-full">
                             <label>{t('Nota', 'Note')} <span style={{color:'var(--ink-45)',fontWeight:400}}>{t('(opcional)', '(optional)')}</span></label>
-                            <textarea value={cnote} onChange={(e) => setCnote(e.target.value)} placeholder={t('¿Qué tipo de empresa buscás?', 'What type of company are you looking for?')} rows={3} />
+                            <textarea value={cnote} onChange={(e) => setCnote(e.target.value)} placeholder={t('¿Qué tipo de empresa buscás? ¿Algún detalle importante sobre tu búsqueda?', 'What type of company are you looking for?')} rows={3} />
+                          </div>
+                          <div className="fg fg-full">
+                            <label>{t('CV / Hoja de vida', 'CV / Resume')} <span style={{color:'var(--ink-45)',fontWeight:400}}>{t('(opcional)', '(optional)')}</span></label>
+                            <label className={`cv-upload-area${cvName ? ' has-file' : ''}`}>
+                              <input
+                                type="file"
+                                accept=".pdf,.doc,.docx"
+                                style={{ display: 'none' }}
+                                onChange={(e) => {
+                                  const f = e.target.files?.[0]
+                                  if (f) { setCvFile(f); setCvName(f.name) }
+                                }}
+                              />
+                              {cvName ? (
+                                <div className="cv-file-info">
+                                  <span className="cv-file-ico">↑</span>
+                                  <span className="cv-file-name">{cvName}</span>
+                                  <button
+                                    type="button"
+                                    className="cv-file-remove"
+                                    onClick={(e) => { e.preventDefault(); setCvFile(null); setCvName('') }}
+                                  >×</button>
+                                </div>
+                              ) : (
+                                <div className="cv-upload-inner">
+                                  <span className="cv-upload-arrow">↑</span>
+                                  <span className="cv-upload-text">{t('Adjuntar CV', 'Attach CV')}</span>
+                                  <span className="cv-upload-hint">PDF, DOC · {t('Máx 5MB', 'Max 5MB')}</span>
+                                </div>
+                              )}
+                            </label>
                           </div>
                           <div className="fg fg-full" style={{ display: 'flex', gap: '.6rem', marginTop: '.4rem', alignItems: 'center' }}>
                             <button className="ob-back-link" onClick={() => nextCStep(2)}>{t('← Atrás', '← Back')}</button>
-                            <button className="submit-btn" disabled={submitting} onClick={submitCandidate} style={{ flex: 1, marginTop: 0 }}>
-                              {submitting ? t('Guardando…', 'Saving…') : t('Ver mis matches →', 'See my matches →')}
+                            <button className="submit-btn" disabled={submitting || cvUploading} onClick={submitCandidate} style={{ flex: 1, marginTop: 0 }}>
+                              {cvUploading ? t('Subiendo CV…', 'Uploading CV…') : submitting ? t('Guardando…', 'Saving…') : t('Crear mi perfil →', 'Create my profile →')}
                             </button>
                           </div>
                           <div className="fg fg-full">
                             <p style={{ fontSize: '.64rem', color: 'var(--ink-45)', textAlign: 'center' }}>
-                              {t('Al registrarte aceptás los términos. Nunca enviamos spam.', 'By signing up you accept the terms. We never send spam.')}
+                              {t('Al registrarte aceptás los términos. Recibirás un email de verificación.', 'By signing up you accept the terms. You\'ll receive a verification email.')}
                             </p>
                           </div>
                         </div>
@@ -938,25 +1040,25 @@ export default function AppPage() {
             {isC ? (
               <>
                 <button className={`tab-btn${candView === 'dashboard' ? ' active' : ''}`} onClick={() => setCandView('dashboard')}>
-                  Inicio
+                  Dashboard
                 </button>
                 <button className={`tab-btn${candView === 'jobs' ? ' active' : ''}`} onClick={() => { setCandView('jobs'); loadJobs() }}>
-                  Buscar trabajo
+                  {t('Buscar trabajo', 'Find jobs')}
                 </button>
                 <button className={`tab-btn${candView === 'profile' ? ' active' : ''}`} onClick={() => setCandView('profile')}>
-                  Mi perfil
+                  {t('Mi perfil', 'Profile')}
                 </button>
               </>
             ) : (
               <>
                 <button className={`tab-btn${compView === 'codashboard' ? ' active' : ''}`} onClick={() => setCompView('codashboard')}>
-                  Inicio
+                  Dashboard
                 </button>
                 <button className={`tab-btn${compView === 'talent' ? ' active' : ''}`} onClick={() => { setCompView('talent'); loadCandidates() }}>
-                  Candidatos
+                  {t('Candidatos', 'Candidates')}
                 </button>
                 <button className={`tab-btn${compView === 'post' ? ' active' : ''}`} onClick={() => setCompView('post')}>
-                  Publicar vacante
+                  {t('Publicar vacante', 'Post listing')}
                 </button>
               </>
             )}
@@ -969,7 +1071,14 @@ export default function AppPage() {
             <button className="btn btn-outline btn-sm" onClick={logout}>
               {t('Salir', 'Log out')}
             </button>
-            <div className="user-ava">{name.substring(0, 2).toUpperCase()}</div>
+            <div
+              className="user-ava"
+              style={{ cursor: 'pointer' }}
+              onClick={() => isC ? setCandView('profile') : undefined}
+              title={name}
+            >
+              {name.substring(0, 2).toUpperCase()}
+            </div>
           </div>
         </nav>
 
@@ -979,31 +1088,35 @@ export default function AppPage() {
               <>
                 <span className="sidebar-lbl">{t('Mi espacio', 'My space')}</span>
                 <button className={`nav-item${candView === 'dashboard' ? ' active' : ''}`} onClick={() => setCandView('dashboard')}>
-                  Inicio
+                  Dashboard
                 </button>
                 <button className={`nav-item${candView === 'jobs' ? ' active' : ''}`} onClick={() => { setCandView('jobs'); loadJobs() }}>
-                  Buscar trabajo
+                  {t('Buscar trabajo', 'Find jobs')}
                 </button>
+                <span className="sidebar-lbl" style={{ marginTop: '1.2rem' }}>{t('Mi cuenta', 'My account')}</span>
                 <button className={`nav-item${candView === 'profile' ? ' active' : ''}`} onClick={() => setCandView('profile')}>
-                  Mi perfil
+                  {t('Mi perfil', 'My profile')}
                 </button>
-                <span className="sidebar-lbl" style={{ marginTop: '1.2rem' }}>{t('Cuenta', 'Account')}</span>
-                <button className="nav-item" onClick={logout}>{t('Salir', 'Log out')}</button>
+                <button className={`nav-item${candView === 'settings' ? ' active' : ''}`} onClick={() => setCandView('settings')}>
+                  {t('Configuración', 'Settings')}
+                </button>
+                <div className="sidebar-spacer"></div>
+                <button className="nav-item nav-item-logout" onClick={logout}>{t('Salir', 'Log out')}</button>
               </>
             ) : (
               <>
                 <span className="sidebar-lbl">{t('Mi empresa', 'My company')}</span>
                 <button className={`nav-item${compView === 'codashboard' ? ' active' : ''}`} onClick={() => setCompView('codashboard')}>
-                  Inicio
+                  Dashboard
                 </button>
                 <button className={`nav-item${compView === 'talent' ? ' active' : ''}`} onClick={() => { setCompView('talent'); loadCandidates() }}>
-                  Candidatos
+                  {t('Candidatos', 'Candidates')}
                 </button>
                 <button className={`nav-item${compView === 'post' ? ' active' : ''}`} onClick={() => setCompView('post')}>
-                  Publicar vacante
+                  {t('Publicar vacante', 'Post listing')}
                 </button>
-                <span className="sidebar-lbl" style={{ marginTop: '1.2rem' }}>{t('Cuenta', 'Account')}</span>
-                <button className="nav-item" onClick={logout}>{t('Salir', 'Log out')}</button>
+                <div className="sidebar-spacer"></div>
+                <button className="nav-item nav-item-logout" onClick={logout}>{t('Salir', 'Log out')}</button>
               </>
             )}
           </aside>
@@ -1188,26 +1301,59 @@ function CandidateView({
       </>
     )
 
-  // profile
+  if (view === 'profile')
+    return (
+      <>
+        <div className="page-head">
+          <div className="page-title">{t('Mi perfil', 'My profile')}</div>
+          <div className="page-sub">{t('Tu información registrada en Candidato', 'Your information registered with Candidato')}</div>
+        </div>
+        <div className="card" style={{ maxWidth: 560 }}>
+          <div className="profile-row"><span className="profile-lbl">{t('Nombre', 'Name')}</span><span>{user?.name || '—'}</span></div>
+          <div className="profile-row"><span className="profile-lbl">Email</span><span>{user?.email || '—'}</span></div>
+          {skills.length > 0 && (
+            <div className="profile-row" style={{ alignItems: 'flex-start' }}>
+              <span className="profile-lbl">{t('Habilidades', 'Skills')}</span>
+              <div className="sk-tags" style={{ margin: 0 }}>
+                {skills.map(s => <span key={s} className="sk-tag">{s}</span>)}
+              </div>
+            </div>
+          )}
+          <p style={{ fontSize: '.75rem', color: 'var(--ink-45)', marginTop: '1.2rem' }}>
+            {t('Para actualizar tu perfil o CV, escribinos a hola@candidato.com.co', 'To update your profile or CV, email us at hola@candidato.com.co')}
+          </p>
+        </div>
+      </>
+    )
+
+  // settings
   return (
     <>
       <div className="page-head">
-        <div className="page-title">{t('Mi perfil', 'My profile')}</div>
-        <div className="page-sub">{t('Tu información registrada en Candidato', 'Your information registered with Candidato')}</div>
+        <div className="page-title">{t('Configuración', 'Settings')}</div>
+        <div className="page-sub">{t('Preferencias de tu cuenta', 'Account preferences')}</div>
       </div>
       <div className="card" style={{ maxWidth: 560 }}>
-        <div className="profile-row"><span className="profile-lbl">{t('Nombre', 'Name')}</span><span>{user?.name || '—'}</span></div>
+        <div className="settings-section-title">{t('Cuenta', 'Account')}</div>
         <div className="profile-row"><span className="profile-lbl">Email</span><span>{user?.email || '—'}</span></div>
-        {skills.length > 0 && (
-          <div className="profile-row" style={{ alignItems: 'flex-start' }}>
-            <span className="profile-lbl">{t('Habilidades', 'Skills')}</span>
-            <div className="sk-tags" style={{ margin: 0 }}>
-              {skills.map(s => <span key={s} className="sk-tag">{s}</span>)}
-            </div>
-          </div>
-        )}
-        <p style={{ fontSize: '.75rem', color: 'var(--ink-45)', marginTop: '1.2rem' }}>
-          {t('Para editar tu perfil, contactá a nuestro equipo o volvé a registrarte.', 'To edit your profile, contact our team or re-register.')}
+        <div className="profile-row"><span className="profile-lbl">{t('Nombre', 'Name')}</span><span>{user?.name || '—'}</span></div>
+        <div className="settings-section-title" style={{ marginTop: '1.4rem' }}>{t('Notificaciones', 'Notifications')}</div>
+        <div className="profile-row">
+          <span className="profile-lbl">{t('Matches por email', 'Email matches')}</span>
+          <span className="settings-badge on">{t('Activo', 'Active')}</span>
+        </div>
+        <div className="profile-row">
+          <span className="profile-lbl">{t('Actualizaciones', 'Updates')}</span>
+          <span className="settings-badge on">{t('Activo', 'Active')}</span>
+        </div>
+        <div className="settings-section-title" style={{ marginTop: '1.4rem' }}>{t('Privacidad', 'Privacy')}</div>
+        <div className="profile-row">
+          <span className="profile-lbl">{t('Perfil visible', 'Profile visible')}</span>
+          <span className="settings-badge on">{t('Sí', 'Yes')}</span>
+        </div>
+        <p style={{ fontSize: '.74rem', color: 'var(--ink-45)', marginTop: '1.4rem', lineHeight: 1.6 }}>
+          {t('Para modificar estas preferencias o eliminar tu cuenta, escribinos a', 'To modify these preferences or delete your account, email us at')}{' '}
+          <a href="mailto:hola@candidato.com.co" style={{ color: 'var(--forest)' }}>hola@candidato.com.co</a>
         </p>
       </div>
     </>
