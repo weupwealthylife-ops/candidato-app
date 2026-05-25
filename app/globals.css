@@ -729,13 +729,14 @@ button:focus-visible,input:focus-visible,select:focus-visible,.btn:focus-visible
 .frow{display:grid;grid-template-columns:1fr 1fr;gap:.65rem}
 .fg{margin-bottom:.65rem}
 .fg label{display:block;font-size:.67rem;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-45);margin-bottom:.28rem}
-.fg input,.fg select{
+.fg input,.fg select,.fg textarea{
   width:100%;background:var(--white);border:1px solid var(--line);border-radius:7px;
   padding:9px 11px;color:var(--ink);font-family:var(--body);font-size:.83rem;
   outline:none;transition:border-color .2s;-webkit-appearance:none;
 }
-.fg input::placeholder{color:var(--ink-45)}
-.fg input:focus,.fg select:focus{border-color:var(--forest);box-shadow:0 0 0 3px rgba(27,59,62,.08)}
+.fg textarea{resize:none;min-height:80px;line-height:1.55}
+.fg input::placeholder,.fg textarea::placeholder{color:var(--ink-45)}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--forest);box-shadow:0 0 0 3px rgba(27,59,62,.08)}
 .fg select{cursor:pointer}
 .fg select option{background:var(--white);color:var(--ink)}
 .skrow{display:flex;gap:.4rem}
@@ -1061,6 +1062,7 @@ footer{
 .job-card:hover{border-color:rgba(27,59,62,.2);box-shadow:0 4px 18px rgba(14,30,32,.08);transform:translateY(-1px)}
 .job-card.featured{border-color:rgba(27,59,62,.15);background:linear-gradient(135deg,rgba(27,59,62,.025),var(--white))}
 .jc-logo{width:44px;height:44px;border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:1.2rem;box-shadow:0 1px 4px rgba(14,30,32,.1)}
+.jc-ava{width:40px;height:40px;border-radius:9px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:.78rem;font-weight:700;background:var(--pale);color:var(--forest);letter-spacing:-.01em}
 .jc-body{flex:1;min-width:0}
 .jc-title{font-family:var(--head);font-size:.92rem;font-weight:700;color:var(--ink);margin-bottom:2px;letter-spacing:-.02em}
 .jc-meta{font-size:.73rem;color:var(--ink-45);margin-bottom:.45rem}
@@ -1081,6 +1083,22 @@ footer{
 .search-input::placeholder{color:var(--ink-45)}
 .filter-chip{background:var(--pale);border:1px solid var(--mist);border-radius:50px;padding:3px 9px;font-size:.68rem;font-weight:600;color:var(--forest);cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:3px}
 .filter-chip:hover{background:var(--coral-lt);color:var(--coral)}
+.filter-select{border:1.5px solid var(--line);border-radius:7px;padding:7px 10px;font-family:var(--body);font-size:.8rem;color:var(--ink);background:var(--white);outline:none;cursor:pointer;-webkit-appearance:none;flex-shrink:0}
+.filter-select:focus{border-color:var(--forest)}
+.jc-tag-skill{background:rgba(27,59,62,.06);color:var(--forest-md)}
+.cand-list{display:flex;flex-direction:column;gap:.7rem}
+.cand-card-row{background:var(--white);border:1px solid var(--line);border-radius:var(--radius);padding:.9rem 1.1rem;display:flex;align-items:flex-start;gap:1rem;transition:all .2s}
+.cand-card-row:hover{border-color:rgba(27,59,62,.2);box-shadow:0 3px 14px rgba(14,30,32,.07)}
+.card-label{font-size:.65rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-45);margin-bottom:.4rem}
+.card-big-num{font-family:var(--head);font-size:2.2rem;font-weight:800;color:var(--ink);letter-spacing:-.04em;line-height:1}
+.card-section-title{font-family:var(--head);font-size:.88rem;font-weight:700;color:var(--ink);margin-bottom:.2rem}
+.empty-state{text-align:center;padding:3rem 1rem;color:var(--ink-45)}
+.empty-title{font-family:var(--head);font-size:1rem;font-weight:700;color:var(--ink);margin-bottom:.5rem}
+.empty-sub{font-size:.8rem;line-height:1.6;max-width:340px;margin:0 auto}
+.loading-state{text-align:center;padding:2rem;font-size:.82rem;color:var(--ink-45)}
+.profile-row{display:flex;gap:1rem;padding:.6rem 0;border-bottom:1px solid var(--line);font-size:.82rem;color:var(--ink-70)}
+.profile-row:last-child{border-bottom:none}
+.profile-lbl{font-weight:600;color:var(--ink-45);min-width:90px;flex-shrink:0}
 
 /* ── CANDIDATE CARDS ── */
 .candidates-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1rem}
