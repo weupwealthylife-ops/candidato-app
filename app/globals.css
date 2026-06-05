@@ -1336,21 +1336,117 @@ footer{
 .view{display:none}
 .view.active{display:block}
 
+/* ── MOBILE BRAND (shown only when left panel is hidden) ── */
+.ob-mobile-brand{display:none}
+@media(max-width:900px){.ob-mobile-brand{display:flex!important}}
+
 /* ── RESPONSIVE ── */
+
+/* ─ Tablet (≤900px) ─ */
 @media(max-width:900px){
-  .stats-row{grid-template-columns:1fr 1fr}
-  .onboard-card{grid-template-columns:1fr}
-  .onboard-left{padding:1.6rem 1.4rem;min-height:auto}
-  .onboard-right{padding:1.4rem 1.2rem}
-  .onboard-right-inner{max-width:100%}
+  /* App shell */
   .sidebar{display:none}
-}
-@media(max-width:640px){
+  .app-shell{padding-bottom:60px}
+  .main{padding:1.4rem 1rem 24px}
   .stats-row{grid-template-columns:1fr 1fr}
-  .form-grid{grid-template-columns:1fr}
-  .main{padding:1.2rem 1rem 60px}
-  .topbar-tabs{display:none}
-  .onboard-right{padding:1.3rem 1.1rem}
+
+  /* Onboarding */
+  .onboard-card{grid-template-columns:1fr;min-height:100vh}
+  .onboard-left{display:none}
+  .onboard-right{padding:2rem 1.6rem;justify-content:flex-start;max-height:100dvh;min-height:100dvh;overflow-y:auto}
+  .onboard-right-inner{max-width:480px;width:100%;margin:0 auto}
+
+  /* Landing */
+  .nav .nav-links{display:none}
+  .hero{grid-template-columns:1fr;min-height:auto}
+  .hero-l{padding:110px max(5vw,24px) 60px;text-align:center;align-items:center}
+  .hero-sub{margin-left:auto;margin-right:auto}
+  .hero-actions{justify-content:center}
+  .hero-stats{justify-content:center}
+  .hero-r{display:none}
+  .register-split{grid-template-columns:1fr;gap:3rem}
+  .trust-bar{gap:1rem}
+  .sec{padding:3.5rem max(5vw,24px)}
+  #process{padding:3.5rem max(5vw,24px)}
+  .contact-row{gap:.75rem}
 }
+
+/* ─ Mobile bottom nav ─ */
+@media(max-width:900px){
+  .mobile-nav{
+    display:flex;
+    position:fixed;bottom:0;left:0;right:0;z-index:300;
+    background:rgba(250,250,248,.97);backdrop-filter:blur(20px);
+    border-top:1px solid var(--line);
+    height:60px;padding:0 .5rem;
+    justify-content:space-around;align-items:center;
+  }
+  .mobile-nav-btn{
+    display:flex;flex-direction:column;align-items:center;gap:2px;
+    flex:1;padding:.4rem 0;border:none;background:transparent;
+    font-family:var(--body);font-size:.54rem;font-weight:600;
+    color:var(--ink-45);cursor:pointer;transition:color .15s;
+    letter-spacing:.04em;text-transform:uppercase;
+  }
+  .mobile-nav-btn.active{color:var(--forest)}
+  .mobile-nav-ico{font-size:1.1rem;line-height:1}
+}
+@media(min-width:901px){
+  .mobile-nav{display:none}
+}
+
+/* ─ Small mobile (≤640px) ─ */
+@media(max-width:640px){
+  /* App shell */
+  .topbar{padding:0 1rem;gap:.7rem}
+  .topbar-tabs{display:none}
+  .main{padding:1rem .85rem 20px}
+  .stats-row{grid-template-columns:1fr 1fr;gap:.65rem}
+  .form-grid{grid-template-columns:1fr}
+  .candidates-grid{grid-template-columns:1fr}
+
+  /* Job cards */
+  .job-card{flex-wrap:wrap;gap:.7rem}
+  .jc-right{flex-direction:row;align-items:center;width:100%;justify-content:space-between}
+
+  /* Onboarding */
+  .onboard-right{padding:1.4rem 1.1rem}
+  .ob-steps{gap:0}
+  .ob-step-lbl{font-size:.55rem}
+  .frow{grid-template-columns:1fr}
+
+  /* Landing */
+  nav{height:60px;padding:0 5vw}
+  .lang-pill{display:none}
+  .hero-l{padding:94px 5vw 56px}
+  .hero-h1{font-size:clamp(2.2rem,8vw,3rem)}
+  .hero-actions{flex-direction:column;width:100%;max-width:300px}
+  .hero-actions .btn{width:100%;justify-content:center}
+  .hero-stats{flex-direction:column;gap:.9rem;align-items:flex-start}
+  .steps-grid{grid-template-columns:1fr}
+  .step{animation:none}
+  .metrics-wrap{grid-template-columns:1fr}
+  .sec{padding:3rem 5vw}
+  #process{padding:3rem 5vw}
+  .curator-split{grid-template-columns:1fr}
+  .pgrid{max-width:100%}
+  footer{flex-direction:column;align-items:center;text-align:center}
+  .f-links{justify-content:center;flex-wrap:wrap}
+  .sec-h2{font-size:clamp(1.75rem,7vw,2.3rem)}
+  .contact-row{gap:.5rem}
+  .cc-btn{width:56px;height:56px}
+
+  /* Modal on mobile */
+  .modal{border-radius:16px 16px 0 0;position:fixed;bottom:0;left:0;right:0;max-width:100%;padding:1.8rem 1.4rem 2.4rem}
+  .modal-overlay{align-items:flex-end;padding:0}
+}
+
+@media(max-width:380px){
+  .hero-h1{font-size:2rem}
+  .btn-xl{padding:12px 22px;font-size:.85rem}
+  .sec-h2{font-size:1.7rem}
+  .stats-row{grid-template-columns:1fr}
+}
+
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 

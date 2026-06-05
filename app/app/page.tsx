@@ -520,6 +520,11 @@ export default function AppPage() {
 
               <div className="onboard-right">
               <div className="onboard-right-inner">
+                {/* Mobile-only logo header */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '1.6rem' }} className="ob-mobile-brand">
+                  <Image src="/bird-logo.png" alt="Candidato" width={28} height={28} style={{ objectFit: 'contain' }} />
+                  <span style={{ fontFamily: 'var(--head)', fontSize: '.95rem', fontWeight: 700, color: 'var(--forest)' }}>Candidato®</span>
+                </div>
 
                 {/* Small type switch — only shown during registration steps */}
                 {phase === 'register' && (
@@ -1193,6 +1198,42 @@ export default function AppPage() {
             )}
           </main>
         </div>
+
+        {/* Mobile bottom nav — visible only on ≤900px */}
+        {isC ? (
+          <nav className="mobile-nav">
+            <button className={`mobile-nav-btn${candView === 'dashboard' ? ' active' : ''}`} onClick={() => setCandView('dashboard')}>
+              <span className="mobile-nav-ico">⊞</span>Dashboard
+            </button>
+            <button className={`mobile-nav-btn${candView === 'jobs' ? ' active' : ''}`} onClick={() => { setCandView('jobs'); loadJobs() }}>
+              <span className="mobile-nav-ico">⌕</span>{t('Empleos', 'Jobs')}
+            </button>
+            <button className={`mobile-nav-btn${candView === 'profile' ? ' active' : ''}`} onClick={() => setCandView('profile')}>
+              <span className="mobile-nav-ico">◯</span>{t('Perfil', 'Profile')}
+            </button>
+            <button className={`mobile-nav-btn${candView === 'settings' ? ' active' : ''}`} onClick={() => setCandView('settings')}>
+              <span className="mobile-nav-ico">⚙</span>{t('Config.', 'Settings')}
+            </button>
+            <button className="mobile-nav-btn" onClick={logout}>
+              <span className="mobile-nav-ico">←</span>{t('Salir', 'Out')}
+            </button>
+          </nav>
+        ) : (
+          <nav className="mobile-nav">
+            <button className={`mobile-nav-btn${compView === 'codashboard' ? ' active' : ''}`} onClick={() => setCompView('codashboard')}>
+              <span className="mobile-nav-ico">⊞</span>Dashboard
+            </button>
+            <button className={`mobile-nav-btn${compView === 'talent' ? ' active' : ''}`} onClick={() => { setCompView('talent'); loadCandidates() }}>
+              <span className="mobile-nav-ico">◉</span>{t('Talentos', 'Talent')}
+            </button>
+            <button className={`mobile-nav-btn${compView === 'post' ? ' active' : ''}`} onClick={() => setCompView('post')}>
+              <span className="mobile-nav-ico">＋</span>{t('Publicar', 'Post')}
+            </button>
+            <button className="mobile-nav-btn" onClick={logout}>
+              <span className="mobile-nav-ico">←</span>{t('Salir', 'Out')}
+            </button>
+          </nav>
+        )}
 
         <div className="status-bar">
           <span>
