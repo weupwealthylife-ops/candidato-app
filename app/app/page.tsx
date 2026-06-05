@@ -217,17 +217,25 @@ export default function AppPage() {
 
   async function submitCandidate() {
     if (!cem.trim()) {
-      showToast('Email requerido', 'Ingresá tu email', '⚠️')
+      showToast('Campo requerido', 'Ingresá tu email', '⚠️')
       return
     }
     setSubmitting(true)
     const email = cem.trim().toLowerCase()
+    const name = `${cfn} ${cln}`.trim()
     let cvUrl = ''
+    let dbOk = false
+
+    if (!supabaseEnabled) {
+      showToast('Configuración', 'Supabase no está configurado', '⚠️')
+      setSubmitting(false)
+      return
+    }
 
     try {
       const sb = createClient()
 
-      // Upload CV if attached
+      // CV upload
       if (cvFile) {
         setCvUploading(true)
         const ext = cvFile.name.split('.').pop()
@@ -240,97 +248,124 @@ export default function AppPage() {
         setCvUploading(false)
       }
 
-      const payload = {
-        name: `${cfn} ${cln}`.trim(),
+      // Insert candidate — only include columns that exist in the schema
+      const payload: Record<string, unknown> = {
+        name,
         email,
-        whatsapp: cph.trim(),
-        city: ccy,
-        modality: cmo,
-        area: car,
-        experience: cex,
-        salary_range: csal,
-        linkedin: cli.trim(),
-        skills: [...cSkills],
-        note: cnote.trim(),
-        cv_url: cvUrl || null,
-        verified: false,
+        whatsapp: cph.trim() || null,
+        city: ccy || null,
+        modality: cmo || null,
+        area: car || null,
+        experience: cex || null,
+        salary_range: csal || null,
+        linkedin: cli.trim() || null,
+        skills: cSkills.length > 0 ? cSkills : null,
+        note: cnote.trim() || null,
       }
-      const { error } = await sb.from('candidates').insert([payload])
-      if (error) console.warn('[Supabase] candidates insert:', error.message)
+      if (cvUrl) payload.cv_url = cvUrl
 
-      // Trigger verification email via Supabase Auth
-      await sb.auth.signUp({
-        email,
-        password: crypto.randomUUID(),
-        options: { emailRedirectTo: `${window.location.origin}/auth/callback?next=/app` },
-      })
+      const { error } = await sb.from('candidates').insert([payload])
+      if (error) {
+        console.error('[DB] candidates insert failed:', error.message, error.details)
+        showToast('Error al guardar', error.message, '⚠️')
+      } else {
+        dbOk = true
+      }
+
+      // Trigger verification email (best-effort)
+      try {
+        await sb.auth.signUp({
+          email,
+          password: crypto.randomUUID(),
+          options: { emailRedirectTo: `${window.location.origin}/auth/callback?next=/app` },
+        })
+      } catch {
+        // Auth signup is non-blocking — profile saved regardless
+      }
     } catch (e) {
-      console.warn('[Supabase] unexpected:', e)
+      console.error('[submitCandidate] unexpected:', e)
     }
 
-    setCurrentUser({ name: `${cfn} ${cln}`.trim(), email, type: 'candidate' })
     setSubmitting(false)
-    setPhase('verify')
+    setCvUploading(false)
+
+    if (dbOk) {
+      setCurrentUser({ name, email, type: 'candidate' })
+      setPhase('verify')
+    }
   }
 
   async function submitCompany() {
     if (!coem.trim()) {
-      showToast('Email requerido', 'Ingresá tu email', '⚠️')
+      showToast('Campo requerido', 'Ingresá tu email', '⚠️')
       return
     }
     setSubmitting(true)
     const email = coem.trim().toLowerCase()
-    const compPayload = {
-      name: `${cofn} ${coln}`.trim(),
-      email,
-      company_name: coname.trim(),
-      industry: coind,
-      size: cosize,
-      city: cocity,
-      whatsapp: cowp.trim(),
-      verified: false,
+    const name = `${cofn} ${coln}`.trim()
+    let dbOk = false
+
+    if (!supabaseEnabled) {
+      showToast('Configuración', 'Supabase no está configurado', '⚠️')
+      setSubmitting(false)
+      return
     }
+
     try {
       const sb = createClient()
+      const compPayload: Record<string, unknown> = {
+        name,
+        email,
+        company_name: coname.trim(),
+        industry: coind || null,
+        size: cosize || null,
+        city: cocity || null,
+        whatsapp: cowp.trim() || null,
+      }
+
       const { data, error } = await sb.from('companies').insert([compPayload]).select()
       if (error) {
-        console.warn('[Supabase] companies insert:', error.message)
+        console.error('[DB] companies insert failed:', error.message, error.details)
+        showToast('Error al guardar', error.message, '⚠️')
       } else {
+        dbOk = true
         const compId = data?.[0]?.id
         if (jobtitle.trim() && compId) {
           const jobPayload = {
             company_id: compId,
             title: jobtitle.trim(),
-            modality: jobmod,
-            city: jobcity,
-            area: jobarea,
-            salary_range: jobsal,
-            description: jobdesc.trim(),
-            skills: [...coSkills],
+            modality: jobmod || null,
+            city: jobcity || null,
+            area: jobarea || null,
+            salary_range: jobsal || null,
+            description: jobdesc.trim() || null,
+            skills: coSkills.length > 0 ? coSkills : null,
             active: true,
           }
           const { error: jobErr } = await sb.from('jobs').insert([jobPayload])
-          if (jobErr) console.warn('[Supabase] jobs insert:', jobErr.message)
+          if (jobErr) console.error('[DB] jobs insert failed:', jobErr.message)
         }
       }
 
-      // Trigger verification email
-      await sb.auth.signUp({
-        email,
-        password: crypto.randomUUID(),
-        options: { emailRedirectTo: `${window.location.origin}/auth/callback?next=/app` },
-      })
+      try {
+        await sb.auth.signUp({
+          email,
+          password: crypto.randomUUID(),
+          options: { emailRedirectTo: `${window.location.origin}/auth/callback?next=/app` },
+        })
+      } catch {
+        // non-blocking
+      }
     } catch (e) {
-      console.warn('[Supabase] unexpected:', e)
+      console.error('[submitCompany] unexpected:', e)
     }
-    setCurrentUser({
-      name: compPayload.name,
-      email,
-      type: 'company',
-      companyName: compPayload.company_name,
-    })
+
     setSubmitting(false)
-    setPhase('verify')
+
+    if (dbOk) {
+      setCurrentUser({ name, email, type: 'company', companyName: coname.trim() })
+      setPhase('verify')
+    }
   }
 
   const goToApp = () => {
@@ -350,6 +385,11 @@ export default function AppPage() {
   const logout = () => {
     setCurrentUser(null)
     setView('onboard')
+    setPhase('gate')
+    setGateEmail('')
+    setFoundName('')
+    setCStep(1)
+    setCoStep(1)
   }
 
   const onSkKey =
@@ -369,30 +409,36 @@ export default function AppPage() {
     setGateLoading(true)
     try {
       const sb = createClient()
-      // Check candidates table first
-      const { data: cand } = await sb.from('candidates').select('name').eq('email', email).maybeSingle()
+
+      // ilike = case-insensitive — handles emails stored with any casing
+      const { data: cand } = await sb
+        .from('candidates')
+        .select('name,email')
+        .ilike('email', email)
+        .maybeSingle()
       if (cand?.name) {
-        setFoundName(cand.name)
-        setCurrentUser({ name: cand.name, email, type: 'candidate' })
-        setUserType('candidate')
         setGateLoading(false)
-        setPhase('welcome')
+        // Returning candidate → go straight to dashboard
+        enterApp({ name: cand.name, email: cand.email ?? email, type: 'candidate' })
         return
       }
-      // Check companies table
-      const { data: comp } = await sb.from('companies').select('name,company_name').eq('email', email).maybeSingle()
+
+      const { data: comp } = await sb
+        .from('companies')
+        .select('name,email,company_name')
+        .ilike('email', email)
+        .maybeSingle()
       if (comp?.name) {
-        setFoundName(comp.name)
-        setCurrentUser({ name: comp.name, email, type: 'company', companyName: comp.company_name })
-        setUserType('company')
         setGateLoading(false)
-        setPhase('welcome')
+        // Returning company → go straight to dashboard
+        enterApp({ name: comp.name, email: comp.email ?? email, type: 'company', companyName: comp.company_name })
         return
       }
     } catch (e) {
-      console.warn('[Supabase] email check:', e)
+      console.error('[checkEmailExists]', e)
     }
-    // New user — prefill email and go to registration
+
+    // Not found → new user, pre-fill email and go to registration
     if (userType === 'candidate') setCem(email)
     else setCoem(email)
     setGateLoading(false)
