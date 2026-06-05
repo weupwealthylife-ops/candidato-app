@@ -248,20 +248,18 @@ export default function AppPage() {
         setCvUploading(false)
       }
 
-      // Insert candidate — only include columns that exist in the schema
-      const payload: Record<string, unknown> = {
-        name,
-        email,
-        whatsapp: cph.trim() || null,
-        city: ccy || null,
-        modality: cmo || null,
-        area: car || null,
-        experience: cex || null,
-        salary_range: csal || null,
-        linkedin: cli.trim() || null,
-        skills: cSkills.length > 0 ? cSkills : null,
-        note: cnote.trim() || null,
-      }
+      // Build payload dynamically — only include keys with actual values
+      // so PostgREST never references a column that may not exist in the schema
+      const payload: Record<string, unknown> = { name, email }
+      if (cph.trim()) payload.whatsapp = cph.trim()
+      if (ccy) payload.city = ccy
+      if (cmo) payload.modality = cmo
+      if (car) payload.area = car
+      if (cex) payload.experience = cex
+      if (csal) payload.salary_range = csal
+      if (cli.trim()) payload.linkedin = cli.trim()
+      if (cSkills.length > 0) payload.skills = cSkills
+      if (cnote.trim()) payload.notes = cnote.trim()
       if (cvUrl) payload.cv_url = cvUrl
 
       const { error } = await sb.from('candidates').insert([payload])
@@ -313,15 +311,11 @@ export default function AppPage() {
 
     try {
       const sb = createClient()
-      const compPayload: Record<string, unknown> = {
-        name,
-        email,
-        company_name: coname.trim(),
-        industry: coind || null,
-        size: cosize || null,
-        city: cocity || null,
-        whatsapp: cowp.trim() || null,
-      }
+      const compPayload: Record<string, unknown> = { name, email, company_name: coname.trim() }
+      if (coind) compPayload.industry = coind
+      if (cosize) compPayload.size = cosize
+      if (cocity) compPayload.city = cocity
+      if (cowp.trim()) compPayload.whatsapp = cowp.trim()
 
       const { data, error } = await sb.from('companies').insert([compPayload]).select()
       if (error) {
@@ -331,17 +325,17 @@ export default function AppPage() {
         dbOk = true
         const compId = data?.[0]?.id
         if (jobtitle.trim() && compId) {
-          const jobPayload = {
+          const jobPayload: Record<string, unknown> = {
             company_id: compId,
             title: jobtitle.trim(),
-            modality: jobmod || null,
-            city: jobcity || null,
-            area: jobarea || null,
-            salary_range: jobsal || null,
-            description: jobdesc.trim() || null,
-            skills: coSkills.length > 0 ? coSkills : null,
             active: true,
           }
+          if (jobmod) jobPayload.modality = jobmod
+          if (jobcity) jobPayload.city = jobcity
+          if (jobarea) jobPayload.area = jobarea
+          if (jobsal) jobPayload.salary_range = jobsal
+          if (jobdesc.trim()) jobPayload.description = jobdesc.trim()
+          if (coSkills.length > 0) jobPayload.skills = coSkills
           const { error: jobErr } = await sb.from('jobs').insert([jobPayload])
           if (jobErr) console.error('[DB] jobs insert failed:', jobErr.message)
         }
