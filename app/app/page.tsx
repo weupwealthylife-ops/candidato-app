@@ -1170,6 +1170,7 @@ export default function AppPage() {
                 firstName={firstName}
                 skills={cSkills}
                 user={currentUser}
+                candProfile={candProfile}
                 jobs={jobs}
                 dataLoading={dataLoading}
                 loadJobs={loadJobs}
@@ -1253,15 +1254,16 @@ export default function AppPage() {
 }
 
 function CandidateView({
-  view, firstName, skills, user, jobs, dataLoading, loadJobs, setView, t,
+  view, firstName, skills, user, candProfile, jobs, dataLoading, loadJobs, setView, t,
 }: {
   view: CandView
   firstName: string
   skills: string[]
   user: CurrentUser | null
+  candProfile: Record<string, unknown> | null
   jobs: Job[]
   dataLoading: boolean
-  loadJobs: (q?: string, area?: string, city?: string, mod?: string) => void
+  loadJobs: (q?: string, area?: string, city?: string, mod?: string, sal?: string) => void
   setView: (v: CandView) => void
   t: (es: string, en: string) => string
 }) {
@@ -1269,58 +1271,74 @@ function CandidateView({
   const [filterArea, setFilterArea] = useState('')
   const [filterCity, setFilterCity] = useState('')
   const [filterMod, setFilterMod] = useState('')
+  const [filterSal, setFilterSal] = useState('')
 
-  const doSearch = () => loadJobs(query, filterArea, filterCity, filterMod)
+  const doSearch = () => loadJobs(query, filterArea, filterCity, filterMod, filterSal)
 
-  if (view === 'dashboard')
+  // ── DASHBOARD ──
+  if (view === 'dashboard') {
+    const newThisWeek = jobs.filter(j => {
+      const d = j.created_at ? Date.now() - new Date(j.created_at).getTime() : Infinity
+      return d < 7 * 24 * 3600000
+    }).length
+    const remoteCount = jobs.filter(j => j.modality?.toLowerCase().includes('remot')).length
+
     return (
       <>
         <div className="page-head">
           <div className="page-title">{t(`Hola, ${firstName}`, `Hi, ${firstName}`)}</div>
-          <div className="page-sub">{t('Vacantes disponibles para tu perfil', 'Job listings available for your profile')}</div>
+          <div className="page-sub">{t('Vacantes disponibles para tu perfil', 'Job listings matched to your profile')}</div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
-          <div className="card">
-            <div className="card-label">{t('Vacantes activas', 'Active listings')}</div>
-            <div className="card-big-num">{jobs.length || '—'}</div>
-            <button className="btn btn-forest btn-sm" style={{ marginTop: '.8rem' }} onClick={() => { setView('jobs'); loadJobs() }}>
-              {t('Ver todas →', 'View all →')}
-            </button>
+        {/* Stat chips */}
+        <div className="stats-row" style={{ gridTemplateColumns: 'repeat(3,1fr)', marginBottom: '1.4rem' }}>
+          <div className="stat-card">
+            <div className="stat-tag">{t('Total vacantes', 'Total listings')}</div>
+            <div className="stat-num">{jobs.length || '0'}</div>
+            <div className="stat-label">{t('activas ahora', 'active now')}</div>
           </div>
-          <div className="card">
-            <div className="card-label">{t('Tu perfil', 'Your profile')}</div>
-            <div style={{ fontSize: '.82rem', color: 'var(--ink-70)', marginTop: '.4rem', lineHeight: 1.6 }}>
-              <div><strong>{t('Nombre:', 'Name:')}</strong> {user?.name || '—'}</div>
-              <div><strong>Email:</strong> {user?.email || '—'}</div>
-              {skills.length > 0 && <div><strong>{t('Habilidades:', 'Skills:')}</strong> {skills.slice(0, 3).join(', ')}</div>}
+          <div className="stat-card">
+            <div className="stat-tag">{t('Nuevas esta semana', 'New this week')}</div>
+            <div className="stat-num coral">{newThisWeek}</div>
+            <div className="stat-label">{t('publicadas recientemente', 'recently posted')}</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-tag">{t('Remotas', 'Remote')}</div>
+            <div className="stat-num">{remoteCount}</div>
+            <div className="stat-label">{t('trabaja desde casa', 'work from anywhere')}</div>
+          </div>
+        </div>
+
+        {/* Job list */}
+        {dataLoading && <div className="loading-state">{t('Cargando vacantes…', 'Loading listings…')}</div>}
+
+        {!dataLoading && jobs.length === 0 && (
+          <div className="empty-state">
+            <div className="empty-title">{t('Aún no hay vacantes publicadas', 'No listings yet')}</div>
+            <div className="empty-sub">{t('Las empresas que se registren podrán publicar sus vacantes aquí.', 'Companies that register will post their listings here.')}</div>
+          </div>
+        )}
+
+        {!dataLoading && jobs.length > 0 && (
+          <div className="card" style={{ padding: '0' }}>
+            <div style={{ padding: '1rem 1.1rem .5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div className="card-section-title">{t('Vacantes recientes', 'Recent listings')}</div>
+              <button className="btn btn-outline btn-sm" onClick={() => { setView('jobs'); loadJobs() }}>
+                {t('Ver todas →', 'View all →')}
+              </button>
             </div>
-            <button className="btn btn-outline btn-sm" style={{ marginTop: '.8rem' }} onClick={() => setView('profile')}>
-              {t('Ver perfil →', 'View profile →')}
-            </button>
-          </div>
-        </div>
-
-        {jobs.length > 0 && (
-          <div className="card">
-            <div className="card-section-title">{t('Vacantes recientes', 'Recent listings')}</div>
-            <div className="jobs-list" style={{ marginTop: '.75rem' }}>
-              {jobs.slice(0, 5).map((j) => (
+            <div className="jobs-list" style={{ padding: '0 .7rem .7rem' }}>
+              {jobs.slice(0, 8).map((j) => (
                 <JobRow key={j.id} job={j} />
               ))}
             </div>
           </div>
         )}
-
-        {jobs.length === 0 && !dataLoading && (
-          <div className="empty-state">
-            <div className="empty-title">{t('Aún no hay vacantes publicadas', 'No job listings yet')}</div>
-            <div className="empty-sub">{t('Las empresas que se registren podrán publicar sus vacantes aquí.', 'Companies that register will be able to post their listings here.')}</div>
-          </div>
-        )}
       </>
     )
+  }
 
+  // ── BUSCAR TRABAJO ──
   if (view === 'jobs')
     return (
       <>
@@ -1329,7 +1347,8 @@ function CandidateView({
           <div className="page-sub">{t(`${jobs.length} vacante${jobs.length !== 1 ? 's' : ''} disponible${jobs.length !== 1 ? 's' : ''}`, `${jobs.length} listing${jobs.length !== 1 ? 's' : ''} available`)}</div>
         </div>
 
-        <div className="search-wrap" style={{ marginBottom: '1rem' }}>
+        {/* Search bar */}
+        <div className="search-wrap" style={{ marginBottom: '.65rem' }}>
           <input
             className="search-input"
             value={query}
@@ -1337,6 +1356,13 @@ function CandidateView({
             onKeyDown={e => e.key === 'Enter' && doSearch()}
             placeholder={t('Cargo o palabra clave…', 'Job title or keyword…')}
           />
+          <button className="btn btn-forest btn-sm" onClick={doSearch} disabled={dataLoading}>
+            {dataLoading ? t('Buscando…', 'Searching…') : t('Buscar', 'Search')}
+          </button>
+        </div>
+
+        {/* Filters row */}
+        <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
           <select className="filter-select" value={filterArea} onChange={e => setFilterArea(e.target.value)}>
             <option value="">{t('Área', 'Area')}</option>
             <option>{t('Tecnología / IT', 'Technology / IT')}</option>
@@ -1346,10 +1372,13 @@ function CandidateView({
             <option>{t('Finanzas y Contabilidad', 'Finance & Accounting')}</option>
             <option>{t('Recursos Humanos', 'Human Resources')}</option>
             <option>{t('Operaciones', 'Operations')}</option>
+            <option>{t('Producto / Product', 'Product')}</option>
+            <option>{t('Legal', 'Legal')}</option>
           </select>
           <select className="filter-select" value={filterCity} onChange={e => setFilterCity(e.target.value)}>
             <option value="">{t('Ciudad', 'City')}</option>
-            <option>Cali</option><option>Bogotá</option><option>Medellín</option><option>Barranquilla</option>
+            <option>Cali</option><option>Bogotá</option><option>Medellín</option>
+            <option>Barranquilla</option><option>Cartagena</option><option>Bucaramanga</option>
           </select>
           <select className="filter-select" value={filterMod} onChange={e => setFilterMod(e.target.value)}>
             <option value="">{t('Modalidad', 'Mode')}</option>
@@ -1357,9 +1386,23 @@ function CandidateView({
             <option>{t('Remoto', 'Remote')}</option>
             <option>{t('Híbrido', 'Hybrid')}</option>
           </select>
-          <button className="btn btn-forest btn-sm" onClick={doSearch} disabled={dataLoading}>
-            {dataLoading ? t('Buscando…', 'Searching…') : t('Buscar', 'Search')}
-          </button>
+          <select className="filter-select" value={filterSal} onChange={e => setFilterSal(e.target.value)}>
+            <option value="">{t('Salario', 'Salary')}</option>
+            <option>$1M – $2M</option>
+            <option>$2M – $3M</option>
+            <option>$3M – $5M</option>
+            <option>$5M – $8M</option>
+            <option>$8M – $12M</option>
+            <option>+$12M</option>
+          </select>
+          {(filterArea || filterCity || filterMod || filterSal) && (
+            <button
+              className="btn btn-outline btn-sm"
+              onClick={() => { setFilterArea(''); setFilterCity(''); setFilterMod(''); setFilterSal(''); loadJobs(query) }}
+            >
+              {t('Limpiar', 'Clear')}
+            </button>
+          )}
         </div>
 
         {dataLoading && <div className="loading-state">{t('Cargando vacantes…', 'Loading listings…')}</div>}
@@ -1373,38 +1416,114 @@ function CandidateView({
 
         {!dataLoading && jobs.length > 0 && (
           <div className="jobs-list">
-            {jobs.map(j => <JobRow key={j.id} job={j} />)}
+            {jobs.map((j) => (
+              <JobRow key={j.id} job={j} />
+            ))}
           </div>
         )}
       </>
     )
 
-  if (view === 'profile')
+  // ── MI PERFIL ──
+  if (view === 'profile') {
+    const p = candProfile
+    const cvUrl = p?.cv_url as string | undefined
+    const phone = (p?.whatsapp as string) || ''
+    const city = (p?.city as string) || ''
+    const modality = (p?.modality as string) || ''
+    const area = (p?.area as string) || ''
+    const experience = (p?.experience as string) || ''
+    const salaryRange = (p?.salary_range as string) || ''
+    const linkedin = (p?.linkedin as string) || ''
+    const profileSkills = (p?.skills as string[]) || skills
+    const notes = (p?.notes as string) || ''
+
     return (
       <>
         <div className="page-head">
           <div className="page-title">{t('Mi perfil', 'My profile')}</div>
-          <div className="page-sub">{t('Tu información registrada en Candidato', 'Your information registered with Candidato')}</div>
+          <div className="page-sub">{t('Tu información registrada en Candidato', 'Your registered profile')}</div>
         </div>
-        <div className="card" style={{ maxWidth: 560 }}>
-          <div className="profile-row"><span className="profile-lbl">{t('Nombre', 'Name')}</span><span>{user?.name || '—'}</span></div>
-          <div className="profile-row"><span className="profile-lbl">Email</span><span>{user?.email || '—'}</span></div>
-          {skills.length > 0 && (
-            <div className="profile-row" style={{ alignItems: 'flex-start' }}>
-              <span className="profile-lbl">{t('Habilidades', 'Skills')}</span>
-              <div className="sk-tags" style={{ margin: 0 }}>
-                {skills.map(s => <span key={s} className="sk-tag">{s}</span>)}
-              </div>
+
+        <div style={{ maxWidth: 580 }}>
+          {/* Avatar + name */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.4rem' }}>
+            <div style={{
+              width: 56, height: 56, borderRadius: '50%',
+              background: 'linear-gradient(135deg,var(--forest),var(--forest-lt))',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontFamily: 'var(--head)', fontSize: '1.1rem', fontWeight: 700, color: 'white', flexShrink: 0,
+            }}>
+              {(user?.name || '').split(' ').map((w: string) => w[0]).join('').substring(0, 2).toUpperCase()}
             </div>
-          )}
-          <p style={{ fontSize: '.75rem', color: 'var(--ink-45)', marginTop: '1.2rem' }}>
-            {t('Para actualizar tu perfil o CV, escribinos a hola@candidato.com.co', 'To update your profile or CV, email us at hola@candidato.com.co')}
+            <div>
+              <div style={{ fontFamily: 'var(--head)', fontSize: '1.1rem', fontWeight: 700, color: 'var(--ink)', letterSpacing: '-.02em' }}>{user?.name || '—'}</div>
+              {area && <div style={{ fontSize: '.78rem', color: 'var(--ink-45)', marginTop: '2px' }}>{area}{city ? ` · ${city}` : ''}</div>}
+            </div>
+          </div>
+
+          {/* Contact */}
+          <div className="card" style={{ marginBottom: '1rem' }}>
+            <div className="card-label" style={{ marginBottom: '.7rem' }}>{t('Contacto', 'Contact')}</div>
+            <div className="profile-row"><span className="profile-lbl">Email</span><span>{user?.email || '—'}</span></div>
+            {phone && <div className="profile-row"><span className="profile-lbl">{t('Celular / WA', 'Phone / WA')}</span><span>{phone}</span></div>}
+            {linkedin && (
+              <div className="profile-row">
+                <span className="profile-lbl">LinkedIn</span>
+                <a href={linkedin.startsWith('http') ? linkedin : `https://${linkedin}`} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--forest)', fontSize: '.82rem' }}>Ver perfil →</a>
+              </div>
+            )}
+          </div>
+
+          {/* Professional info */}
+          <div className="card" style={{ marginBottom: '1rem' }}>
+            <div className="card-label" style={{ marginBottom: '.7rem' }}>{t('Información profesional', 'Professional info')}</div>
+            {area && <div className="profile-row"><span className="profile-lbl">{t('Área', 'Area')}</span><span>{area}</span></div>}
+            {experience && <div className="profile-row"><span className="profile-lbl">{t('Experiencia', 'Experience')}</span><span>{experience}</span></div>}
+            {modality && <div className="profile-row"><span className="profile-lbl">{t('Modalidad', 'Mode')}</span><span>{modality}</span></div>}
+            {city && <div className="profile-row"><span className="profile-lbl">{t('Ciudad', 'City')}</span><span>{city}</span></div>}
+            {salaryRange && <div className="profile-row"><span className="profile-lbl">{t('Pretensión', 'Salary range')}</span><span>{salaryRange}</span></div>}
+            {profileSkills.length > 0 && (
+              <div className="profile-row" style={{ alignItems: 'flex-start' }}>
+                <span className="profile-lbl">{t('Habilidades', 'Skills')}</span>
+                <div className="sk-tags" style={{ margin: 0 }}>
+                  {profileSkills.map((s: string) => <span key={s} className="sk-tag">{s}</span>)}
+                </div>
+              </div>
+            )}
+            {notes && <div className="profile-row" style={{ alignItems: 'flex-start' }}><span className="profile-lbl">{t('Nota', 'Notes')}</span><span style={{ fontSize: '.82rem', color: 'var(--ink-70)', lineHeight: 1.6 }}>{notes}</span></div>}
+          </div>
+
+          {/* CV */}
+          <div className="card" style={{ marginBottom: '1rem' }}>
+            <div className="card-label" style={{ marginBottom: '.7rem' }}>{t('Hoja de vida', 'CV / Resume')}</div>
+            {cvUrl ? (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ fontSize: '.82rem', color: 'var(--ink-70)' }}>
+                  <span style={{ marginRight: '.4rem' }}>📄</span>{t('CV adjunto', 'CV attached')}
+                </div>
+                <a href={cvUrl} target="_blank" rel="noopener noreferrer" className="btn btn-outline btn-sm">
+                  {t('Ver CV →', 'View CV →')}
+                </a>
+              </div>
+            ) : (
+              <div style={{ fontSize: '.82rem', color: 'var(--ink-45)' }}>
+                {t('Sin CV adjunto. Para agregar tu CV escribinos a', 'No CV attached. To add your CV email us at')}{' '}
+                <a href="mailto:hola@candidato.com.co" style={{ color: 'var(--forest)' }}>hola@candidato.com.co</a>
+              </div>
+            )}
+          </div>
+
+          <p style={{ fontSize: '.72rem', color: 'var(--ink-45)', lineHeight: 1.6, marginTop: '.4rem' }}>
+            {t('Para actualizar tus datos escribinos a', 'To update your information email us at')}{' '}
+            <a href="mailto:hola@candidato.com.co" style={{ color: 'var(--forest)' }}>hola@candidato.com.co</a>
           </p>
         </div>
       </>
     )
+  }
 
-  // settings
+  // ── CONFIGURACIÓN ──
   return (
     <>
       <div className="page-head">
