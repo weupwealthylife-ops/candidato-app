@@ -2210,9 +2210,18 @@ function TalentView({ candidates, loadCandidates, t }: {
   const [filterCity, setFilterCity] = useState('')
   const [filterMod, setFilterMod] = useState('')
   const [filterSal, setFilterSal] = useState('')
-  const doSearch = () => loadCandidates(query, filterArea, filterCity, filterMod, filterSal)
-  const clearFilters = () => { setFilterArea(''); setFilterCity(''); setFilterMod(''); setFilterSal(''); loadCandidates(query) }
-  const hasFilters = filterArea || filterCity || filterMod || filterSal
+  const [searchErr, setSearchErr] = useState('')
+
+  const doSearch = () => {
+    if (!query.trim() && !filterArea && !filterCity && !filterMod && !filterSal) {
+      setSearchErr(t('Ingresá un nombre o seleccioná al menos un filtro para buscar.', 'Enter a name or select at least one filter to search.'))
+      return
+    }
+    setSearchErr('')
+    loadCandidates(query, filterArea, filterCity, filterMod, filterSal)
+  }
+  const clearAll = () => { setQuery(''); setFilterArea(''); setFilterCity(''); setFilterMod(''); setFilterSal(''); setSearchErr(''); loadCandidates() }
+  const hasAny = query || filterArea || filterCity || filterMod || filterSal
 
   return (
     <>
@@ -2222,13 +2231,13 @@ function TalentView({ candidates, loadCandidates, t }: {
       </div>
 
       {/* Search + filters */}
-      <div style={{ background: 'var(--white)', border: '1.5px solid var(--line)', borderRadius: '12px', padding: '1rem 1.1rem', marginBottom: '1rem' }}>
-        <div style={{ display: 'flex', gap: '.6rem', marginBottom: '.75rem' }}>
-          <div className="search-wrap" style={{ flex: '0 1 320px', minWidth: 0, margin: 0, border: 'none', background: 'var(--off)', borderRadius: '8px', padding: '.55rem .9rem' }}>
+      <div style={{ background: 'var(--white)', border: '1.5px solid var(--line)', borderRadius: '12px', padding: '1.1rem 1.2rem', marginBottom: '1.2rem' }}>
+        <div style={{ display: 'flex', gap: '.6rem', marginBottom: searchErr ? '.4rem' : '.75rem' }}>
+          <div className="search-wrap" style={{ flex: 1, minWidth: 0, margin: 0, border: searchErr ? '1.5px solid var(--coral)' : 'none', background: 'var(--off)', borderRadius: '8px', padding: '.55rem .9rem' }}>
             <input
               className="search-input"
               value={query}
-              onChange={e => setQuery(e.target.value)}
+              onChange={e => { setQuery(e.target.value); if (searchErr) setSearchErr('') }}
               onKeyDown={e => e.key === 'Enter' && doSearch()}
               placeholder={t('Nombre o keyword…', 'Name or keyword…')}
               style={{ background: 'transparent' }}
@@ -2237,9 +2246,19 @@ function TalentView({ candidates, loadCandidates, t }: {
           <button className="btn btn-forest" onClick={doSearch} style={{ padding: '0 1.4rem', borderRadius: '8px', fontSize: '.82rem', flexShrink: 0 }}>
             {t('Buscar', 'Search')}
           </button>
+          {hasAny && (
+            <button className="btn btn-outline" onClick={clearAll} style={{ padding: '0 1rem', borderRadius: '8px', fontSize: '.8rem', flexShrink: 0 }}>
+              {t('Limpiar ✕', 'Clear ✕')}
+            </button>
+          )}
         </div>
+        {searchErr && (
+          <div style={{ fontSize: '.75rem', color: 'var(--coral)', marginBottom: '.6rem', paddingLeft: '.2rem' }}>
+            ⚠ {searchErr}
+          </div>
+        )}
         <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
-          <select className="filter-select" value={filterArea} onChange={e => { setFilterArea(e.target.value); loadCandidates(query, e.target.value, filterCity, filterMod, filterSal) }}>
+          <select className="filter-select" value={filterArea} onChange={e => { setFilterArea(e.target.value); setSearchErr(''); loadCandidates(query, e.target.value, filterCity, filterMod, filterSal) }}>
             <option value="">{t('Área', 'Area')}</option>
             <option>{t('Tecnología / IT', 'Technology / IT')}</option>
             <option>{t('Diseño UX/UI', 'UX/UI Design')}</option>
@@ -2251,18 +2270,18 @@ function TalentView({ candidates, loadCandidates, t }: {
             <option>{t('Producto / Product', 'Product')}</option>
             <option>{t('Legal', 'Legal')}</option>
           </select>
-          <select className="filter-select" value={filterCity} onChange={e => { setFilterCity(e.target.value); loadCandidates(query, filterArea, e.target.value, filterMod, filterSal) }}>
+          <select className="filter-select" value={filterCity} onChange={e => { setFilterCity(e.target.value); setSearchErr(''); loadCandidates(query, filterArea, e.target.value, filterMod, filterSal) }}>
             <option value="">{t('Ciudad', 'City')}</option>
             <option>Cali</option><option>Bogotá</option><option>Medellín</option>
             <option>Barranquilla</option><option>Cartagena</option><option>Bucaramanga</option>
           </select>
-          <select className="filter-select" value={filterMod} onChange={e => { setFilterMod(e.target.value); loadCandidates(query, filterArea, filterCity, e.target.value, filterSal) }}>
+          <select className="filter-select" value={filterMod} onChange={e => { setFilterMod(e.target.value); setSearchErr(''); loadCandidates(query, filterArea, filterCity, e.target.value, filterSal) }}>
             <option value="">{t('Modalidad', 'Mode')}</option>
             <option>{t('Presencial', 'On-site')}</option>
             <option>{t('Remoto', 'Remote')}</option>
             <option>{t('Híbrido', 'Hybrid')}</option>
           </select>
-          <select className="filter-select" value={filterSal} onChange={e => { setFilterSal(e.target.value); loadCandidates(query, filterArea, filterCity, filterMod, e.target.value) }}>
+          <select className="filter-select" value={filterSal} onChange={e => { setFilterSal(e.target.value); setSearchErr(''); loadCandidates(query, filterArea, filterCity, filterMod, e.target.value) }}>
             <option value="">{t('Pretensión salarial', 'Expected salary')}</option>
             <option>$1M – $2M</option>
             <option>$2M – $3M</option>
@@ -2271,9 +2290,6 @@ function TalentView({ candidates, loadCandidates, t }: {
             <option>$8M – $12M</option>
             <option>+$12M</option>
           </select>
-          {hasFilters && (
-            <button className="btn btn-outline btn-sm" onClick={clearFilters}>{t('Limpiar', 'Clear')}</button>
-          )}
         </div>
       </div>
 
@@ -2284,7 +2300,7 @@ function TalentView({ candidates, loadCandidates, t }: {
         </div>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(280px,1fr))', gap: '1rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(360px,1fr))', gap: '1rem' }}>
         {candidates.map(c => <CandCard key={c.id} c={c} t={t} />)}
       </div>
     </>
@@ -2295,24 +2311,28 @@ function CandCard({ c, t }: { c: Candidate; t: (es: string, en: string) => strin
   const [showContact, setShowContact] = useState(false)
   const tags = [c.experience, c.city, c.modality].filter(Boolean)
   return (
-    <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '.7rem' }}>
+    <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '.85rem', padding: '1.2rem 1.3rem' }}>
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '.75rem' }}>
-        <div style={{ width: 42, height: 42, borderRadius: '50%', background: 'linear-gradient(135deg,var(--forest),var(--forest-lt))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--head)', fontSize: '.85rem', fontWeight: 700, color: 'white', flexShrink: 0 }}>
-          {initials(c.name)}
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '.85rem' }}>
+        <div style={{ position: 'relative', flexShrink: 0 }}>
+          <div style={{ width: 46, height: 46, borderRadius: '50%', background: 'linear-gradient(135deg,var(--forest),var(--forest-lt))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--head)', fontSize: '.9rem', fontWeight: 700, color: 'white' }}>
+            {initials(c.name)}
+          </div>
+          {/* Green "available" dot */}
+          <span style={{ position: 'absolute', bottom: 1, right: 1, width: 11, height: 11, borderRadius: '50%', background: '#16a34a', border: '2px solid white' }} title={t('Disponible', 'Available')} />
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontFamily: 'var(--head)', fontWeight: 700, fontSize: '.88rem', color: 'var(--ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</div>
-          {c.area && <div style={{ fontSize: '.74rem', color: 'var(--forest)', fontWeight: 600, marginTop: '1px' }}>{c.area}</div>}
+          <div style={{ fontFamily: 'var(--head)', fontWeight: 700, fontSize: '.9rem', color: 'var(--ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</div>
+          {c.area && <div style={{ fontSize: '.75rem', color: 'var(--forest)', fontWeight: 600, marginTop: '2px' }}>{c.area}</div>}
         </div>
-        <span style={{ fontSize: '.7rem', color: 'var(--ink-45)', flexShrink: 0 }}>{timeAgo(c.created_at)}</span>
+        <span style={{ fontSize: '.7rem', color: 'var(--ink-45)', flexShrink: 0, marginTop: '2px' }}>{timeAgo(c.created_at)}</span>
       </div>
 
       {/* Tags */}
       {tags.length > 0 && (
         <div className="jc-tags" style={{ margin: 0 }}>
           {tags.map(tag => <span key={tag} className="jc-tag">{tag}</span>)}
-          {c.salary_range && <span className="jc-tag" style={{ background: 'var(--pale)', color: 'var(--forest)' }}>{c.salary_range}</span>}
+          {c.salary_range && <span className="jc-tag" style={{ background: 'var(--pale)', color: 'var(--forest)', fontWeight: 600 }}>{c.salary_range}</span>}
         </div>
       )}
 
@@ -2585,7 +2605,8 @@ function MyJobsView({ userEmail, onPost, t }: {
                     <div style={{ fontFamily: 'var(--head)', fontWeight: 700, fontSize: '.95rem', color: 'var(--ink)' }}>{j.title}</div>
                     <div style={{ fontSize: '.74rem', color: 'var(--ink-45)', marginTop: '2px' }}>{timeAgo(j.created_at)}</div>
                   </div>
-                  <span style={{ fontSize: '.7rem', fontWeight: 700, padding: '3px 9px', borderRadius: '50px', background: j.active ? 'var(--pale)' : 'var(--off)', color: j.active ? 'var(--forest)' : 'var(--ink-45)' }}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '.72rem', fontWeight: 700, padding: '4px 10px 4px 8px', borderRadius: '50px', background: j.active ? '#dcfce7' : 'var(--off)', color: j.active ? '#15803d' : 'var(--ink-45)', border: j.active ? '1px solid #bbf7d0' : '1px solid var(--line)' }}>
+                    {j.active && <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#16a34a', display: 'inline-block', flexShrink: 0 }} />}
                     {j.active ? t('Activa', 'Active') : t('Inactiva', 'Inactive')}
                   </span>
                 </div>
@@ -2676,7 +2697,7 @@ function PostJobView({ userEmail, onSuccess, t }: {
         <div className="page-title">{t('Publicar vacante', 'Post a listing')}</div>
         <div className="page-sub">{t('El algoritmo identificará los candidatos más compatibles automáticamente.', 'The algorithm will identify the most compatible candidates automatically.')}</div>
       </div>
-      <div className="card" style={{ maxWidth: 640 }}>
+      <div className="card" style={{ maxWidth: 800 }}>
         <div className="form-grid">
           <div className="fg fg-full">
             <label>{t('Cargo *', 'Job title *')}</label>
