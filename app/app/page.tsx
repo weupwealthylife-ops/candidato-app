@@ -150,6 +150,7 @@ export default function AppPage() {
   // App view
   const [candView, setCandView] = useState<CandView>('dashboard')
   const [compView, setCompView] = useState<CompView>('codashboard')
+  const [avatarOpen, setAvatarOpen] = useState(false)
 
   // Real data
   const [jobs, setJobs] = useState<Job[]>([])
@@ -318,6 +319,15 @@ export default function AppPage() {
     try {
       const sb = createClient()
 
+      // Duplicate check — email already registered?
+      const { data: existing } = await sb.from('candidates').select('name,email').ilike('email', email).maybeSingle()
+      if (existing?.name) {
+        showToast(t('¡Bienvenido/a de vuelta!', 'Welcome back!'), t(`Hola ${existing.name}, ya tenés cuenta en Candidato®.`, `Hi ${existing.name}, you already have an account.`), '👋')
+        setSubmitting(false)
+        enterApp({ name: existing.name, email: existing.email ?? email, type: 'candidate' })
+        return
+      }
+
       // CV upload
       if (cvFile) {
         setCvUploading(true)
@@ -394,6 +404,16 @@ export default function AppPage() {
 
     try {
       const sb = createClient()
+
+      // Duplicate check
+      const { data: existingCo } = await sb.from('companies').select('name,email,company_name').ilike('email', email).maybeSingle()
+      if (existingCo?.name) {
+        showToast(t('¡Bienvenido/a de vuelta!', 'Welcome back!'), t(`Hola ${existingCo.name}, ya tenés cuenta en Candidato®.`, `Hi ${existingCo.name}, you already have an account.`), '👋')
+        setSubmitting(false)
+        enterApp({ name: existingCo.name, email: existingCo.email ?? email, type: 'company', companyName: existingCo.company_name })
+        return
+      }
+
       const compPayload: Record<string, unknown> = { name, email, company_name: coname.trim() }
       if (coind) compPayload.industry = coind
       if (cosize) compPayload.size = cosize
@@ -496,7 +516,7 @@ export default function AppPage() {
         .maybeSingle()
       if (cand?.name) {
         setGateLoading(false)
-        // Returning candidate → go straight to dashboard
+        showToast(t(`¡Bienvenido/a de vuelta, ${cand.name.split(' ')[0]}!`, `Welcome back, ${cand.name.split(' ')[0]}!`), t('Accediste a tu cuenta.', 'You\'ve been logged in.'), '👋')
         enterApp({ name: cand.name, email: cand.email ?? email, type: 'candidate' })
         return
       }
@@ -508,7 +528,7 @@ export default function AppPage() {
         .maybeSingle()
       if (comp?.name) {
         setGateLoading(false)
-        // Returning company → go straight to dashboard
+        showToast(t(`¡Bienvenido/a de vuelta, ${comp.name.split(' ')[0]}!`, `Welcome back, ${comp.name.split(' ')[0]}!`), t('Accediste a tu cuenta.', 'You\'ve been logged in.'), '👋')
         enterApp({ name: comp.name, email: comp.email ?? email, type: 'company', companyName: comp.company_name })
         return
       }
@@ -1257,13 +1277,66 @@ export default function AppPage() {
               <button className={appLang === 'es' ? 'on' : ''} onClick={() => setAppLang('es')}>ES</button>
               <button className={appLang === 'en' ? 'on' : ''} onClick={() => setAppLang('en')}>EN</button>
             </div>
-            <div
-              className="user-ava"
-              style={{ cursor: 'pointer' }}
-              onClick={() => isC ? setCandView('profile') : undefined}
-              title={name}
-            >
-              {name.substring(0, 2).toUpperCase()}
+            {/* Avatar + dropdown */}
+            <div style={{ position: 'relative' }}>
+              <div
+                className="user-ava"
+                onClick={() => setAvatarOpen(v => !v)}
+                title={name}
+              >
+                {name.substring(0, 2).toUpperCase()}
+              </div>
+              {avatarOpen && (
+                <>
+                  {/* backdrop to close on outside click */}
+                  <div style={{ position: 'fixed', inset: 0, zIndex: 199 }} onClick={() => setAvatarOpen(false)} />
+                  <div style={{ position: 'absolute', top: 'calc(100% + 8px)', right: 0, zIndex: 200, background: 'var(--white)', border: '1.5px solid var(--line)', borderRadius: 12, boxShadow: '0 8px 32px rgba(14,30,32,.13)', minWidth: 200, overflow: 'hidden' }}>
+                    {/* User info header */}
+                    <div style={{ padding: '.75rem 1rem .6rem', borderBottom: '1px solid var(--line)' }}>
+                      <div style={{ fontFamily: 'var(--head)', fontWeight: 700, fontSize: '.83rem', color: 'var(--ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{name}</div>
+                      <div style={{ fontSize: '.72rem', color: 'var(--ink-45)', marginTop: '1px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{currentUser?.email}</div>
+                      {!isC && currentUser?.companyName && (
+                        <div style={{ fontSize: '.72rem', color: 'var(--forest)', fontWeight: 600, marginTop: '2px' }}>{currentUser.companyName}</div>
+                      )}
+                    </div>
+                    {/* Menu items */}
+                    <div style={{ padding: '.35rem' }}>
+                      {isC && (
+                        <button
+                          className="ava-menu-item"
+                          onClick={() => { setCandView('profile'); setAvatarOpen(false) }}
+                        >
+                          👤 {t('Mi perfil', 'My profile')}
+                        </button>
+                      )}
+                      {isC && (
+                        <button
+                          className="ava-menu-item"
+                          onClick={() => { setCandView('settings'); setAvatarOpen(false) }}
+                        >
+                          ⚙️ {t('Configuración', 'Settings')}
+                        </button>
+                      )}
+                      {!isC && (
+                        <button
+                          className="ava-menu-item"
+                          onClick={() => { setCompView('codashboard'); setAvatarOpen(false) }}
+                        >
+                          🏢 {t('Mi empresa', 'My company')}
+                        </button>
+                      )}
+                      <div style={{ borderTop: '1px solid var(--line)', margin: '.35rem 0' }} />
+                      <button
+                        className="ava-menu-item"
+                        style={{ color: 'var(--coral)' }}
+                        onClick={() => { setAvatarOpen(false); logout() }}
+                      >
+                        → {t('Cerrar sesión', 'Log out')}
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </nav>

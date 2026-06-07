@@ -1022,7 +1022,10 @@ footer{
 .tab-btn:hover:not(.active){background:var(--off)}
 .tab-badge{font-size:.58rem;background:var(--coral);color:white;border-radius:50px;padding:1px 6px;font-weight:700}
 .topbar-right{margin-left:auto;display:flex;align-items:center;gap:.6rem}
-.user-ava{width:32px;height:32px;border-radius:50%;background:var(--forest);color:white;font-size:.7rem;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.user-ava{width:32px;height:32px;border-radius:50%;background:var(--forest);color:white;font-size:.7rem;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:opacity .15s}
+.user-ava:hover{opacity:.85}
+.ava-menu-item{display:flex;align-items:center;gap:.5rem;width:100%;background:none;border:none;padding:.55rem .75rem;border-radius:8px;font-family:var(--body);font-size:.81rem;font-weight:500;color:var(--ink-70);cursor:pointer;text-align:left;transition:background .12s}
+.ava-menu-item:hover{background:var(--off);color:var(--ink)}
 
 /* ── APP LAYOUT ── */
 .app-shell{display:flex;min-height:100vh;padding-top:60px}
