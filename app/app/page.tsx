@@ -23,6 +23,7 @@ interface Job {
   salary_range?: string
   description?: string
   skills?: string[]
+  active?: boolean
   created_at?: string
   companies?: { company_name: string }
 }
@@ -30,12 +31,16 @@ interface Job {
 interface Candidate {
   id: string
   name: string
+  email?: string
+  whatsapp?: string
   area?: string
   experience?: string
   city?: string
   modality?: string
+  salary_range?: string
   skills?: string[]
   linkedin?: string
+  cv_url?: string
   created_at?: string
 }
 
@@ -55,7 +60,7 @@ function initials(name: string) {
 }
 
 type CandView = 'dashboard' | 'jobs' | 'profile' | 'settings'
-type CompView = 'codashboard' | 'matches' | 'post' | 'talent'
+type CompView = 'codashboard' | 'matches' | 'post' | 'talent' | 'myjobs'
 
 export default function AppPage() {
   const [appLang, setAppLang] = useState<'es' | 'en'>('es')
@@ -188,13 +193,16 @@ export default function AppPage() {
     setDataLoading(false)
   }
 
-  async function loadCandidates(query = '', area = '') {
+  async function loadCandidates(query = '', area = '', city = '', modality = '', salary = '') {
     try {
       const sb = createClient()
-      let q = sb.from('candidates').select('id,name,area,experience,city,modality,skills,linkedin,created_at')
+      let q = sb.from('candidates').select('id,name,email,whatsapp,area,experience,city,modality,salary_range,skills,linkedin,cv_url,created_at')
       if (query) q = q.ilike('name', `%${query}%`)
       if (area) q = q.eq('area', area)
-      const { data } = await q.order('created_at', { ascending: false }).limit(50)
+      if (city) q = q.eq('city', city)
+      if (modality) q = q.eq('modality', modality)
+      if (salary) q = q.eq('salary_range', salary)
+      const { data } = await q.order('created_at', { ascending: false }).limit(100)
       setCandidates(data || [])
     } catch (e) { console.warn('[Supabase] loadCandidates:', e) }
   }
@@ -1170,6 +1178,9 @@ export default function AppPage() {
                 <button className={`tab-btn${compView === 'talent' ? ' active' : ''}`} onClick={() => { setCompView('talent'); loadCandidates() }}>
                   {t('Candidatos', 'Candidates')}
                 </button>
+                <button className={`tab-btn${compView === 'myjobs' ? ' active' : ''}`} onClick={() => setCompView('myjobs')}>
+                  {t('Mis vacantes', 'My listings')}
+                </button>
                 <button className={`tab-btn${compView === 'post' ? ' active' : ''}`} onClick={() => setCompView('post')}>
                   {t('Publicar vacante', 'Post listing')}
                 </button>
@@ -1242,6 +1253,9 @@ export default function AppPage() {
                 </button>
                 <button className={`nav-item${compView === 'talent' ? ' active' : ''}`} onClick={() => { setCompView('talent'); loadCandidates() }}>
                   {t('Candidatos', 'Candidates')}
+                </button>
+                <button className={`nav-item${compView === 'myjobs' ? ' active' : ''}`} onClick={() => setCompView('myjobs')}>
+                  {t('Mis vacantes', 'My listings')}
                 </button>
                 <button className={`nav-item${compView === 'post' ? ' active' : ''}`} onClick={() => setCompView('post')}>
                   {t('Publicar vacante', 'Post listing')}
@@ -1846,7 +1860,7 @@ function CompanyView({
   coName: string
   userEmail: string
   candidates: Candidate[]
-  loadCandidates: (q?: string, area?: string) => void
+  loadCandidates: (q?: string, area?: string, city?: string, modality?: string, salary?: string) => void
   setView: (v: CompView) => void
   t: (es: string, en: string) => string
 }) {
@@ -1889,7 +1903,7 @@ function CompanyView({
           <div className="card" style={{ marginTop: '1rem' }}>
             <div className="card-section-title">{t('Candidatos recientes', 'Recent candidates')}</div>
             <div className="cand-list" style={{ marginTop: '.75rem' }}>
-              {candidates.slice(0, 4).map(c => <CandRow key={c.id} c={c} />)}
+              {candidates.slice(0, 4).map(c => <CandCard key={c.id} c={c} t={t} />)}
             </div>
           </div>
         )}
@@ -1899,20 +1913,28 @@ function CompanyView({
   if (view === 'talent')
     return <TalentView candidates={candidates} loadCandidates={loadCandidates} t={t} />
 
+  if (view === 'myjobs')
+    return <MyJobsView userEmail={userEmail} onPost={() => setView('post')} t={t} />
+
   if (view === 'post')
-    return <PostJobView userEmail={userEmail} onSuccess={() => setView('codashboard')} t={t} />
+    return <PostJobView userEmail={userEmail} onSuccess={() => setView('myjobs')} t={t} />
 
   return null
 }
 
 function TalentView({ candidates, loadCandidates, t }: {
   candidates: Candidate[]
-  loadCandidates: (q?: string, area?: string) => void
+  loadCandidates: (q?: string, area?: string, city?: string, modality?: string, salary?: string) => void
   t: (es: string, en: string) => string
 }) {
   const [query, setQuery] = useState('')
   const [filterArea, setFilterArea] = useState('')
-  const doSearch = () => loadCandidates(query, filterArea)
+  const [filterCity, setFilterCity] = useState('')
+  const [filterMod, setFilterMod] = useState('')
+  const [filterSal, setFilterSal] = useState('')
+  const doSearch = () => loadCandidates(query, filterArea, filterCity, filterMod, filterSal)
+  const clearFilters = () => { setFilterArea(''); setFilterCity(''); setFilterMod(''); setFilterSal(''); loadCandidates(query) }
+  const hasFilters = filterArea || filterCity || filterMod || filterSal
 
   return (
     <>
@@ -1921,68 +1943,284 @@ function TalentView({ candidates, loadCandidates, t }: {
         <div className="page-sub">{t(`${candidates.length} perfil${candidates.length !== 1 ? 'es' : ''} disponible${candidates.length !== 1 ? 's' : ''}`, `${candidates.length} profile${candidates.length !== 1 ? 's' : ''} available`)}</div>
       </div>
 
-      <div className="search-wrap" style={{ marginBottom: '1rem' }}>
-        <input
-          className="search-input"
-          value={query}
-          onChange={e => setQuery(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && doSearch()}
-          placeholder={t('Nombre del candidato…', 'Candidate name…')}
-        />
-        <select className="filter-select" value={filterArea} onChange={e => setFilterArea(e.target.value)}>
-          <option value="">{t('Área', 'Area')}</option>
-          <option>{t('Tecnología / IT', 'Technology / IT')}</option>
-          <option>{t('Diseño UX/UI', 'UX/UI Design')}</option>
-          <option>{t('Marketing y Comunicaciones', 'Marketing & Comms')}</option>
-          <option>{t('Ventas y Comercial', 'Sales & Business Dev')}</option>
-          <option>{t('Finanzas y Contabilidad', 'Finance & Accounting')}</option>
-          <option>{t('Recursos Humanos', 'Human Resources')}</option>
-          <option>{t('Operaciones', 'Operations')}</option>
-        </select>
-        <button className="btn btn-forest btn-sm" onClick={doSearch}>{t('Buscar', 'Search')}</button>
+      {/* Search + filters */}
+      <div style={{ background: 'var(--white)', border: '1.5px solid var(--line)', borderRadius: '12px', padding: '1rem 1.1rem', marginBottom: '1rem' }}>
+        <div style={{ display: 'flex', gap: '.6rem', marginBottom: '.75rem' }}>
+          <div className="search-wrap" style={{ flex: '0 1 320px', minWidth: 0, margin: 0, border: 'none', background: 'var(--off)', borderRadius: '8px', padding: '.55rem .9rem' }}>
+            <input
+              className="search-input"
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && doSearch()}
+              placeholder={t('Nombre o keyword…', 'Name or keyword…')}
+              style={{ background: 'transparent' }}
+            />
+          </div>
+          <button className="btn btn-forest" onClick={doSearch} style={{ padding: '0 1.4rem', borderRadius: '8px', fontSize: '.82rem', flexShrink: 0 }}>
+            {t('Buscar', 'Search')}
+          </button>
+        </div>
+        <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
+          <select className="filter-select" value={filterArea} onChange={e => { setFilterArea(e.target.value); loadCandidates(query, e.target.value, filterCity, filterMod, filterSal) }}>
+            <option value="">{t('Área', 'Area')}</option>
+            <option>{t('Tecnología / IT', 'Technology / IT')}</option>
+            <option>{t('Diseño UX/UI', 'UX/UI Design')}</option>
+            <option>{t('Marketing y Comunicaciones', 'Marketing & Comms')}</option>
+            <option>{t('Ventas y Comercial', 'Sales & Business Dev')}</option>
+            <option>{t('Finanzas y Contabilidad', 'Finance & Accounting')}</option>
+            <option>{t('Recursos Humanos', 'Human Resources')}</option>
+            <option>{t('Operaciones', 'Operations')}</option>
+            <option>{t('Producto / Product', 'Product')}</option>
+            <option>{t('Legal', 'Legal')}</option>
+          </select>
+          <select className="filter-select" value={filterCity} onChange={e => { setFilterCity(e.target.value); loadCandidates(query, filterArea, e.target.value, filterMod, filterSal) }}>
+            <option value="">{t('Ciudad', 'City')}</option>
+            <option>Cali</option><option>Bogotá</option><option>Medellín</option>
+            <option>Barranquilla</option><option>Cartagena</option><option>Bucaramanga</option>
+          </select>
+          <select className="filter-select" value={filterMod} onChange={e => { setFilterMod(e.target.value); loadCandidates(query, filterArea, filterCity, e.target.value, filterSal) }}>
+            <option value="">{t('Modalidad', 'Mode')}</option>
+            <option>{t('Presencial', 'On-site')}</option>
+            <option>{t('Remoto', 'Remote')}</option>
+            <option>{t('Híbrido', 'Hybrid')}</option>
+          </select>
+          <select className="filter-select" value={filterSal} onChange={e => { setFilterSal(e.target.value); loadCandidates(query, filterArea, filterCity, filterMod, e.target.value) }}>
+            <option value="">{t('Pretensión salarial', 'Expected salary')}</option>
+            <option>$1M – $2M</option>
+            <option>$2M – $3M</option>
+            <option>$3M – $5M</option>
+            <option>$5M – $8M</option>
+            <option>$8M – $12M</option>
+            <option>+$12M</option>
+          </select>
+          {hasFilters && (
+            <button className="btn btn-outline btn-sm" onClick={clearFilters}>{t('Limpiar', 'Clear')}</button>
+          )}
+        </div>
       </div>
 
       {candidates.length === 0 && (
         <div className="empty-state">
-          <div className="empty-title">{t('Sin candidatos registrados', 'No candidates registered')}</div>
-          <div className="empty-sub">{t('Los candidatos aparecerán aquí una vez se registren.', 'Candidates will appear here once they register.')}</div>
+          <div className="empty-title">{t('Sin candidatos', 'No candidates')}</div>
+          <div className="empty-sub">{t('Intentá con otros filtros.', 'Try different filters.')}</div>
         </div>
       )}
 
-      <div className="cand-list">
-        {candidates.map(c => <CandRow key={c.id} c={c} />)}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(280px,1fr))', gap: '1rem' }}>
+        {candidates.map(c => <CandCard key={c.id} c={c} t={t} />)}
       </div>
     </>
   )
 }
 
-function CandRow({ c }: { c: Candidate }) {
-  const tags = [c.area, c.experience, c.city, c.modality].filter(Boolean)
+function CandCard({ c, t }: { c: Candidate; t: (es: string, en: string) => string }) {
+  const [showContact, setShowContact] = useState(false)
+  const tags = [c.experience, c.city, c.modality].filter(Boolean)
   return (
-    <div className="cand-card-row">
-      <div className="jc-ava">{initials(c.name)}</div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div className="jc-title">{c.name}</div>
-        {tags.length > 0 && (
-          <div className="jc-tags" style={{ marginTop: '.25rem' }}>
-            {tags.map(tag => <span key={tag} className="jc-tag">{tag}</span>)}
-          </div>
-        )}
-        {c.skills && c.skills.length > 0 && (
-          <div className="jc-tags" style={{ marginTop: '.2rem' }}>
-            {c.skills.slice(0, 4).map(s => <span key={s} className="jc-tag jc-tag-skill">{s}</span>)}
-          </div>
-        )}
+    <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '.7rem' }}>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '.75rem' }}>
+        <div style={{ width: 42, height: 42, borderRadius: '50%', background: 'linear-gradient(135deg,var(--forest),var(--forest-lt))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--head)', fontSize: '.85rem', fontWeight: 700, color: 'white', flexShrink: 0 }}>
+          {initials(c.name)}
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontFamily: 'var(--head)', fontWeight: 700, fontSize: '.88rem', color: 'var(--ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</div>
+          {c.area && <div style={{ fontSize: '.74rem', color: 'var(--forest)', fontWeight: 600, marginTop: '1px' }}>{c.area}</div>}
+        </div>
+        <span style={{ fontSize: '.7rem', color: 'var(--ink-45)', flexShrink: 0 }}>{timeAgo(c.created_at)}</span>
       </div>
-      <div className="jc-right">
-        <span className="jc-time">{timeAgo(c.created_at)}</span>
+
+      {/* Tags */}
+      {tags.length > 0 && (
+        <div className="jc-tags" style={{ margin: 0 }}>
+          {tags.map(tag => <span key={tag} className="jc-tag">{tag}</span>)}
+          {c.salary_range && <span className="jc-tag" style={{ background: 'var(--pale)', color: 'var(--forest)' }}>{c.salary_range}</span>}
+        </div>
+      )}
+
+      {/* Skills */}
+      {c.skills && c.skills.length > 0 && (
+        <div className="jc-tags" style={{ margin: 0 }}>
+          {c.skills.slice(0, 4).map(s => <span key={s} className="jc-tag jc-tag-skill">{s}</span>)}
+          {c.skills.length > 4 && <span className="jc-tag" style={{ color: 'var(--ink-45)' }}>+{c.skills.length - 4}</span>}
+        </div>
+      )}
+
+      {/* Actions */}
+      <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap', marginTop: 'auto', paddingTop: '.5rem', borderTop: '1px solid var(--line)' }}>
         {c.linkedin && (
-          <a href={c.linkedin.startsWith('http') ? c.linkedin : `https://${c.linkedin}`} target="_blank" rel="noreferrer" className="btn btn-outline btn-sm" style={{ marginTop: '.3rem' }}>
-            LinkedIn
+          <a href={c.linkedin.startsWith('http') ? c.linkedin : `https://${c.linkedin}`} target="_blank" rel="noreferrer" className="btn btn-outline btn-sm">
+            LinkedIn →
           </a>
         )}
+        {c.cv_url && (
+          <a href={c.cv_url} target="_blank" rel="noreferrer" className="btn btn-outline btn-sm">
+            {t('Ver CV', 'View CV')}
+          </a>
+        )}
+        <button
+          className="btn btn-forest btn-sm"
+          style={{ marginLeft: 'auto' }}
+          onClick={() => setShowContact(v => !v)}
+        >
+          {showContact ? t('Ocultar', 'Hide') : t('Contactar', 'Contact')}
+        </button>
       </div>
+
+      {/* Contact reveal */}
+      {showContact && (
+        <div style={{ background: 'var(--off)', borderRadius: '8px', padding: '.7rem .9rem', fontSize: '.8rem', lineHeight: 1.8 }}>
+          {c.email && (
+            <div><span style={{ color: 'var(--ink-45)', fontSize: '.72rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.04em' }}>Email</span><br />
+              <a href={`mailto:${c.email}`} style={{ color: 'var(--forest)', fontWeight: 600 }}>{c.email}</a>
+            </div>
+          )}
+          {c.whatsapp && (
+            <div style={{ marginTop: '.4rem' }}><span style={{ color: 'var(--ink-45)', fontSize: '.72rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.04em' }}>WhatsApp</span><br />
+              <a href={`https://wa.me/${c.whatsapp.replace(/\D/g,'')}`} target="_blank" rel="noreferrer" style={{ color: 'var(--forest)', fontWeight: 600 }}>{c.whatsapp}</a>
+            </div>
+          )}
+          {!c.email && !c.whatsapp && <span style={{ color: 'var(--ink-45)' }}>{t('Sin datos de contacto', 'No contact info')}</span>}
+        </div>
+      )}
     </div>
+  )
+}
+
+function MyJobsView({ userEmail, onPost, t }: {
+  userEmail: string
+  onPost: () => void
+  t: (es: string, en: string) => string
+}) {
+  const [myJobs, setMyJobs] = useState<Job[]>([])
+  const [loading, setLoading] = useState(true)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editTitle, setEditTitle] = useState('')
+  const [editDesc, setEditDesc] = useState('')
+  const [editSal, setEditSal] = useState('')
+  const [editMod, setEditMod] = useState('')
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    loadMyJobs()
+  }, [])
+
+  async function loadMyJobs() {
+    setLoading(true)
+    try {
+      const sb = createClient()
+      const { data: co } = await sb.from('companies').select('id').ilike('email', userEmail).maybeSingle()
+      if (!co?.id) { setMyJobs([]); setLoading(false); return }
+      const { data } = await sb.from('jobs').select('*,companies(company_name)').eq('company_id', co.id).order('created_at', { ascending: false })
+      setMyJobs(data || [])
+    } catch (e) { console.warn(e) }
+    setLoading(false)
+  }
+
+  const startEdit = (j: Job) => {
+    setEditingId(j.id)
+    setEditTitle(j.title)
+    setEditDesc(j.description || '')
+    setEditSal(j.salary_range || '')
+    setEditMod(j.modality || '')
+  }
+
+  async function saveEdit(id: string) {
+    setSaving(true)
+    try {
+      const sb = createClient()
+      await sb.from('jobs').update({ title: editTitle, description: editDesc, salary_range: editSal, modality: editMod }).eq('id', id)
+      setEditingId(null)
+      await loadMyJobs()
+    } catch (e) { console.warn(e) }
+    setSaving(false)
+  }
+
+  async function deleteJob(id: string) {
+    if (!confirm(t('¿Eliminár esta vacante?', 'Delete this listing?'))) return
+    try {
+      const sb = createClient()
+      await sb.from('jobs').delete().eq('id', id)
+      setMyJobs(prev => prev.filter(j => j.id !== id))
+    } catch (e) { console.warn(e) }
+  }
+
+  const inp: React.CSSProperties = { width: '100%', background: 'var(--off)', border: '1.5px solid transparent', borderRadius: '8px', padding: '8px 10px', color: 'var(--ink)', fontFamily: 'var(--body)', fontSize: '.83rem', outline: 'none' }
+
+  return (
+    <>
+      <div className="page-head">
+        <div className="page-title">{t('Mis vacantes', 'My listings')}</div>
+        <div className="page-sub">{t(`${myJobs.length} publicada${myJobs.length !== 1 ? 's' : ''}`, `${myJobs.length} published`)}</div>
+        <div className="page-actions">
+          <button className="btn btn-forest btn-sm" onClick={onPost}>{t('+ Nueva vacante', '+ New listing')}</button>
+        </div>
+      </div>
+
+      {loading && <div className="loading-state">{t('Cargando…', 'Loading…')}</div>}
+
+      {!loading && myJobs.length === 0 && (
+        <div className="empty-state">
+          <div className="empty-title">{t('Aún no publicaste vacantes', 'No listings yet')}</div>
+          <div className="empty-sub">{t('Publicá tu primera vacante para encontrar candidatos.', 'Post your first listing to find candidates.')}</div>
+          <button className="btn btn-forest" style={{ marginTop: '1rem' }} onClick={onPost}>{t('Publicar vacante →', 'Post a listing →')}</button>
+        </div>
+      )}
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        {myJobs.map(j => (
+          <div key={j.id} className="card">
+            {editingId === j.id ? (
+              /* Edit mode */
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '.75rem' }}>
+                <input style={inp} value={editTitle} onChange={e => setEditTitle(e.target.value)} placeholder={t('Cargo', 'Job title')} />
+                <div style={{ display: 'flex', gap: '.5rem' }}>
+                  <select style={{ ...inp, flex: 1 }} value={editMod} onChange={e => setEditMod(e.target.value)}>
+                    <option value="">{t('Modalidad', 'Mode')}</option>
+                    <option>{t('Presencial', 'On-site')}</option>
+                    <option>{t('Remoto', 'Remote')}</option>
+                    <option>{t('Híbrido', 'Hybrid')}</option>
+                  </select>
+                  <select style={{ ...inp, flex: 1 }} value={editSal} onChange={e => setEditSal(e.target.value)}>
+                    <option value="">{t('Salario', 'Salary')}</option>
+                    <option>Hasta $2M</option><option>$2M–$4M</option><option>$4M–$7M</option><option>$7M–$12M</option><option>$12M+</option>
+                  </select>
+                </div>
+                <textarea style={{ ...inp, resize: 'none', minHeight: 80, lineHeight: 1.55 }} value={editDesc} onChange={e => setEditDesc(e.target.value)} placeholder={t('Descripción…', 'Description…')} />
+                <div style={{ display: 'flex', gap: '.5rem' }}>
+                  <button className="btn btn-outline btn-sm" onClick={() => setEditingId(null)}>{t('Cancelar', 'Cancel')}</button>
+                  <button className="btn btn-forest btn-sm" onClick={() => saveEdit(j.id)} disabled={saving}>{saving ? t('Guardando…', 'Saving…') : t('Guardar', 'Save')}</button>
+                </div>
+              </div>
+            ) : (
+              /* View mode */
+              <div>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '.75rem', marginBottom: '.6rem' }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontFamily: 'var(--head)', fontWeight: 700, fontSize: '.95rem', color: 'var(--ink)' }}>{j.title}</div>
+                    <div style={{ fontSize: '.74rem', color: 'var(--ink-45)', marginTop: '2px' }}>{timeAgo(j.created_at)}</div>
+                  </div>
+                  <span style={{ fontSize: '.7rem', fontWeight: 700, padding: '3px 9px', borderRadius: '50px', background: j.active ? 'var(--pale)' : 'var(--off)', color: j.active ? 'var(--forest)' : 'var(--ink-45)' }}>
+                    {j.active ? t('Activa', 'Active') : t('Inactiva', 'Inactive')}
+                  </span>
+                </div>
+                <div className="jc-tags" style={{ margin: '0 0 .8rem' }}>
+                  {j.modality && <span className="jc-tag">{j.modality}</span>}
+                  {j.city && <span className="jc-tag">{j.city}</span>}
+                  {j.area && <span className="jc-tag">{j.area}</span>}
+                  {j.salary_range && <span className="jc-tag" style={{ background: 'var(--pale)', color: 'var(--forest)' }}>{j.salary_range}</span>}
+                </div>
+                {j.description && <p style={{ fontSize: '.8rem', color: 'var(--ink-70)', lineHeight: 1.6, margin: '0 0 .8rem' }}>{j.description.slice(0, 160)}{j.description.length > 160 ? '…' : ''}</p>}
+                <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap', paddingTop: '.75rem', borderTop: '1px solid var(--line)' }}>
+                  <button className="btn btn-outline btn-sm" onClick={() => startEdit(j)}>{t('Editar', 'Edit')}</button>
+                  <button className="btn btn-sm" style={{ background: 'none', border: '1.5px solid var(--line)', color: 'var(--coral)', borderRadius: 7, padding: '4px 12px', fontSize: '.78rem', cursor: 'pointer' }} onClick={() => deleteJob(j.id)}>{t('Eliminar', 'Delete')}</button>
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </>
   )
 }
 
