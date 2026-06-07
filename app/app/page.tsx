@@ -44,6 +44,27 @@ interface Candidate {
   created_at?: string
 }
 
+interface Application {
+  id: string
+  job_id: string
+  candidate_id: string
+  status: string
+  applied_at: string
+  candidates?: {
+    id: string
+    name: string
+    email?: string
+    whatsapp?: string
+    area?: string
+    experience?: string
+    city?: string
+    modality?: string
+    skills?: string[]
+    linkedin?: string
+    cv_url?: string
+  }
+}
+
 function timeAgo(ts?: string) {
   if (!ts) return ''
   const diff = Date.now() - new Date(ts).getTime()
@@ -1378,6 +1399,34 @@ function CandidateView({
   const [filterMod, setFilterMod] = useState('')
   const [filterSal, setFilterSal] = useState('')
 
+  // Applications state
+  const [myApplied, setMyApplied] = useState<Set<string>>(new Set())
+  const [applying, setApplying] = useState<string | null>(null)
+
+  useEffect(() => {
+    const candidateId = candProfile?.id as string | undefined
+    if (!candidateId) return
+    createClient()
+      .from('applications')
+      .select('job_id')
+      .eq('candidate_id', candidateId)
+      .then(({ data }) => {
+        if (data) setMyApplied(new Set(data.map((a: { job_id: string }) => a.job_id)))
+      })
+  }, [candProfile])
+
+  async function applyToJob(jobId: string) {
+    const candidateId = candProfile?.id as string | undefined
+    if (!candidateId || applying) return
+    setApplying(jobId)
+    try {
+      const sb = createClient()
+      const { error } = await sb.from('applications').insert({ job_id: jobId, candidate_id: candidateId, status: 'pending' })
+      if (!error) setMyApplied(prev => new Set([...prev, jobId]))
+    } catch (e) { console.warn(e) }
+    setApplying(null)
+  }
+
   // Profile edit state
   const [isEditing, setIsEditing] = useState(false)
   const [editData, setEditData] = useState({ email: '', phone: '', city: '', modality: '', area: '', experience: '', salary_range: '', linkedin: '', notes: '' })
@@ -1445,7 +1494,7 @@ function CandidateView({
             </div>
             <div className="jobs-list" style={{ padding: '0 .7rem .7rem' }}>
               {jobs.slice(0, 8).map((j) => (
-                <JobRow key={j.id} job={j} />
+                <JobRow key={j.id} job={j} applied={myApplied.has(j.id)} onApply={applyToJob} t={t} />
               ))}
             </div>
           </div>
@@ -1536,7 +1585,7 @@ function CandidateView({
         {!dataLoading && jobs.length > 0 && (
           <div className="jobs-list">
             {jobs.map((j) => (
-              <JobRow key={j.id} job={j} />
+              <JobRow key={j.id} job={j} applied={myApplied.has(j.id)} onApply={applyToJob} t={t} />
             ))}
           </div>
         )}
@@ -1831,7 +1880,13 @@ function CandidateView({
   )
 }
 
-function JobRow({ job }: { job: Job }) {
+function JobRow({ job, applied, onApply, t }: {
+  job: Job
+  applied?: boolean
+  onApply?: (jobId: string) => void
+  t?: (es: string, en: string) => string
+}) {
+  const tr = t || ((es: string) => es)
   const coName = job.companies?.company_name || '—'
   const tags = [job.modality, job.city, job.salary_range].filter(Boolean)
   return (
@@ -1848,6 +1903,16 @@ function JobRow({ job }: { job: Job }) {
       </div>
       <div className="jc-right">
         <span className="jc-time">{timeAgo(job.created_at)}</span>
+        {onApply && (
+          <button
+            className={`btn btn-sm${applied ? '' : ' btn-forest'}`}
+            style={applied ? { background: 'var(--pale)', color: 'var(--forest)', border: '1.5px solid var(--mist)', borderRadius: 7, padding: '4px 12px', fontSize: '.76rem', marginTop: '.4rem', cursor: 'default' } : { marginTop: '.4rem', borderRadius: 7, padding: '4px 14px', fontSize: '.76rem' }}
+            onClick={() => !applied && onApply(job.id)}
+            disabled={applied}
+          >
+            {applied ? tr('Postulado ✓', 'Applied ✓') : tr('Postularme →', 'Apply →')}
+          </button>
+        )}
       </div>
     </div>
   )
