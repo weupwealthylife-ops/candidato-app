@@ -1060,27 +1060,7 @@ export default function AppPage() {
     <>
       <div id="viewApp" className="view active">
         <nav className="topbar">
-          <div className="topbar-logo">
-            <Image
-              src="/bird-logo.png"
-              alt="Candidato"
-              width={28}
-              height={28}
-              style={{ objectFit: 'contain' }}
-            />
-            <span
-              style={{
-                fontFamily: 'var(--head)',
-                fontWeight: 700,
-                fontSize: '.95rem',
-                color: 'var(--forest)',
-                letterSpacing: '-.02em',
-              }}
-            >
-              Candidato<sup style={{ fontSize: '.55em', fontWeight: 600 }}>®</sup>
-            </span>
-          </div>
-          <div className="topbar-div"></div>
+          {/* Left zone — tabs */}
           <div className="topbar-tabs">
             {isC ? (
               <>
@@ -1108,6 +1088,30 @@ export default function AppPage() {
               </>
             )}
           </div>
+
+          {/* Center zone — logo absolutely centered */}
+          <div className="topbar-logo-center">
+            <Image
+              src="/bird-logo.png"
+              alt="Candidato"
+              width={26}
+              height={26}
+              style={{ objectFit: 'contain' }}
+            />
+            <span
+              style={{
+                fontFamily: 'var(--head)',
+                fontWeight: 700,
+                fontSize: '.92rem',
+                color: 'var(--forest)',
+                letterSpacing: '-.02em',
+              }}
+            >
+              Candidato<sup style={{ fontSize: '.55em', fontWeight: 600 }}>®</sup>
+            </span>
+          </div>
+
+          {/* Right zone */}
           <div className="topbar-right">
             <div className="lang-pill">
               <button className={appLang === 'es' ? 'on' : ''} onClick={() => setAppLang('es')}>ES</button>
@@ -1138,9 +1142,6 @@ export default function AppPage() {
                 <span className="sidebar-lbl" style={{ marginTop: '1.2rem' }}>{t('Mi cuenta', 'My account')}</span>
                 <button className={`nav-item${candView === 'profile' ? ' active' : ''}`} onClick={() => setCandView('profile')}>
                   {t('Mi perfil', 'My profile')}
-                </button>
-                <button className={`nav-item${candView === 'settings' ? ' active' : ''}`} onClick={() => setCandView('settings')}>
-                  {t('Configuración', 'Settings')}
                 </button>
                 <div className="sidebar-spacer"></div>
                 <button className="nav-item nav-item-logout" onClick={logout}>{t('Salir', 'Log out')}</button>
@@ -1363,13 +1364,13 @@ function CandidateView({
         {/* Search + filters in one contained row */}
         <div style={{ background: 'var(--white)', border: '1.5px solid var(--line)', borderRadius: '12px', padding: '1rem 1.1rem', marginBottom: '1rem' }}>
           <div style={{ display: 'flex', gap: '.6rem', marginBottom: '.75rem' }}>
-            <div className="search-wrap" style={{ flex: 1, margin: 0, border: 'none', background: 'var(--off)', borderRadius: '8px', padding: '.55rem .9rem' }}>
+            <div className="search-wrap" style={{ flex: '0 1 320px', minWidth: 0, margin: 0, border: 'none', background: 'var(--off)', borderRadius: '8px', padding: '.55rem .9rem' }}>
               <input
                 className="search-input"
                 value={query}
                 onChange={e => setQuery(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && doSearch()}
-                placeholder={t('Cargo, empresa o keyword…', 'Job title, company, keyword…')}
+                placeholder={t('Cargo o keyword…', 'Job title or keyword…')}
                 style={{ background: 'transparent' }}
               />
             </div>
@@ -1551,7 +1552,7 @@ function CandidateView({
           </div>
 
           {/* 2-column grid */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem', alignItems: 'start' }}>
             {/* Contact card */}
             <div className="card">
               <div className="card-label" style={{ marginBottom: '.75rem' }}>{t('Contacto', 'Contact')}</div>
