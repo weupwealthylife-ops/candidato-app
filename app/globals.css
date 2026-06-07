@@ -1178,6 +1178,16 @@ footer{
 .toast-title{font-family:var(--head);font-size:.82rem;font-weight:700;margin-bottom:2px}
 .toast-sub{font-size:.71rem;color:rgba(255,255,255,.6)}
 
+/* ── APPLY MODAL ── */
+.apply-overlay{position:fixed;inset:0;z-index:500;background:rgba(14,30,32,.5);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);display:flex;align-items:center;justify-content:center;padding:1.5rem;animation:fadeIn .2s ease}
+.apply-modal{background:var(--white);border-radius:18px;padding:2rem 1.8rem 1.6rem;max-width:420px;width:100%;box-shadow:0 28px 56px rgba(14,30,32,.22);animation:slideUp .28s cubic-bezier(.34,1.56,.64,1)}
+.apply-modal-ico{width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,var(--forest),var(--forest-lt));display:flex;align-items:center;justify-content:center;font-size:1.4rem;margin:0 auto 1rem}
+.apply-modal-steps{margin:1.1rem 0;display:flex;flex-direction:column;gap:.6rem}
+.apply-modal-step{display:flex;align-items:flex-start;gap:.7rem;font-size:.8rem;color:var(--ink-70);line-height:1.55}
+.apply-modal-step-num{width:22px;height:22px;border-radius:50%;background:var(--pale);color:var(--forest);font-size:.68rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes slideUp{from{transform:translateY(24px);opacity:0}to{transform:translateY(0);opacity:1}}
+
 /* ── ONBOARD ── */
 .onboard-wrap{height:100vh;display:flex;align-items:stretch;background:var(--cream);padding:0;overflow:hidden}
 .onboard-card{width:100%;background:var(--white);border:none;border-radius:0;overflow:hidden;display:grid;grid-template-columns:42% 58%;box-shadow:none;min-height:100vh}

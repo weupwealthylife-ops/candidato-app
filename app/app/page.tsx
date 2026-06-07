@@ -1402,6 +1402,7 @@ function CandidateView({
   // Applications state
   const [myApplied, setMyApplied] = useState<Set<string>>(new Set())
   const [applying, setApplying] = useState<string | null>(null)
+  const [appliedJob, setAppliedJob] = useState<Job | null>(null)
 
   useEffect(() => {
     const candidateId = candProfile?.id as string | undefined
@@ -1415,14 +1416,17 @@ function CandidateView({
       })
   }, [candProfile])
 
-  async function applyToJob(jobId: string) {
+  async function applyToJob(job: Job) {
     const candidateId = candProfile?.id as string | undefined
     if (!candidateId || applying) return
-    setApplying(jobId)
+    setApplying(job.id)
     try {
       const sb = createClient()
-      const { error } = await sb.from('applications').insert({ job_id: jobId, candidate_id: candidateId, status: 'pending' })
-      if (!error) setMyApplied(prev => new Set([...prev, jobId]))
+      const { error } = await sb.from('applications').insert({ job_id: job.id, candidate_id: candidateId, status: 'pending' })
+      if (!error) {
+        setMyApplied(prev => new Set([...prev, job.id]))
+        setAppliedJob(job)
+      }
     } catch (e) { console.warn(e) }
     setApplying(null)
   }
@@ -1439,6 +1443,52 @@ function CandidateView({
   const setEdit = (k: string, v: string) => setEditData(prev => ({ ...prev, [k]: v }))
 
   const doSearch = () => loadJobs(query, filterArea, filterCity, filterMod, filterSal)
+
+  // ── APPLY CONFIRMATION MODAL ──
+  const applyModal = appliedJob && (
+    <div className="apply-overlay" onClick={() => setAppliedJob(null)}>
+      <div className="apply-modal" onClick={e => e.stopPropagation()}>
+        <div className="apply-modal-ico">🎉</div>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontFamily: 'var(--head)', fontWeight: 700, fontSize: '1.05rem', color: 'var(--ink)', marginBottom: '.35rem' }}>
+            {t('¡Postulación enviada!', 'Application submitted!')}
+          </div>
+          <div style={{ fontSize: '.82rem', color: 'var(--ink-70)', lineHeight: 1.6 }}>
+            {t('Te postulaste a', 'You applied for')}{' '}
+            <strong style={{ color: 'var(--forest)' }}>{appliedJob.title}</strong>
+            {appliedJob.companies?.company_name ? (
+              <>{' '}{t('en', 'at')}{' '}<strong>{appliedJob.companies.company_name}</strong></>
+            ) : null}.
+          </div>
+          {!!(candProfile?.cv_url) && (
+            <div style={{ fontSize: '.78rem', color: 'var(--ink-45)', marginTop: '.4rem' }}>
+              {t('Tu CV fue compartido con la empresa.', 'Your CV was shared with the company.')}
+            </div>
+          )}
+        </div>
+        <div className="apply-modal-steps">
+          <div className="apply-modal-step">
+            <span className="apply-modal-step-num">1</span>
+            <span>{t('La empresa revisará tu perfil en los próximos días. Si tu experiencia encaja, se pondrán en contacto.', 'The company will review your profile in the coming days. If your experience is a match, they\'ll reach out.')}</span>
+          </div>
+          <div className="apply-modal-step">
+            <span className="apply-modal-step-num">2</span>
+            <span>{t('Si no tenés noticias en 2–3 semanas, podés seguir explorando otras oportunidades — ¡el match indicado siempre aparece!', 'If you don\'t hear back in 2–3 weeks, keep exploring other opportunities — the right match always comes!')}</span>
+          </div>
+        </div>
+        <div style={{ marginTop: '.4rem', padding: '.75rem', background: 'var(--pale)', borderRadius: '9px', fontSize: '.76rem', color: 'var(--forest)', lineHeight: 1.55, textAlign: 'center' }}>
+          {t('Mantené tu perfil actualizado y subí tu CV para aumentar tus chances. 💪', 'Keep your profile updated and upload your CV to boost your chances. 💪')}
+        </div>
+        <button
+          className="btn btn-forest"
+          style={{ width: '100%', marginTop: '1.2rem', borderRadius: '9px', padding: '.75rem' }}
+          onClick={() => setAppliedJob(null)}
+        >
+          {t('Entendido, ¡gracias!', 'Got it, thanks!')}
+        </button>
+      </div>
+    </div>
+  )
 
   // ── DASHBOARD ──
   if (view === 'dashboard') {
@@ -1499,6 +1549,7 @@ function CandidateView({
             </div>
           </div>
         )}
+        {applyModal}
       </>
     )
   }
@@ -1589,6 +1640,7 @@ function CandidateView({
             ))}
           </div>
         )}
+        {applyModal}
       </>
     )
 
@@ -1883,7 +1935,7 @@ function CandidateView({
 function JobRow({ job, applied, onApply, t }: {
   job: Job
   applied?: boolean
-  onApply?: (jobId: string) => void
+  onApply?: (job: Job) => void
   t?: (es: string, en: string) => string
 }) {
   const tr = t || ((es: string) => es)
@@ -1907,7 +1959,7 @@ function JobRow({ job, applied, onApply, t }: {
           <button
             className={`btn btn-sm${applied ? '' : ' btn-forest'}`}
             style={applied ? { background: 'var(--pale)', color: 'var(--forest)', border: '1.5px solid var(--mist)', borderRadius: 7, padding: '4px 12px', fontSize: '.76rem', marginTop: '.4rem', cursor: 'default' } : { marginTop: '.4rem', borderRadius: 7, padding: '4px 14px', fontSize: '.76rem' }}
-            onClick={() => !applied && onApply(job.id)}
+            onClick={() => !applied && onApply(job)}
             disabled={applied}
           >
             {applied ? tr('Postulado ✓', 'Applied ✓') : tr('Postularme →', 'Apply →')}
