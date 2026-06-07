@@ -2165,10 +2165,14 @@ function MyJobsView({ userEmail, onPost, t }: {
   const [editSal, setEditSal] = useState('')
   const [editMod, setEditMod] = useState('')
   const [saving, setSaving] = useState(false)
+  // applicant counts per job_id
+  const [appCounts, setAppCounts] = useState<Record<string, number>>({})
+  // which job's applicants are being viewed (null = show job list)
+  const [viewingJobId, setViewingJobId] = useState<string | null>(null)
+  const [applications, setApplications] = useState<Application[]>([])
+  const [appsLoading, setAppsLoading] = useState(false)
 
-  useEffect(() => {
-    loadMyJobs()
-  }, [])
+  useEffect(() => { loadMyJobs() }, [])
 
   async function loadMyJobs() {
     setLoading(true)
@@ -2176,10 +2180,43 @@ function MyJobsView({ userEmail, onPost, t }: {
       const sb = createClient()
       const { data: co } = await sb.from('companies').select('id').ilike('email', userEmail).maybeSingle()
       if (!co?.id) { setMyJobs([]); setLoading(false); return }
-      const { data } = await sb.from('jobs').select('*,companies(company_name)').eq('company_id', co.id).order('created_at', { ascending: false })
-      setMyJobs(data || [])
+      const { data } = await sb.from('jobs').select('*').eq('company_id', co.id).order('created_at', { ascending: false })
+      const jobs = data || []
+      setMyJobs(jobs)
+      // load application counts
+      if (jobs.length > 0) {
+        const ids = jobs.map((j: Job) => j.id)
+        const { data: apps } = await sb.from('applications').select('job_id').in('job_id', ids)
+        if (apps) {
+          const counts: Record<string, number> = {}
+          apps.forEach((a: { job_id: string }) => { counts[a.job_id] = (counts[a.job_id] || 0) + 1 })
+          setAppCounts(counts)
+        }
+      }
     } catch (e) { console.warn(e) }
     setLoading(false)
+  }
+
+  async function viewApplicants(jobId: string) {
+    setViewingJobId(jobId)
+    setAppsLoading(true)
+    try {
+      const sb = createClient()
+      const { data } = await sb
+        .from('applications')
+        .select('*, candidates(id,name,email,whatsapp,area,experience,city,modality,skills,linkedin,cv_url)')
+        .eq('job_id', jobId)
+        .order('applied_at', { ascending: false })
+      setApplications(data || [])
+    } catch (e) { console.warn(e) }
+    setAppsLoading(false)
+  }
+
+  async function updateAppStatus(appId: string, status: string) {
+    try {
+      await createClient().from('applications').update({ status }).eq('id', appId)
+      setApplications(prev => prev.map(a => a.id === appId ? { ...a, status } : a))
+    } catch (e) { console.warn(e) }
   }
 
   const startEdit = (j: Job) => {
@@ -2202,7 +2239,7 @@ function MyJobsView({ userEmail, onPost, t }: {
   }
 
   async function deleteJob(id: string) {
-    if (!confirm(t('¿Eliminár esta vacante?', 'Delete this listing?'))) return
+    if (!confirm(t('¿Eliminar esta vacante?', 'Delete this listing?'))) return
     try {
       const sb = createClient()
       await sb.from('jobs').delete().eq('id', id)
@@ -2212,6 +2249,78 @@ function MyJobsView({ userEmail, onPost, t }: {
 
   const inp: React.CSSProperties = { width: '100%', background: 'var(--off)', border: '1.5px solid transparent', borderRadius: '8px', padding: '8px 10px', color: 'var(--ink)', fontFamily: 'var(--body)', fontSize: '.83rem', outline: 'none' }
 
+  const statusColor: Record<string, string> = { pending: 'var(--ink-45)', reviewed: 'var(--forest)', contacted: '#2A7E4E', rejected: 'var(--coral)' }
+
+  // ── APPLICANTS PANEL ──
+  if (viewingJobId) {
+    const job = myJobs.find(j => j.id === viewingJobId)
+    return (
+      <>
+        <div className="page-head">
+          <button className="btn btn-outline btn-sm" onClick={() => setViewingJobId(null)}>← {t('Mis vacantes', 'My listings')}</button>
+          <div className="page-title" style={{ marginTop: '.5rem' }}>{job?.title}</div>
+          <div className="page-sub">{t(`${applications.length} postulante${applications.length !== 1 ? 's' : ''}`, `${applications.length} applicant${applications.length !== 1 ? 's' : ''}`)}</div>
+        </div>
+        {appsLoading && <div className="loading-state">{t('Cargando postulantes…', 'Loading applicants…')}</div>}
+        {!appsLoading && applications.length === 0 && (
+          <div className="empty-state">
+            <div className="empty-title">{t('Sin postulantes aún', 'No applicants yet')}</div>
+            <div className="empty-sub">{t('Los candidatos que se postulen aparecerán aquí.', 'Candidates who apply will appear here.')}</div>
+          </div>
+        )}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          {applications.map(app => {
+            const c = app.candidates
+            if (!c) return null
+            return (
+              <div key={app.id} className="card">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '.75rem', marginBottom: '.75rem' }}>
+                  <div style={{ width: 42, height: 42, borderRadius: '50%', background: 'linear-gradient(135deg,var(--forest),var(--forest-lt))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--head)', fontSize: '.85rem', fontWeight: 700, color: 'white', flexShrink: 0 }}>
+                    {initials(c.name)}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontFamily: 'var(--head)', fontWeight: 700, fontSize: '.88rem' }}>{c.name}</div>
+                    <div style={{ fontSize: '.74rem', color: 'var(--forest)', fontWeight: 600 }}>{c.area || ''}</div>
+                  </div>
+                  <select
+                    value={app.status}
+                    onChange={e => updateAppStatus(app.id, e.target.value)}
+                    style={{ fontSize: '.75rem', fontWeight: 700, padding: '4px 8px', borderRadius: '6px', border: '1.5px solid var(--line)', background: 'var(--off)', color: statusColor[app.status] || 'var(--ink)', cursor: 'pointer', outline: 'none' }}
+                  >
+                    <option value="pending">{t('Pendiente', 'Pending')}</option>
+                    <option value="reviewed">{t('Revisado', 'Reviewed')}</option>
+                    <option value="contacted">{t('Contactado', 'Contacted')}</option>
+                    <option value="rejected">{t('Descartado', 'Rejected')}</option>
+                  </select>
+                </div>
+                {[c.experience, c.city, c.modality].filter(Boolean).length > 0 && (
+                  <div className="jc-tags" style={{ margin: '0 0 .65rem' }}>
+                    {[c.experience, c.city, c.modality].filter(Boolean).map(tag => <span key={tag} className="jc-tag">{tag}</span>)}
+                  </div>
+                )}
+                {c.skills && c.skills.length > 0 && (
+                  <div className="jc-tags" style={{ margin: '0 0 .65rem' }}>
+                    {c.skills.slice(0, 5).map(s => <span key={s} className="jc-tag jc-tag-skill">{s}</span>)}
+                  </div>
+                )}
+                <div style={{ background: 'var(--off)', borderRadius: '8px', padding: '.65rem .9rem', fontSize: '.8rem', lineHeight: 1.9, marginBottom: '.75rem' }}>
+                  {c.email && <div><span style={{ color: 'var(--ink-45)', fontSize: '.72rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.04em' }}>Email</span><br /><a href={`mailto:${c.email}`} style={{ color: 'var(--forest)', fontWeight: 600 }}>{c.email}</a></div>}
+                  {c.whatsapp && <div style={{ marginTop: '.3rem' }}><span style={{ color: 'var(--ink-45)', fontSize: '.72rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.04em' }}>WhatsApp</span><br /><a href={`https://wa.me/${c.whatsapp.replace(/\D/g,'')}`} target="_blank" rel="noreferrer" style={{ color: 'var(--forest)', fontWeight: 600 }}>{c.whatsapp}</a></div>}
+                </div>
+                <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap' }}>
+                  {c.linkedin && <a href={c.linkedin.startsWith('http') ? c.linkedin : `https://${c.linkedin}`} target="_blank" rel="noreferrer" className="btn btn-outline btn-sm">LinkedIn →</a>}
+                  {c.cv_url && <a href={c.cv_url} target="_blank" rel="noreferrer" className="btn btn-outline btn-sm">{t('Descargar CV', 'Download CV')}</a>}
+                  <span style={{ marginLeft: 'auto', fontSize: '.72rem', color: 'var(--ink-45)', alignSelf: 'center' }}>{timeAgo(app.applied_at)}</span>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </>
+    )
+  }
+
+  // ── JOB LIST ──
   return (
     <>
       <div className="page-head">
@@ -2236,7 +2345,6 @@ function MyJobsView({ userEmail, onPost, t }: {
         {myJobs.map(j => (
           <div key={j.id} className="card">
             {editingId === j.id ? (
-              /* Edit mode */
               <div style={{ display: 'flex', flexDirection: 'column', gap: '.75rem' }}>
                 <input style={inp} value={editTitle} onChange={e => setEditTitle(e.target.value)} placeholder={t('Cargo', 'Job title')} />
                 <div style={{ display: 'flex', gap: '.5rem' }}>
@@ -2258,7 +2366,6 @@ function MyJobsView({ userEmail, onPost, t }: {
                 </div>
               </div>
             ) : (
-              /* View mode */
               <div>
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: '.75rem', marginBottom: '.6rem' }}>
                   <div style={{ flex: 1 }}>
@@ -2279,6 +2386,13 @@ function MyJobsView({ userEmail, onPost, t }: {
                 <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap', paddingTop: '.75rem', borderTop: '1px solid var(--line)' }}>
                   <button className="btn btn-outline btn-sm" onClick={() => startEdit(j)}>{t('Editar', 'Edit')}</button>
                   <button className="btn btn-sm" style={{ background: 'none', border: '1.5px solid var(--line)', color: 'var(--coral)', borderRadius: 7, padding: '4px 12px', fontSize: '.78rem', cursor: 'pointer' }} onClick={() => deleteJob(j.id)}>{t('Eliminar', 'Delete')}</button>
+                  <button
+                    className="btn btn-forest btn-sm"
+                    style={{ marginLeft: 'auto' }}
+                    onClick={() => viewApplicants(j.id)}
+                  >
+                    {t('Postulantes', 'Applicants')} {appCounts[j.id] ? `(${appCounts[j.id]})` : '(0)'}
+                  </button>
                 </div>
               </div>
             )}
