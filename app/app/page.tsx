@@ -109,6 +109,7 @@ export default function AppPage() {
   const [jobs, setJobs] = useState<Job[]>([])
   const [candidates, setCandidates] = useState<Candidate[]>([])
   const [dataLoading, setDataLoading] = useState(false)
+  const [candProfile, setCandProfile] = useState<Record<string, unknown> | null>(null)
 
   // Modal / toast
   const [modal, setModal] = useState<{
@@ -147,7 +148,7 @@ export default function AppPage() {
   const showToast = (title: string, sub: string, ico = '✅') =>
     setToast({ ico, title, sub })
 
-  async function loadJobs(query = '', area = '', city = '', mod = '') {
+  async function loadJobs(query = '', area = '', city = '', mod = '', sal = '') {
     setDataLoading(true)
     try {
       const sb = createClient()
@@ -156,6 +157,7 @@ export default function AppPage() {
       if (area) q = q.eq('area', area)
       if (city) q = q.eq('city', city)
       if (mod) q = q.eq('modality', mod)
+      if (sal) q = q.ilike('salary_range', `%${sal}%`)
       const { data } = await q.order('created_at', { ascending: false }).limit(50)
       setJobs(data || [])
     } catch (e) { console.warn('[Supabase] loadJobs:', e) }
@@ -171,6 +173,14 @@ export default function AppPage() {
       const { data } = await q.order('created_at', { ascending: false }).limit(50)
       setCandidates(data || [])
     } catch (e) { console.warn('[Supabase] loadCandidates:', e) }
+  }
+
+  async function loadProfile(email: string) {
+    try {
+      const sb = createClient()
+      const { data } = await sb.from('candidates').select('*').ilike('email', email).maybeSingle()
+      if (data) setCandProfile(data)
+    } catch (e) { console.warn('[loadProfile]', e) }
   }
 
   const addSkill = (form: 'c' | 'co') => {
@@ -374,6 +384,7 @@ export default function AppPage() {
     setView('app')
     loadJobs()
     loadCandidates()
+    if (user.type === 'candidate') loadProfile(user.email)
   }
 
   const logout = () => {
@@ -1050,17 +1061,6 @@ export default function AppPage() {
       <div id="viewApp" className="view active">
         <nav className="topbar">
           <div className="topbar-logo">
-            <a
-              href="/"
-              style={{
-                fontSize: '.72rem',
-                color: 'var(--ink-45)',
-                marginRight: '.5rem',
-                textDecoration: 'none',
-              }}
-            >
-              {t('← Inicio', '← Home')}
-            </a>
             <Image
               src="/bird-logo.png"
               alt="Candidato"
@@ -1113,9 +1113,6 @@ export default function AppPage() {
               <button className={appLang === 'es' ? 'on' : ''} onClick={() => setAppLang('es')}>ES</button>
               <button className={appLang === 'en' ? 'on' : ''} onClick={() => setAppLang('en')}>EN</button>
             </div>
-            <button className="btn btn-outline btn-sm" onClick={logout}>
-              {t('Salir', 'Log out')}
-            </button>
             <div
               className="user-ava"
               style={{ cursor: 'pointer' }}
