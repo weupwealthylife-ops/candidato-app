@@ -124,7 +124,7 @@ export default function AppPage() {
   const [submitting, setSubmitting] = useState(false)
 
   // Email gate phase
-  const [phase, setPhase] = useState<'gate' | 'register' | 'welcome' | 'verify'>('gate')
+  const [phase, setPhase] = useState<'gate' | 'register' | 'welcome' | 'verify' | 'magic-sent'>('gate')
   const [gateEmail, setGateEmail] = useState('')
   const [gateLoading, setGateLoading] = useState(false)
   const [foundName, setFoundName] = useState('')
@@ -474,6 +474,24 @@ export default function AppPage() {
     setPhase('register')
   }
 
+  async function sendMagicLink() {
+    const email = gateEmail.trim().toLowerCase()
+    if (!email || !email.includes('@')) {
+      showToast(t('Email requerido', 'Email required'), t('Ingresá tu email arriba primero.', 'Enter your email above first.'), '⚠️')
+      return
+    }
+    try {
+      const sb = createClient()
+      await sb.auth.signInWithOtp({
+        email,
+        options: { emailRedirectTo: `${window.location.origin}/auth/callback?next=/app` },
+      })
+      setPhase('magic-sent')
+    } catch {
+      showToast(t('Error', 'Error'), t('No pudimos enviar el enlace. Intentá de nuevo.', 'Could not send the link. Please try again.'), '❌')
+    }
+  }
+
   // ── RENDER ONBOARD ──
   if (view === 'onboard') {
     const isC = userType === 'candidate'
@@ -635,6 +653,13 @@ export default function AppPage() {
                     <p className="ob-gate-hint">
                       {t('Si ya tenés cuenta accedés directo. Si no, te registramos en 3 minutos.', "Already have an account? You'll go straight in. New? We'll register you in 3 minutes.")}
                     </p>
+                    <button
+                      type="button"
+                      onClick={sendMagicLink}
+                      style={{ background: 'none', border: 'none', color: 'var(--ink-45)', fontSize: '.75rem', cursor: 'pointer', marginTop: '.4rem', textDecoration: 'underline', padding: 0 }}
+                    >
+                      {t('¿Olvidaste tu acceso? Recibir enlace por email →', 'Forgot your access? Get a login link by email →')}
+                    </button>
                   </div>
                 )}
 
@@ -663,6 +688,45 @@ export default function AppPage() {
                     <button onClick={() => { setPhase('gate'); setGateEmail('') }} className="ob-notme-btn">
                       {t('← Usar otro email', '← Use a different email')}
                     </button>
+                  </div>
+                )}
+
+                {/* ── MAGIC LINK SENT ── */}
+                {phase === 'magic-sent' && (
+                  <div className="ob-gate ob-gate-center">
+                    <div className="ob-verify-ico">✉</div>
+                    <h2 className="ob-gate-title" style={{ textAlign: 'center', marginTop: '.6rem' }}>
+                      {t('Revisá tu email', 'Check your inbox')}
+                    </h2>
+                    <p className="ob-gate-sub" style={{ textAlign: 'center' }}>
+                      {t('Te enviamos un enlace de acceso a', 'We sent a login link to')}
+                      <br /><strong>{gateEmail}</strong>
+                    </p>
+                    <div className="ob-verify-steps">
+                      <div className="ob-verify-step">
+                        <span className="ob-vstep-num">1</span>
+                        <span>{t('Abrí tu bandeja de entrada', 'Open your inbox')}</span>
+                      </div>
+                      <div className="ob-verify-step">
+                        <span className="ob-vstep-num">2</span>
+                        <span>{t('Buscá el email de Candidato®', 'Look for the email from Candidato®')}</span>
+                      </div>
+                      <div className="ob-verify-step">
+                        <span className="ob-vstep-num">3</span>
+                        <span>{t('Hacé clic en "Acceder a mi cuenta"', 'Click "Access my account"')}</span>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => { setPhase('gate'); setGateEmail('') }}
+                      className="btn btn-outline btn-sm"
+                      style={{ marginTop: '1.4rem' }}
+                    >
+                      {t('← Volver', '← Back')}
+                    </button>
+                    <p className="ob-gate-hint" style={{ marginTop: '.8rem' }}>
+                      {t('¿No llegó? Revisá spam o intentá de nuevo.', "Didn't arrive? Check spam or try again.")}
+                    </p>
                   </div>
                 )}
 
@@ -1302,7 +1366,7 @@ function CandidateView({
 
   // Profile edit state
   const [isEditing, setIsEditing] = useState(false)
-  const [editData, setEditData] = useState({ phone: '', city: '', modality: '', area: '', experience: '', salary_range: '', linkedin: '', notes: '' })
+  const [editData, setEditData] = useState({ email: '', phone: '', city: '', modality: '', area: '', experience: '', salary_range: '', linkedin: '', notes: '' })
   const [editSkills, setEditSkills] = useState<string[]>([])
   const [editSkInput, setEditSkInput] = useState('')
   const [saving, setSaving] = useState(false)
@@ -1480,7 +1544,7 @@ function CandidateView({
     const notes = (p?.notes as string) || ''
 
     const startEdit = () => {
-      setEditData({ phone, city, modality, area, experience, salary_range: salaryRange, linkedin, notes })
+      setEditData({ email: user?.email || '', phone, city, modality, area, experience, salary_range: salaryRange, linkedin, notes })
       setEditSkills([...profileSkills])
       setIsEditing(true)
     }
@@ -1501,9 +1565,18 @@ function CandidateView({
         if (editData.linkedin) updates.linkedin = editData.linkedin
         if (editData.notes) updates.notes = editData.notes
         if (editSkills.length > 0) updates.skills = editSkills
+        const emailChanged = editData.email.trim() && editData.email.trim().toLowerCase() !== (user?.email || '').toLowerCase()
+        if (emailChanged) updates.email = editData.email.trim().toLowerCase()
         const { data, error } = await sb.from('candidates').update(updates).ilike('email', user?.email || '').select().maybeSingle()
         if (error) { console.error('[saveProfile]', error.message) }
-        else if (data) { onProfileUpdate(data); setIsEditing(false) }
+        else if (data) {
+          onProfileUpdate(data)
+          setIsEditing(false)
+          if (emailChanged) {
+            await sb.auth.updateUser({ email: editData.email.trim().toLowerCase() })
+            // toast handled by parent re-render; show inline note
+          }
+        }
       } catch (e) { console.error(e) }
       setSaving(false)
     }
@@ -1582,7 +1655,9 @@ function CandidateView({
               <div className="card-label" style={{ marginBottom: '.75rem' }}>{t('Contacto', 'Contact')}</div>
               <div className="profile-row">
                 <span className="profile-lbl">Email</span>
-                <span style={{ fontSize: '.82rem', wordBreak: 'break-all' }}>{user?.email || '—'}</span>
+                {isEditing
+                  ? <input style={inp} type="email" value={editData.email} onChange={e => setEdit('email', e.target.value)} placeholder="tu@email.com" />
+                  : <span style={{ fontSize: '.82rem', wordBreak: 'break-all' }}>{user?.email || '—'}</span>}
               </div>
               <div className="profile-row">
                 <span className="profile-lbl">{t('Celular / WA', 'Phone')}</span>
