@@ -135,8 +135,32 @@ export default function AppPage() {
   const [cvUploading, setCvUploading] = useState(false)
 
   useEffect(() => {
-    const urlType = new URLSearchParams(window.location.search).get('type')
+    const params = new URLSearchParams(window.location.search)
+    const urlType = params.get('type')
     if (urlType === 'company') setUserType('company')
+
+    // After email verification the callback route redirects here with ?verified=1
+    // and a live Supabase session — auto-login without requiring the gate again.
+    const sb = createClient()
+    sb.auth.getSession().then(async ({ data: { session } }) => {
+      if (!session?.user?.email) return
+      const email = session.user.email
+      const { data: cand } = await sb.from('candidates').select('name,email').ilike('email', email).maybeSingle()
+      if (cand?.name) {
+        if (params.get('verified') === '1') showToast('¡Email verificado!', 'Tu cuenta está activa — bienvenido/a 🎉', '✅')
+        enterApp({ name: cand.name, email: cand.email ?? email, type: 'candidate' })
+        return
+      }
+      const { data: comp } = await sb.from('companies').select('name,email,company_name').ilike('email', email).maybeSingle()
+      if (comp?.name) {
+        if (params.get('verified') === '1') showToast('¡Email verificado!', 'Tu cuenta está activa — bienvenido/a 🎉', '✅')
+        enterApp({ name: comp.name, email: comp.email ?? email, type: 'company', companyName: comp.company_name })
+      }
+    })
+
+    if (params.get('error') === 'verification_failed') {
+      showToast('Enlace inválido', 'El enlace expiró. Registrate de nuevo.', '❌')
+    }
   }, [])
 
   useEffect(() => {
