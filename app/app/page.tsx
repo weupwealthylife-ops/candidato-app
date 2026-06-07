@@ -1360,62 +1360,65 @@ function CandidateView({
           <div className="page-sub">{t(`${jobs.length} vacante${jobs.length !== 1 ? 's' : ''} disponible${jobs.length !== 1 ? 's' : ''}`, `${jobs.length} listing${jobs.length !== 1 ? 's' : ''} available`)}</div>
         </div>
 
-        {/* Search bar */}
-        <div className="search-wrap" style={{ marginBottom: '.65rem' }}>
-          <input
-            className="search-input"
-            value={query}
-            onChange={e => setQuery(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && doSearch()}
-            placeholder={t('Cargo o palabra clave…', 'Job title or keyword…')}
-          />
-          <button className="btn btn-forest btn-sm" onClick={doSearch} disabled={dataLoading}>
-            {dataLoading ? t('Buscando…', 'Searching…') : t('Buscar', 'Search')}
-          </button>
-        </div>
-
-        {/* Filters row */}
-        <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
-          <select className="filter-select" value={filterArea} onChange={e => setFilterArea(e.target.value)}>
-            <option value="">{t('Área', 'Area')}</option>
-            <option>{t('Tecnología / IT', 'Technology / IT')}</option>
-            <option>{t('Diseño UX/UI', 'UX/UI Design')}</option>
-            <option>{t('Marketing y Comunicaciones', 'Marketing & Comms')}</option>
-            <option>{t('Ventas y Comercial', 'Sales & Business Dev')}</option>
-            <option>{t('Finanzas y Contabilidad', 'Finance & Accounting')}</option>
-            <option>{t('Recursos Humanos', 'Human Resources')}</option>
-            <option>{t('Operaciones', 'Operations')}</option>
-            <option>{t('Producto / Product', 'Product')}</option>
-            <option>{t('Legal', 'Legal')}</option>
-          </select>
-          <select className="filter-select" value={filterCity} onChange={e => setFilterCity(e.target.value)}>
-            <option value="">{t('Ciudad', 'City')}</option>
-            <option>Cali</option><option>Bogotá</option><option>Medellín</option>
-            <option>Barranquilla</option><option>Cartagena</option><option>Bucaramanga</option>
-          </select>
-          <select className="filter-select" value={filterMod} onChange={e => setFilterMod(e.target.value)}>
-            <option value="">{t('Modalidad', 'Mode')}</option>
-            <option>{t('Presencial', 'On-site')}</option>
-            <option>{t('Remoto', 'Remote')}</option>
-            <option>{t('Híbrido', 'Hybrid')}</option>
-          </select>
-          <select className="filter-select" value={filterSal} onChange={e => setFilterSal(e.target.value)}>
-            <option value="">{t('Salario', 'Salary')}</option>
-            <option>$1M – $2M</option>
-            <option>$2M – $3M</option>
-            <option>$3M – $5M</option>
-            <option>$5M – $8M</option>
-            <option>$8M – $12M</option>
-            <option>+$12M</option>
-          </select>
-          {(filterArea || filterCity || filterMod || filterSal) && (
-            <button
-              className="btn btn-outline btn-sm"
-              onClick={() => { setFilterArea(''); setFilterCity(''); setFilterMod(''); setFilterSal(''); loadJobs(query) }}
-            >
-              {t('Limpiar', 'Clear')}
+        {/* Search + filters in one contained row */}
+        <div style={{ background: 'var(--white)', border: '1.5px solid var(--line)', borderRadius: '12px', padding: '1rem 1.1rem', marginBottom: '1rem' }}>
+          <div style={{ display: 'flex', gap: '.6rem', marginBottom: '.75rem' }}>
+            <div className="search-wrap" style={{ flex: 1, margin: 0, border: 'none', background: 'var(--off)', borderRadius: '8px', padding: '.55rem .9rem' }}>
+              <input
+                className="search-input"
+                value={query}
+                onChange={e => setQuery(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && doSearch()}
+                placeholder={t('Cargo, empresa o keyword…', 'Job title, company, keyword…')}
+                style={{ background: 'transparent' }}
+              />
+            </div>
+            <button className="btn btn-forest" onClick={doSearch} disabled={dataLoading} style={{ padding: '0 1.4rem', borderRadius: '8px', fontSize: '.82rem', flexShrink: 0 }}>
+              {dataLoading ? t('Buscando…', 'Searching…') : t('Buscar', 'Search')}
             </button>
-          )}
+          </div>
+          <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
+            <select className="filter-select" value={filterArea} onChange={e => { setFilterArea(e.target.value); loadJobs(query, e.target.value, filterCity, filterMod, filterSal) }}>
+              <option value="">{t('Área', 'Area')}</option>
+              <option>{t('Tecnología / IT', 'Technology / IT')}</option>
+              <option>{t('Diseño UX/UI', 'UX/UI Design')}</option>
+              <option>{t('Marketing y Comunicaciones', 'Marketing & Comms')}</option>
+              <option>{t('Ventas y Comercial', 'Sales & Business Dev')}</option>
+              <option>{t('Finanzas y Contabilidad', 'Finance & Accounting')}</option>
+              <option>{t('Recursos Humanos', 'Human Resources')}</option>
+              <option>{t('Operaciones', 'Operations')}</option>
+              <option>{t('Producto / Product', 'Product')}</option>
+              <option>{t('Legal', 'Legal')}</option>
+            </select>
+            <select className="filter-select" value={filterCity} onChange={e => { setFilterCity(e.target.value); loadJobs(query, filterArea, e.target.value, filterMod, filterSal) }}>
+              <option value="">{t('Ciudad', 'City')}</option>
+              <option>Cali</option><option>Bogotá</option><option>Medellín</option>
+              <option>Barranquilla</option><option>Cartagena</option><option>Bucaramanga</option>
+            </select>
+            <select className="filter-select" value={filterMod} onChange={e => { setFilterMod(e.target.value); loadJobs(query, filterArea, filterCity, e.target.value, filterSal) }}>
+              <option value="">{t('Modalidad', 'Mode')}</option>
+              <option>{t('Presencial', 'On-site')}</option>
+              <option>{t('Remoto', 'Remote')}</option>
+              <option>{t('Híbrido', 'Hybrid')}</option>
+            </select>
+            <select className="filter-select" value={filterSal} onChange={e => { setFilterSal(e.target.value); loadJobs(query, filterArea, filterCity, filterMod, e.target.value) }}>
+              <option value="">{t('Salario', 'Salary')}</option>
+              <option>$1M – $2M</option>
+              <option>$2M – $3M</option>
+              <option>$3M – $5M</option>
+              <option>$5M – $8M</option>
+              <option>$8M – $12M</option>
+              <option>+$12M</option>
+            </select>
+            {(filterArea || filterCity || filterMod || filterSal) && (
+              <button
+                className="btn btn-outline btn-sm"
+                onClick={() => { setFilterArea(''); setFilterCity(''); setFilterMod(''); setFilterSal(''); loadJobs(query) }}
+              >
+                {t('Limpiar', 'Clear')}
+              </button>
+            )}
+          </div>
         </div>
 
         {dataLoading && <div className="loading-state">{t('Cargando vacantes…', 'Loading listings…')}</div>}
@@ -1521,23 +1524,14 @@ function CandidateView({
 
     return (
       <>
-        <div className="page-head" style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-          <div>
-            <div className="page-title">{t('Mi perfil', 'My profile')}</div>
-            <div className="page-sub">{t('Tu información en Candidato', 'Your Candidato profile')}</div>
-          </div>
-          {!isEditing
-            ? <button className="btn btn-outline btn-sm" onClick={startEdit}>{t('Editar perfil', 'Edit profile')}</button>
-            : <div style={{ display: 'flex', gap: '.5rem' }}>
-                <button className="btn btn-outline btn-sm" onClick={cancelEdit}>{t('Cancelar', 'Cancel')}</button>
-                <button className="btn btn-forest btn-sm" onClick={saveProfile} disabled={saving}>{saving ? t('Guardando…', 'Saving…') : t('Guardar', 'Save')}</button>
-              </div>
-          }
+        <div className="page-head">
+          <div className="page-title">{t('Mi perfil', 'My profile')}</div>
+          <div className="page-sub">{t('Tu información en Candidato', 'Your Candidato profile')}</div>
         </div>
 
-        <div style={{ maxWidth: 580 }}>
-          {/* Avatar + name */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.4rem', padding: '1.1rem 1.2rem', background: 'var(--white)', border: '1px solid var(--line)', borderRadius: '12px' }}>
+        <div style={{ maxWidth: 860 }}>
+          {/* Avatar + name + edit button */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.2rem', padding: '1.1rem 1.2rem', background: 'var(--white)', border: '1px solid var(--line)', borderRadius: '12px' }}>
             <div style={{ width: 52, height: 52, borderRadius: '50%', background: 'linear-gradient(135deg,var(--forest),var(--forest-lt))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--head)', fontSize: '1.05rem', fontWeight: 700, color: 'white', flexShrink: 0 }}>
               {(user?.name || '').split(' ').map((w: string) => w[0]).join('').substring(0, 2).toUpperCase()}
             </div>
@@ -1547,86 +1541,100 @@ function CandidateView({
                 {[area, city].filter(Boolean).join(' · ') || user?.email}
               </div>
             </div>
+            {!isEditing
+              ? <button className="btn btn-outline btn-sm" onClick={startEdit}>{t('Editar perfil', 'Edit profile')}</button>
+              : <div style={{ display: 'flex', gap: '.5rem', flexShrink: 0 }}>
+                  <button className="btn btn-outline btn-sm" onClick={cancelEdit}>{t('Cancelar', 'Cancel')}</button>
+                  <button className="btn btn-forest btn-sm" onClick={saveProfile} disabled={saving}>{saving ? t('Guardando…', 'Saving…') : t('Guardar', 'Save')}</button>
+                </div>
+            }
           </div>
 
-          {/* Contact card */}
-          <div className="card" style={{ marginBottom: '1rem' }}>
-            <div className="card-label" style={{ marginBottom: '.75rem' }}>{t('Contacto', 'Contact')}</div>
-            <div className="profile-row">
-              <span className="profile-lbl">Email</span>
-              <span style={{ fontSize: '.82rem' }}>{user?.email || '—'}</span>
+          {/* 2-column grid */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+            {/* Contact card */}
+            <div className="card">
+              <div className="card-label" style={{ marginBottom: '.75rem' }}>{t('Contacto', 'Contact')}</div>
+              <div className="profile-row">
+                <span className="profile-lbl">Email</span>
+                <span style={{ fontSize: '.82rem', wordBreak: 'break-all' }}>{user?.email || '—'}</span>
+              </div>
+              <div className="profile-row">
+                <span className="profile-lbl">{t('Celular / WA', 'Phone')}</span>
+                {isEditing
+                  ? <input style={inp} value={editData.phone} onChange={e => setEdit('phone', e.target.value)} placeholder="+57 300 000 0000" />
+                  : <span style={{ fontSize: '.82rem' }}>{phone || <span style={{ color: 'var(--ink-45)' }}>—</span>}</span>}
+              </div>
+              <div className="profile-row">
+                <span className="profile-lbl">LinkedIn</span>
+                {isEditing
+                  ? <input style={inp} value={editData.linkedin} onChange={e => setEdit('linkedin', e.target.value)} placeholder="linkedin.com/in/tu-perfil" />
+                  : linkedin
+                      ? <a href={linkedin.startsWith('http') ? linkedin : `https://${linkedin}`} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--forest)', fontSize: '.82rem' }}>Ver perfil →</a>
+                      : <span style={{ color: 'var(--ink-45)', fontSize: '.82rem' }}>—</span>}
+              </div>
             </div>
-            <div className="profile-row">
-              <span className="profile-lbl">{t('Celular / WA', 'Phone / WA')}</span>
-              {isEditing
-                ? <input style={inp} value={editData.phone} onChange={e => setEdit('phone', e.target.value)} placeholder="+57 300 000 0000" />
-                : <span style={{ fontSize: '.82rem' }}>{phone || <span style={{ color: 'var(--ink-45)' }}>—</span>}</span>}
-            </div>
-            <div className="profile-row">
-              <span className="profile-lbl">LinkedIn</span>
-              {isEditing
-                ? <input style={inp} value={editData.linkedin} onChange={e => setEdit('linkedin', e.target.value)} placeholder="linkedin.com/in/tu-perfil" />
-                : linkedin
-                    ? <a href={linkedin.startsWith('http') ? linkedin : `https://${linkedin}`} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--forest)', fontSize: '.82rem' }}>Ver perfil →</a>
-                    : <span style={{ color: 'var(--ink-45)', fontSize: '.82rem' }}>—</span>}
+
+            {/* Professional card */}
+            <div className="card">
+              <div className="card-label" style={{ marginBottom: '.75rem' }}>{t('Información profesional', 'Professional info')}</div>
+              <div className="profile-row">
+                <span className="profile-lbl">{t('Área', 'Area')}</span>
+                {isEditing
+                  ? <select style={sel} value={editData.area} onChange={e => setEdit('area', e.target.value)}>
+                      <option value="">{t('Seleccioná', 'Select')}</option>
+                      {['Tecnología / IT','Diseño UX/UI','Marketing y Comunicaciones','Ventas y Comercial','Finanzas y Contabilidad','Recursos Humanos','Operaciones','Producto / Product','Legal'].map(o => <option key={o}>{o}</option>)}
+                    </select>
+                  : <span style={{ fontSize: '.82rem' }}>{area || <span style={{ color: 'var(--ink-45)' }}>—</span>}</span>}
+              </div>
+              <div className="profile-row">
+                <span className="profile-lbl">{t('Experiencia', 'Exp.')}</span>
+                {isEditing
+                  ? <select style={sel} value={editData.experience} onChange={e => setEdit('experience', e.target.value)}>
+                      <option value="">{t('Seleccioná', 'Select')}</option>
+                      {['Sin experiencia','0-1 año','1-3 años','3-5 años','5-10 años','+10 años'].map(o => <option key={o}>{o}</option>)}
+                    </select>
+                  : <span style={{ fontSize: '.82rem' }}>{experience || <span style={{ color: 'var(--ink-45)' }}>—</span>}</span>}
+              </div>
+              <div className="profile-row">
+                <span className="profile-lbl">{t('Modalidad', 'Mode')}</span>
+                {isEditing
+                  ? <select style={sel} value={editData.modality} onChange={e => setEdit('modality', e.target.value)}>
+                      <option value="">{t('Seleccioná', 'Select')}</option>
+                      {[t('Presencial','On-site'),t('Remoto','Remote'),t('Híbrido','Hybrid')].map(o => <option key={o}>{o}</option>)}
+                    </select>
+                  : <span style={{ fontSize: '.82rem' }}>{modality || <span style={{ color: 'var(--ink-45)' }}>—</span>}</span>}
+              </div>
+              <div className="profile-row">
+                <span className="profile-lbl">{t('Ciudad', 'City')}</span>
+                {isEditing
+                  ? <select style={sel} value={editData.city} onChange={e => setEdit('city', e.target.value)}>
+                      <option value="">{t('Seleccioná', 'Select')}</option>
+                      {['Cali','Bogotá','Medellín','Barranquilla','Cartagena','Bucaramanga'].map(o => <option key={o}>{o}</option>)}
+                    </select>
+                  : <span style={{ fontSize: '.82rem' }}>{city || <span style={{ color: 'var(--ink-45)' }}>—</span>}</span>}
+              </div>
+              <div className="profile-row">
+                <span className="profile-lbl">{t('Pretensión', 'Salary')}</span>
+                {isEditing
+                  ? <select style={sel} value={editData.salary_range} onChange={e => setEdit('salary_range', e.target.value)}>
+                      <option value="">{t('Seleccioná', 'Select')}</option>
+                      {['$1M – $2M','$2M – $3M','$3M – $5M','$5M – $8M','$8M – $12M','+$12M'].map(o => <option key={o}>{o}</option>)}
+                    </select>
+                  : <span style={{ fontSize: '.82rem' }}>{salaryRange || <span style={{ color: 'var(--ink-45)' }}>—</span>}</span>}
+              </div>
             </div>
           </div>
 
-          {/* Professional card */}
+          {/* Skills + Notes — full width 2-col */}
           <div className="card" style={{ marginBottom: '1rem' }}>
-            <div className="card-label" style={{ marginBottom: '.75rem' }}>{t('Información profesional', 'Professional info')}</div>
-            <div className="profile-row">
-              <span className="profile-lbl">{t('Área', 'Area')}</span>
-              {isEditing
-                ? <select style={sel} value={editData.area} onChange={e => setEdit('area', e.target.value)}>
-                    <option value="">{t('Seleccioná', 'Select')}</option>
-                    {['Tecnología / IT','Diseño UX/UI','Marketing y Comunicaciones','Ventas y Comercial','Finanzas y Contabilidad','Recursos Humanos','Operaciones','Producto / Product','Legal'].map(o => <option key={o}>{o}</option>)}
-                  </select>
-                : <span style={{ fontSize: '.82rem' }}>{area || <span style={{ color: 'var(--ink-45)' }}>—</span>}</span>}
-            </div>
-            <div className="profile-row">
-              <span className="profile-lbl">{t('Experiencia', 'Experience')}</span>
-              {isEditing
-                ? <select style={sel} value={editData.experience} onChange={e => setEdit('experience', e.target.value)}>
-                    <option value="">{t('Seleccioná', 'Select')}</option>
-                    {['Sin experiencia','0-1 año','1-3 años','3-5 años','5-10 años','+10 años'].map(o => <option key={o}>{o}</option>)}
-                  </select>
-                : <span style={{ fontSize: '.82rem' }}>{experience || <span style={{ color: 'var(--ink-45)' }}>—</span>}</span>}
-            </div>
-            <div className="profile-row">
-              <span className="profile-lbl">{t('Modalidad', 'Mode')}</span>
-              {isEditing
-                ? <select style={sel} value={editData.modality} onChange={e => setEdit('modality', e.target.value)}>
-                    <option value="">{t('Seleccioná', 'Select')}</option>
-                    {[t('Presencial','On-site'),t('Remoto','Remote'),t('Híbrido','Hybrid')].map(o => <option key={o}>{o}</option>)}
-                  </select>
-                : <span style={{ fontSize: '.82rem' }}>{modality || <span style={{ color: 'var(--ink-45)' }}>—</span>}</span>}
-            </div>
-            <div className="profile-row">
-              <span className="profile-lbl">{t('Ciudad', 'City')}</span>
-              {isEditing
-                ? <select style={sel} value={editData.city} onChange={e => setEdit('city', e.target.value)}>
-                    <option value="">{t('Seleccioná', 'Select')}</option>
-                    {['Cali','Bogotá','Medellín','Barranquilla','Cartagena','Bucaramanga'].map(o => <option key={o}>{o}</option>)}
-                  </select>
-                : <span style={{ fontSize: '.82rem' }}>{city || <span style={{ color: 'var(--ink-45)' }}>—</span>}</span>}
-            </div>
-            <div className="profile-row">
-              <span className="profile-lbl">{t('Pretensión', 'Salary range')}</span>
-              {isEditing
-                ? <select style={sel} value={editData.salary_range} onChange={e => setEdit('salary_range', e.target.value)}>
-                    <option value="">{t('Seleccioná', 'Select')}</option>
-                    {['$1M – $2M','$2M – $3M','$3M – $5M','$5M – $8M','$8M – $12M','+$12M'].map(o => <option key={o}>{o}</option>)}
-                  </select>
-                : <span style={{ fontSize: '.82rem' }}>{salaryRange || <span style={{ color: 'var(--ink-45)' }}>—</span>}</span>}
-            </div>
-            <div className="profile-row" style={{ alignItems: 'flex-start' }}>
-              <span className="profile-lbl">{t('Habilidades', 'Skills')}</span>
-              <div style={{ flex: 1 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.4rem' }}>
+              <div>
+                <div className="card-label" style={{ marginBottom: '.6rem' }}>{t('Habilidades', 'Skills')}</div>
                 {isEditing && (
-                  <div style={{ display: 'flex', gap: '.4rem', marginBottom: '.4rem' }}>
-                    <input style={{ ...inp, flex: 1 }} value={editSkInput} onChange={e => setEditSkInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addEditSkill() } }} placeholder={t('Agregar habilidad…', 'Add skill…')} />
-                    <button type="button" className="add-btn" onClick={addEditSkill} style={{ width: 36, height: 36 }}>+</button>
+                  <div style={{ display: 'flex', gap: '.4rem', marginBottom: '.5rem' }}>
+                    <input style={{ ...inp, flex: 1 }} value={editSkInput} onChange={e => setEditSkInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addEditSkill() } }} placeholder={t('Agregar…', 'Add…')} />
+                    <button type="button" className="add-btn" onClick={addEditSkill} style={{ width: 34, height: 34 }}>+</button>
                   </div>
                 )}
                 <div className="sk-tags" style={{ margin: 0 }}>
@@ -1635,14 +1643,15 @@ function CandidateView({
                       {s}{isEditing ? ' ×' : ''}
                     </span>
                   ))}
+                  {(isEditing ? editSkills : profileSkills).length === 0 && <span style={{ fontSize: '.78rem', color: 'var(--ink-45)' }}>—</span>}
                 </div>
               </div>
-            </div>
-            <div className="profile-row" style={{ alignItems: 'flex-start' }}>
-              <span className="profile-lbl">{t('Nota', 'Notes')}</span>
-              {isEditing
-                ? <textarea style={{ ...inp, resize: 'none', minHeight: 70, lineHeight: 1.55 }} value={editData.notes} onChange={e => setEdit('notes', e.target.value)} placeholder={t('¿Qué tipo de empresa buscás?', 'What kind of company are you looking for?')} />
-                : <span style={{ fontSize: '.82rem', color: 'var(--ink-70)', lineHeight: 1.6 }}>{notes || <span style={{ color: 'var(--ink-45)' }}>—</span>}</span>}
+              <div>
+                <div className="card-label" style={{ marginBottom: '.6rem' }}>{t('Nota', 'Notes')}</div>
+                {isEditing
+                  ? <textarea style={{ ...inp, resize: 'none', minHeight: 80, lineHeight: 1.55 }} value={editData.notes} onChange={e => setEdit('notes', e.target.value)} placeholder={t('¿Qué tipo de empresa buscás?', 'What kind of role are you seeking?')} />
+                  : <span style={{ fontSize: '.82rem', color: notes ? 'var(--ink-70)' : 'var(--ink-45)', lineHeight: 1.6 }}>{notes || '—'}</span>}
+              </div>
             </div>
           </div>
 
