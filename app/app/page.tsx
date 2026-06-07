@@ -73,7 +73,27 @@ function timeAgo(ts?: string) {
   if (h < 24) return `Hace ${h}h`
   const d = Math.floor(h / 24)
   if (d === 1) return 'Ayer'
-  return `Hace ${d}d`
+  if (d < 7) return `Hace ${d}d`
+  const w = Math.floor(d / 7)
+  if (w < 5) return `Hace ${w} semana${w > 1 ? 's' : ''}`
+  const m = Math.floor(d / 30)
+  if (m < 12) return `Hace ${m} mes${m > 1 ? 'es' : ''}`
+  return `Hace más de un año`
+}
+
+function appliedAgo(ts: string, t: (es: string, en: string) => string) {
+  const diff = Date.now() - new Date(ts).getTime()
+  const h = Math.floor(diff / 3600000)
+  if (h < 1) return t('Hace un momento', 'Just now')
+  if (h < 24) return t(`Hace ${h}h`, `${h}h ago`)
+  const d = Math.floor(h / 24)
+  if (d === 1) return t('Ayer', 'Yesterday')
+  if (d < 7) return t(`Hace ${d} días`, `${d} days ago`)
+  const w = Math.floor(d / 7)
+  if (w < 5) return t(`Hace ${w} semana${w > 1 ? 's' : ''}`, `${w} week${w > 1 ? 's' : ''} ago`)
+  const m = Math.floor(d / 30)
+  if (m < 12) return t(`Hace ${m} mes${m > 1 ? 'es' : ''}`, `${m} month${m > 1 ? 's' : ''} ago`)
+  return t('Hace más de un año', 'Over a year ago')
 }
 
 function initials(name: string) {
@@ -1399,20 +1419,25 @@ function CandidateView({
   const [filterMod, setFilterMod] = useState('')
   const [filterSal, setFilterSal] = useState('')
 
-  // Applications state
-  const [myApplied, setMyApplied] = useState<Set<string>>(new Set())
+  // Applications state — Map<jobId, applied_at>
+  const [myApplied, setMyApplied] = useState<Map<string, string>>(new Map())
   const [applying, setApplying] = useState<string | null>(null)
+  const [withdrawing, setWithdrawing] = useState<string | null>(null)
   const [appliedJob, setAppliedJob] = useState<Job | null>(null)
+  const [selectedJob, setSelectedJob] = useState<Job | null>(null)
 
   useEffect(() => {
     const candidateId = candProfile?.id as string | undefined
     if (!candidateId) return
     createClient()
       .from('applications')
-      .select('job_id')
+      .select('job_id, applied_at')
       .eq('candidate_id', candidateId)
       .then(({ data }) => {
-        if (data) setMyApplied(new Set(data.map((a: { job_id: string }) => a.job_id)))
+        if (data) {
+          const m = new Map(data.map((a: { job_id: string; applied_at: string }) => [a.job_id, a.applied_at] as [string, string]))
+          setMyApplied(m)
+        }
       })
   }, [candProfile])
 
@@ -1422,13 +1447,30 @@ function CandidateView({
     setApplying(job.id)
     try {
       const sb = createClient()
+      const now = new Date().toISOString()
       const { error } = await sb.from('applications').insert({ job_id: job.id, candidate_id: candidateId, status: 'pending' })
       if (!error) {
-        setMyApplied(prev => new Set([...prev, job.id]))
+        setMyApplied(prev => new Map([...prev, [job.id, now]]))
         setAppliedJob(job)
+        setSelectedJob(null)
       }
     } catch (e) { console.warn(e) }
     setApplying(null)
+  }
+
+  async function withdrawApplication(job: Job) {
+    const candidateId = candProfile?.id as string | undefined
+    if (!candidateId || withdrawing) return
+    setWithdrawing(job.id)
+    try {
+      const sb = createClient()
+      const { error } = await sb.from('applications').delete().eq('job_id', job.id).eq('candidate_id', candidateId)
+      if (!error) {
+        setMyApplied(prev => { const m = new Map(prev); m.delete(job.id); return m })
+        setSelectedJob(null)
+      }
+    } catch (e) { console.warn(e) }
+    setWithdrawing(null)
   }
 
   // Profile edit state
@@ -1443,6 +1485,97 @@ function CandidateView({
   const setEdit = (k: string, v: string) => setEditData(prev => ({ ...prev, [k]: v }))
 
   const doSearch = () => loadJobs(query, filterArea, filterCity, filterMod, filterSal)
+
+  // ── JOB DETAIL MODAL ──
+  const jobDetailModal = selectedJob && (
+    <div className="apply-overlay" onClick={() => setSelectedJob(null)}>
+      <div className="apply-modal" style={{ maxWidth: 480, width: '92vw', maxHeight: '85vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
+        <button
+          onClick={() => setSelectedJob(null)}
+          style={{ position: 'absolute', top: 12, right: 14, background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--ink-45)', padding: '2px 6px', borderRadius: 6 }}
+          aria-label="Cerrar"
+        >✕</button>
+
+        {/* Company avatar + title */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '.85rem', marginBottom: '1.1rem' }}>
+          <div className="jc-ava" style={{ width: 48, height: 48, fontSize: '1rem', flexShrink: 0 }}>
+            {initials(selectedJob.companies?.company_name || '—')}
+          </div>
+          <div>
+            <div style={{ fontFamily: 'var(--head)', fontWeight: 700, fontSize: '1.05rem', color: 'var(--ink)', lineHeight: 1.25 }}>{selectedJob.title}</div>
+            <div style={{ fontSize: '.83rem', color: 'var(--ink-70)', marginTop: '.15rem' }}>{selectedJob.companies?.company_name || '—'}{selectedJob.area ? ` · ${selectedJob.area}` : ''}</div>
+          </div>
+        </div>
+
+        {/* Tags row */}
+        {[selectedJob.modality, selectedJob.city, selectedJob.salary_range].filter(Boolean).length > 0 && (
+          <div className="jc-tags" style={{ marginBottom: '1rem' }}>
+            {[selectedJob.modality, selectedJob.city, selectedJob.salary_range].filter(Boolean).map(tag => (
+              <span key={tag} className="jc-tag">{tag}</span>
+            ))}
+          </div>
+        )}
+
+        {/* Description */}
+        {selectedJob.description && (
+          <div style={{ marginBottom: '1rem' }}>
+            <div style={{ fontSize: '.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.06em', color: 'var(--ink-45)', marginBottom: '.4rem' }}>
+              {t('Descripción', 'Description')}
+            </div>
+            <div style={{ fontSize: '.84rem', color: 'var(--ink-70)', lineHeight: 1.65, whiteSpace: 'pre-wrap' }}>
+              {selectedJob.description}
+            </div>
+          </div>
+        )}
+
+        {/* Skills */}
+        {selectedJob.skills && selectedJob.skills.length > 0 && (
+          <div style={{ marginBottom: '1.1rem' }}>
+            <div style={{ fontSize: '.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.06em', color: 'var(--ink-45)', marginBottom: '.4rem' }}>
+              {t('Habilidades requeridas', 'Required skills')}
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '.35rem' }}>
+              {selectedJob.skills.map(s => (
+                <span key={s} style={{ background: 'var(--pale)', color: 'var(--forest)', fontSize: '.76rem', borderRadius: 6, padding: '3px 9px', border: '1px solid var(--mist)' }}>{s}</span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Posted date */}
+        <div style={{ fontSize: '.75rem', color: 'var(--ink-45)', marginBottom: '1.3rem' }}>
+          {t('Publicado', 'Posted')} · {timeAgo(selectedJob.created_at)}
+        </div>
+
+        <div style={{ borderTop: '1px solid var(--line)', paddingTop: '1.1rem', display: 'flex', flexDirection: 'column', gap: '.6rem' }}>
+          {myApplied.has(selectedJob.id) ? (
+            <>
+              <div style={{ textAlign: 'center', fontSize: '.82rem', color: 'var(--forest)', background: 'var(--pale)', borderRadius: 8, padding: '.6rem', border: '1px solid var(--mist)' }}>
+                ✓ {t('Ya te postulaste', 'You applied')} · {appliedAgo(myApplied.get(selectedJob.id)!, t)}
+              </div>
+              <button
+                className="btn btn-sm"
+                style={{ borderRadius: 8, padding: '.65rem', fontSize: '.82rem', border: '1.5px solid #e8b0b0', color: '#c0392b', background: '#fff9f9', width: '100%' }}
+                disabled={withdrawing === selectedJob.id}
+                onClick={() => withdrawApplication(selectedJob)}
+              >
+                {withdrawing === selectedJob.id ? t('Retirando…', 'Withdrawing…') : t('Retirar mi postulación', 'Withdraw application')}
+              </button>
+            </>
+          ) : (
+            <button
+              className="btn btn-forest"
+              style={{ width: '100%', borderRadius: 9, padding: '.75rem', fontSize: '.88rem' }}
+              disabled={applying === selectedJob.id}
+              onClick={() => applyToJob(selectedJob)}
+            >
+              {applying === selectedJob.id ? t('Enviando…', 'Sending…') : t('Quiero postularme →', 'Apply now →')}
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  )
 
   // ── APPLY CONFIRMATION MODAL ──
   const applyModal = appliedJob && (
@@ -1544,11 +1677,12 @@ function CandidateView({
             </div>
             <div className="jobs-list" style={{ padding: '0 .7rem .7rem' }}>
               {jobs.slice(0, 8).map((j) => (
-                <JobRow key={j.id} job={j} applied={myApplied.has(j.id)} onApply={applyToJob} t={t} />
+                <JobRow key={j.id} job={j} applied={myApplied.has(j.id)} appliedAt={myApplied.get(j.id)} onApply={applyToJob} onWithdraw={withdrawApplication} onSelect={setSelectedJob} t={t} />
               ))}
             </div>
           </div>
         )}
+        {jobDetailModal}
         {applyModal}
       </>
     )
@@ -1613,12 +1747,13 @@ function CandidateView({
               <option>$8M – $12M</option>
               <option>+$12M</option>
             </select>
-            {(filterArea || filterCity || filterMod || filterSal) && (
+            {(query || filterArea || filterCity || filterMod || filterSal) && (
               <button
                 className="btn btn-outline btn-sm"
-                onClick={() => { setFilterArea(''); setFilterCity(''); setFilterMod(''); setFilterSal(''); loadJobs(query) }}
+                style={{ flexShrink: 0 }}
+                onClick={() => { setQuery(''); setFilterArea(''); setFilterCity(''); setFilterMod(''); setFilterSal(''); loadJobs() }}
               >
-                {t('Limpiar', 'Clear')}
+                {t('Limpiar todo ✕', 'Clear all ✕')}
               </button>
             )}
           </div>
@@ -1636,10 +1771,11 @@ function CandidateView({
         {!dataLoading && jobs.length > 0 && (
           <div className="jobs-list">
             {jobs.map((j) => (
-              <JobRow key={j.id} job={j} applied={myApplied.has(j.id)} onApply={applyToJob} t={t} />
+              <JobRow key={j.id} job={j} applied={myApplied.has(j.id)} appliedAt={myApplied.get(j.id)} onApply={applyToJob} onWithdraw={withdrawApplication} onSelect={setSelectedJob} t={t} />
             ))}
           </div>
         )}
+        {jobDetailModal}
         {applyModal}
       </>
     )
@@ -1932,17 +2068,24 @@ function CandidateView({
   )
 }
 
-function JobRow({ job, applied, onApply, t }: {
+function JobRow({ job, applied, appliedAt, onApply, onWithdraw, onSelect, t }: {
   job: Job
   applied?: boolean
+  appliedAt?: string
   onApply?: (job: Job) => void
+  onWithdraw?: (job: Job) => void
+  onSelect?: (job: Job) => void
   t?: (es: string, en: string) => string
 }) {
   const tr = t || ((es: string) => es)
   const coName = job.companies?.company_name || '—'
   const tags = [job.modality, job.city, job.salary_range].filter(Boolean)
   return (
-    <div className="job-card">
+    <div
+      className="job-card"
+      style={{ cursor: onSelect ? 'pointer' : undefined }}
+      onClick={() => onSelect?.(job)}
+    >
       <div className="jc-ava">{initials(coName)}</div>
       <div className="jc-body">
         <div className="jc-title">{job.title}</div>
@@ -1953,18 +2096,36 @@ function JobRow({ job, applied, onApply, t }: {
           </div>
         )}
       </div>
-      <div className="jc-right">
+      <div className="jc-right" onClick={e => e.stopPropagation()}>
         <span className="jc-time">{timeAgo(job.created_at)}</span>
-        {onApply && (
+        {applied ? (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '.2rem', marginTop: '.35rem' }}>
+            <span style={{ background: 'var(--pale)', color: 'var(--forest)', border: '1.5px solid var(--mist)', borderRadius: 7, padding: '3px 10px', fontSize: '.75rem', fontWeight: 600 }}>
+              {tr('Postulado ✓', 'Applied ✓')}
+            </span>
+            {appliedAt && (
+              <span style={{ fontSize: '.68rem', color: 'var(--ink-45)' }}>
+                {appliedAgo(appliedAt, tr)}
+              </span>
+            )}
+            {onWithdraw && (
+              <button
+                style={{ background: 'none', border: 'none', padding: 0, fontSize: '.68rem', color: '#c0392b', cursor: 'pointer', textDecoration: 'underline', opacity: .8 }}
+                onClick={() => onWithdraw(job)}
+              >
+                {tr('Retirar', 'Withdraw')}
+              </button>
+            )}
+          </div>
+        ) : onApply ? (
           <button
-            className={`btn btn-sm${applied ? '' : ' btn-forest'}`}
-            style={applied ? { background: 'var(--pale)', color: 'var(--forest)', border: '1.5px solid var(--mist)', borderRadius: 7, padding: '4px 12px', fontSize: '.76rem', marginTop: '.4rem', cursor: 'default' } : { marginTop: '.4rem', borderRadius: 7, padding: '4px 14px', fontSize: '.76rem' }}
-            onClick={() => !applied && onApply(job)}
-            disabled={applied}
+            className="btn btn-sm btn-forest"
+            style={{ marginTop: '.4rem', borderRadius: 7, padding: '4px 14px', fontSize: '.76rem' }}
+            onClick={() => onApply(job)}
           >
-            {applied ? tr('Postulado ✓', 'Applied ✓') : tr('Postularme →', 'Apply →')}
+            {tr('Postularme →', 'Apply →')}
           </button>
-        )}
+        ) : null}
       </div>
     </div>
   )
