@@ -1171,6 +1171,7 @@ export default function AppPage() {
                 skills={cSkills}
                 user={currentUser}
                 candProfile={candProfile}
+                onProfileUpdate={setCandProfile}
                 jobs={jobs}
                 dataLoading={dataLoading}
                 loadJobs={loadJobs}
@@ -1254,13 +1255,14 @@ export default function AppPage() {
 }
 
 function CandidateView({
-  view, firstName, skills, user, candProfile, jobs, dataLoading, loadJobs, setView, t,
+  view, firstName, skills, user, candProfile, onProfileUpdate, jobs, dataLoading, loadJobs, setView, t,
 }: {
   view: CandView
   firstName: string
   skills: string[]
   user: CurrentUser | null
   candProfile: Record<string, unknown> | null
+  onProfileUpdate: (data: Record<string, unknown>) => void
   jobs: Job[]
   dataLoading: boolean
   loadJobs: (q?: string, area?: string, city?: string, mod?: string, sal?: string) => void
@@ -1272,6 +1274,17 @@ function CandidateView({
   const [filterCity, setFilterCity] = useState('')
   const [filterMod, setFilterMod] = useState('')
   const [filterSal, setFilterSal] = useState('')
+
+  // Profile edit state
+  const [isEditing, setIsEditing] = useState(false)
+  const [editData, setEditData] = useState({ phone: '', city: '', modality: '', area: '', experience: '', salary_range: '', linkedin: '', notes: '' })
+  const [editSkills, setEditSkills] = useState<string[]>([])
+  const [editSkInput, setEditSkInput] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [cvUploading, setCvUploading] = useState(false)
+  const [cvDeleting, setCvDeleting] = useState(false)
+
+  const setEdit = (k: string, v: string) => setEditData(prev => ({ ...prev, [k]: v }))
 
   const doSearch = () => loadJobs(query, filterArea, filterCity, filterMod, filterSal)
 
@@ -1438,86 +1451,228 @@ function CandidateView({
     const profileSkills = (p?.skills as string[]) || skills
     const notes = (p?.notes as string) || ''
 
+    const startEdit = () => {
+      setEditData({ phone, city, modality, area, experience, salary_range: salaryRange, linkedin, notes })
+      setEditSkills([...profileSkills])
+      setIsEditing(true)
+    }
+
+    const cancelEdit = () => { setIsEditing(false); setEditSkInput('') }
+
+    const saveProfile = async () => {
+      setSaving(true)
+      try {
+        const sb = createClient()
+        const updates: Record<string, unknown> = {}
+        if (editData.phone) updates.whatsapp = editData.phone
+        if (editData.city) updates.city = editData.city
+        if (editData.modality) updates.modality = editData.modality
+        if (editData.area) updates.area = editData.area
+        if (editData.experience) updates.experience = editData.experience
+        if (editData.salary_range) updates.salary_range = editData.salary_range
+        if (editData.linkedin) updates.linkedin = editData.linkedin
+        if (editData.notes) updates.notes = editData.notes
+        if (editSkills.length > 0) updates.skills = editSkills
+        const { data, error } = await sb.from('candidates').update(updates).ilike('email', user?.email || '').select().maybeSingle()
+        if (error) { console.error('[saveProfile]', error.message) }
+        else if (data) { onProfileUpdate(data); setIsEditing(false) }
+      } catch (e) { console.error(e) }
+      setSaving(false)
+    }
+
+    const uploadCv = async (file: File) => {
+      setCvUploading(true)
+      try {
+        const sb = createClient()
+        const ext = file.name.split('.').pop()
+        const path = `cvs/${Date.now()}-${(user?.email || '').replace(/[@.]/g, '_')}.${ext}`
+        const { data: upData } = await sb.storage.from('candidatos').upload(path, file, { upsert: true })
+        if (upData?.path) {
+          const { data: urlData } = sb.storage.from('candidatos').getPublicUrl(upData.path)
+          const newUrl = urlData?.publicUrl || ''
+          const { data: updated } = await sb.from('candidates').update({ cv_url: newUrl }).ilike('email', user?.email || '').select().maybeSingle()
+          if (updated) onProfileUpdate(updated)
+        }
+      } catch (e) { console.error(e) }
+      setCvUploading(false)
+    }
+
+    const deleteCv = async () => {
+      if (!cvUrl) return
+      setCvDeleting(true)
+      try {
+        const sb = createClient()
+        const match = cvUrl.match(/\/candidatos\/(.+)$/)
+        if (match) await sb.storage.from('candidatos').remove([match[1]])
+        const { data: updated } = await sb.from('candidates').update({ cv_url: null }).ilike('email', user?.email || '').select().maybeSingle()
+        if (updated) onProfileUpdate(updated)
+      } catch (e) { console.error(e) }
+      setCvDeleting(false)
+    }
+
+    const addEditSkill = () => {
+      const v = editSkInput.trim()
+      if (v && !editSkills.includes(v)) setEditSkills(prev => [...prev, v])
+      setEditSkInput('')
+    }
+
+    const sel: React.CSSProperties = { width: '100%', background: 'var(--off)', border: '1.5px solid transparent', borderRadius: '8px', padding: '8px 10px', color: 'var(--ink)', fontFamily: 'var(--body)', fontSize: '.83rem', outline: 'none' }
+    const inp: React.CSSProperties = { ...sel }
+
     return (
       <>
-        <div className="page-head">
-          <div className="page-title">{t('Mi perfil', 'My profile')}</div>
-          <div className="page-sub">{t('Tu información registrada en Candidato', 'Your registered profile')}</div>
+        <div className="page-head" style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+          <div>
+            <div className="page-title">{t('Mi perfil', 'My profile')}</div>
+            <div className="page-sub">{t('Tu información en Candidato', 'Your Candidato profile')}</div>
+          </div>
+          {!isEditing
+            ? <button className="btn btn-outline btn-sm" onClick={startEdit}>{t('Editar perfil', 'Edit profile')}</button>
+            : <div style={{ display: 'flex', gap: '.5rem' }}>
+                <button className="btn btn-outline btn-sm" onClick={cancelEdit}>{t('Cancelar', 'Cancel')}</button>
+                <button className="btn btn-forest btn-sm" onClick={saveProfile} disabled={saving}>{saving ? t('Guardando…', 'Saving…') : t('Guardar', 'Save')}</button>
+              </div>
+          }
         </div>
 
         <div style={{ maxWidth: 580 }}>
           {/* Avatar + name */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.4rem' }}>
-            <div style={{
-              width: 56, height: 56, borderRadius: '50%',
-              background: 'linear-gradient(135deg,var(--forest),var(--forest-lt))',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontFamily: 'var(--head)', fontSize: '1.1rem', fontWeight: 700, color: 'white', flexShrink: 0,
-            }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.4rem', padding: '1.1rem 1.2rem', background: 'var(--white)', border: '1px solid var(--line)', borderRadius: '12px' }}>
+            <div style={{ width: 52, height: 52, borderRadius: '50%', background: 'linear-gradient(135deg,var(--forest),var(--forest-lt))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--head)', fontSize: '1.05rem', fontWeight: 700, color: 'white', flexShrink: 0 }}>
               {(user?.name || '').split(' ').map((w: string) => w[0]).join('').substring(0, 2).toUpperCase()}
             </div>
-            <div>
-              <div style={{ fontFamily: 'var(--head)', fontSize: '1.1rem', fontWeight: 700, color: 'var(--ink)', letterSpacing: '-.02em' }}>{user?.name || '—'}</div>
-              {area && <div style={{ fontSize: '.78rem', color: 'var(--ink-45)', marginTop: '2px' }}>{area}{city ? ` · ${city}` : ''}</div>}
+            <div style={{ flex: 1 }}>
+              <div style={{ fontFamily: 'var(--head)', fontSize: '1rem', fontWeight: 700, color: 'var(--ink)', letterSpacing: '-.02em' }}>{user?.name || '—'}</div>
+              <div style={{ fontSize: '.76rem', color: 'var(--ink-45)', marginTop: '2px' }}>
+                {[area, city].filter(Boolean).join(' · ') || user?.email}
+              </div>
             </div>
           </div>
 
-          {/* Contact */}
+          {/* Contact card */}
           <div className="card" style={{ marginBottom: '1rem' }}>
-            <div className="card-label" style={{ marginBottom: '.7rem' }}>{t('Contacto', 'Contact')}</div>
-            <div className="profile-row"><span className="profile-lbl">Email</span><span>{user?.email || '—'}</span></div>
-            {phone && <div className="profile-row"><span className="profile-lbl">{t('Celular / WA', 'Phone / WA')}</span><span>{phone}</span></div>}
-            {linkedin && (
-              <div className="profile-row">
-                <span className="profile-lbl">LinkedIn</span>
-                <a href={linkedin.startsWith('http') ? linkedin : `https://${linkedin}`} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--forest)', fontSize: '.82rem' }}>Ver perfil →</a>
-              </div>
-            )}
+            <div className="card-label" style={{ marginBottom: '.75rem' }}>{t('Contacto', 'Contact')}</div>
+            <div className="profile-row">
+              <span className="profile-lbl">Email</span>
+              <span style={{ fontSize: '.82rem' }}>{user?.email || '—'}</span>
+            </div>
+            <div className="profile-row">
+              <span className="profile-lbl">{t('Celular / WA', 'Phone / WA')}</span>
+              {isEditing
+                ? <input style={inp} value={editData.phone} onChange={e => setEdit('phone', e.target.value)} placeholder="+57 300 000 0000" />
+                : <span style={{ fontSize: '.82rem' }}>{phone || <span style={{ color: 'var(--ink-45)' }}>—</span>}</span>}
+            </div>
+            <div className="profile-row">
+              <span className="profile-lbl">LinkedIn</span>
+              {isEditing
+                ? <input style={inp} value={editData.linkedin} onChange={e => setEdit('linkedin', e.target.value)} placeholder="linkedin.com/in/tu-perfil" />
+                : linkedin
+                    ? <a href={linkedin.startsWith('http') ? linkedin : `https://${linkedin}`} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--forest)', fontSize: '.82rem' }}>Ver perfil →</a>
+                    : <span style={{ color: 'var(--ink-45)', fontSize: '.82rem' }}>—</span>}
+            </div>
           </div>
 
-          {/* Professional info */}
+          {/* Professional card */}
           <div className="card" style={{ marginBottom: '1rem' }}>
-            <div className="card-label" style={{ marginBottom: '.7rem' }}>{t('Información profesional', 'Professional info')}</div>
-            {area && <div className="profile-row"><span className="profile-lbl">{t('Área', 'Area')}</span><span>{area}</span></div>}
-            {experience && <div className="profile-row"><span className="profile-lbl">{t('Experiencia', 'Experience')}</span><span>{experience}</span></div>}
-            {modality && <div className="profile-row"><span className="profile-lbl">{t('Modalidad', 'Mode')}</span><span>{modality}</span></div>}
-            {city && <div className="profile-row"><span className="profile-lbl">{t('Ciudad', 'City')}</span><span>{city}</span></div>}
-            {salaryRange && <div className="profile-row"><span className="profile-lbl">{t('Pretensión', 'Salary range')}</span><span>{salaryRange}</span></div>}
-            {profileSkills.length > 0 && (
-              <div className="profile-row" style={{ alignItems: 'flex-start' }}>
-                <span className="profile-lbl">{t('Habilidades', 'Skills')}</span>
+            <div className="card-label" style={{ marginBottom: '.75rem' }}>{t('Información profesional', 'Professional info')}</div>
+            <div className="profile-row">
+              <span className="profile-lbl">{t('Área', 'Area')}</span>
+              {isEditing
+                ? <select style={sel} value={editData.area} onChange={e => setEdit('area', e.target.value)}>
+                    <option value="">{t('Seleccioná', 'Select')}</option>
+                    {['Tecnología / IT','Diseño UX/UI','Marketing y Comunicaciones','Ventas y Comercial','Finanzas y Contabilidad','Recursos Humanos','Operaciones','Producto / Product','Legal'].map(o => <option key={o}>{o}</option>)}
+                  </select>
+                : <span style={{ fontSize: '.82rem' }}>{area || <span style={{ color: 'var(--ink-45)' }}>—</span>}</span>}
+            </div>
+            <div className="profile-row">
+              <span className="profile-lbl">{t('Experiencia', 'Experience')}</span>
+              {isEditing
+                ? <select style={sel} value={editData.experience} onChange={e => setEdit('experience', e.target.value)}>
+                    <option value="">{t('Seleccioná', 'Select')}</option>
+                    {['Sin experiencia','0-1 año','1-3 años','3-5 años','5-10 años','+10 años'].map(o => <option key={o}>{o}</option>)}
+                  </select>
+                : <span style={{ fontSize: '.82rem' }}>{experience || <span style={{ color: 'var(--ink-45)' }}>—</span>}</span>}
+            </div>
+            <div className="profile-row">
+              <span className="profile-lbl">{t('Modalidad', 'Mode')}</span>
+              {isEditing
+                ? <select style={sel} value={editData.modality} onChange={e => setEdit('modality', e.target.value)}>
+                    <option value="">{t('Seleccioná', 'Select')}</option>
+                    {[t('Presencial','On-site'),t('Remoto','Remote'),t('Híbrido','Hybrid')].map(o => <option key={o}>{o}</option>)}
+                  </select>
+                : <span style={{ fontSize: '.82rem' }}>{modality || <span style={{ color: 'var(--ink-45)' }}>—</span>}</span>}
+            </div>
+            <div className="profile-row">
+              <span className="profile-lbl">{t('Ciudad', 'City')}</span>
+              {isEditing
+                ? <select style={sel} value={editData.city} onChange={e => setEdit('city', e.target.value)}>
+                    <option value="">{t('Seleccioná', 'Select')}</option>
+                    {['Cali','Bogotá','Medellín','Barranquilla','Cartagena','Bucaramanga'].map(o => <option key={o}>{o}</option>)}
+                  </select>
+                : <span style={{ fontSize: '.82rem' }}>{city || <span style={{ color: 'var(--ink-45)' }}>—</span>}</span>}
+            </div>
+            <div className="profile-row">
+              <span className="profile-lbl">{t('Pretensión', 'Salary range')}</span>
+              {isEditing
+                ? <select style={sel} value={editData.salary_range} onChange={e => setEdit('salary_range', e.target.value)}>
+                    <option value="">{t('Seleccioná', 'Select')}</option>
+                    {['$1M – $2M','$2M – $3M','$3M – $5M','$5M – $8M','$8M – $12M','+$12M'].map(o => <option key={o}>{o}</option>)}
+                  </select>
+                : <span style={{ fontSize: '.82rem' }}>{salaryRange || <span style={{ color: 'var(--ink-45)' }}>—</span>}</span>}
+            </div>
+            <div className="profile-row" style={{ alignItems: 'flex-start' }}>
+              <span className="profile-lbl">{t('Habilidades', 'Skills')}</span>
+              <div style={{ flex: 1 }}>
+                {isEditing && (
+                  <div style={{ display: 'flex', gap: '.4rem', marginBottom: '.4rem' }}>
+                    <input style={{ ...inp, flex: 1 }} value={editSkInput} onChange={e => setEditSkInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addEditSkill() } }} placeholder={t('Agregar habilidad…', 'Add skill…')} />
+                    <button type="button" className="add-btn" onClick={addEditSkill} style={{ width: 36, height: 36 }}>+</button>
+                  </div>
+                )}
                 <div className="sk-tags" style={{ margin: 0 }}>
-                  {profileSkills.map((s: string) => <span key={s} className="sk-tag">{s}</span>)}
+                  {(isEditing ? editSkills : profileSkills).map((s: string) => (
+                    <span key={s} className="sk-tag" onClick={isEditing ? () => setEditSkills(prev => prev.filter(x => x !== s)) : undefined} style={isEditing ? { cursor: 'pointer' } : {}}>
+                      {s}{isEditing ? ' ×' : ''}
+                    </span>
+                  ))}
                 </div>
               </div>
-            )}
-            {notes && <div className="profile-row" style={{ alignItems: 'flex-start' }}><span className="profile-lbl">{t('Nota', 'Notes')}</span><span style={{ fontSize: '.82rem', color: 'var(--ink-70)', lineHeight: 1.6 }}>{notes}</span></div>}
+            </div>
+            <div className="profile-row" style={{ alignItems: 'flex-start' }}>
+              <span className="profile-lbl">{t('Nota', 'Notes')}</span>
+              {isEditing
+                ? <textarea style={{ ...inp, resize: 'none', minHeight: 70, lineHeight: 1.55 }} value={editData.notes} onChange={e => setEdit('notes', e.target.value)} placeholder={t('¿Qué tipo de empresa buscás?', 'What kind of company are you looking for?')} />
+                : <span style={{ fontSize: '.82rem', color: 'var(--ink-70)', lineHeight: 1.6 }}>{notes || <span style={{ color: 'var(--ink-45)' }}>—</span>}</span>}
+            </div>
           </div>
 
-          {/* CV */}
+          {/* CV card */}
           <div className="card" style={{ marginBottom: '1rem' }}>
-            <div className="card-label" style={{ marginBottom: '.7rem' }}>{t('Hoja de vida', 'CV / Resume')}</div>
+            <div className="card-label" style={{ marginBottom: '.75rem' }}>{t('Hoja de vida', 'CV / Resume')}</div>
             {cvUrl ? (
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div style={{ fontSize: '.82rem', color: 'var(--ink-70)' }}>
-                  <span style={{ marginRight: '.4rem' }}>📄</span>{t('CV adjunto', 'CV attached')}
-                </div>
-                <a href={cvUrl} target="_blank" rel="noopener noreferrer" className="btn btn-outline btn-sm">
-                  {t('Ver CV →', 'View CV →')}
-                </a>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '.75rem' }}>
+                <span style={{ fontSize: '.82rem', color: 'var(--ink-70)', flex: 1 }}>📄 {t('CV adjunto', 'CV attached')}</span>
+                <a href={cvUrl} target="_blank" rel="noopener noreferrer" className="btn btn-outline btn-sm">{t('Ver →', 'View →')}</a>
+                <label className="btn btn-outline btn-sm" style={{ cursor: 'pointer', margin: 0 }}>
+                  {cvUploading ? t('Subiendo…', 'Uploading…') : t('Reemplazar', 'Replace')}
+                  <input type="file" accept=".pdf,.doc,.docx" style={{ display: 'none' }} onChange={e => { const f = e.target.files?.[0]; if (f) uploadCv(f) }} />
+                </label>
+                <button className="btn btn-sm" style={{ background: 'none', border: '1.5px solid var(--line)', color: 'var(--coral)', borderRadius: 7 }} onClick={deleteCv} disabled={cvDeleting}>
+                  {cvDeleting ? '…' : t('Eliminar', 'Delete')}
+                </button>
               </div>
             ) : (
-              <div style={{ fontSize: '.82rem', color: 'var(--ink-45)' }}>
-                {t('Sin CV adjunto. Para agregar tu CV escribinos a', 'No CV attached. To add your CV email us at')}{' '}
-                <a href="mailto:hola@candidato.com.co" style={{ color: 'var(--forest)' }}>hola@candidato.com.co</a>
-              </div>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '.75rem', cursor: 'pointer' }}>
+                <div style={{ flex: 1, fontSize: '.82rem', color: 'var(--ink-45)' }}>
+                  {cvUploading ? t('Subiendo tu CV…', 'Uploading CV…') : t('Sin CV adjunto. Hacé clic para subir.', 'No CV attached. Click to upload.')}
+                </div>
+                <div className="btn btn-forest btn-sm" style={{ pointerEvents: 'none' }}>
+                  {cvUploading ? '⏳' : t('Subir CV', 'Upload CV')}
+                </div>
+                <input type="file" accept=".pdf,.doc,.docx" style={{ display: 'none' }} onChange={e => { const f = e.target.files?.[0]; if (f) uploadCv(f) }} />
+              </label>
             )}
           </div>
-
-          <p style={{ fontSize: '.72rem', color: 'var(--ink-45)', lineHeight: 1.6, marginTop: '.4rem' }}>
-            {t('Para actualizar tus datos escribinos a', 'To update your information email us at')}{' '}
-            <a href="mailto:hola@candidato.com.co" style={{ color: 'var(--forest)' }}>hola@candidato.com.co</a>
-          </p>
         </div>
       </>
     )
@@ -1548,10 +1703,6 @@ function CandidateView({
           <span className="profile-lbl">{t('Perfil visible', 'Profile visible')}</span>
           <span className="settings-badge on">{t('Sí', 'Yes')}</span>
         </div>
-        <p style={{ fontSize: '.74rem', color: 'var(--ink-45)', marginTop: '1.4rem', lineHeight: 1.6 }}>
-          {t('Para modificar estas preferencias o eliminar tu cuenta, escribinos a', 'To modify these preferences or delete your account, email us at')}{' '}
-          <a href="mailto:hola@candidato.com.co" style={{ color: 'var(--forest)' }}>hola@candidato.com.co</a>
-        </p>
       </div>
     </>
   )
