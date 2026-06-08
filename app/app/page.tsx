@@ -298,9 +298,13 @@ export default function AppPage() {
   }
 
   const nextCStep = (n: number) => {
-    if (n > 1) {
+    if (n > 1 && cStep === 1) {
       if (!cfn.trim())
         return showToast('Campo requerido', 'Ingresá tu nombre', '⚠️')
+    }
+    if (n > 2 && cStep === 2) {
+      if (!car)
+        return showToast(t('Campo requerido', 'Required field'), t('Seleccioná tu área profesional', 'Select your professional area'), '⚠️')
     }
     setCStep(n)
   }
@@ -501,7 +505,8 @@ export default function AppPage() {
     if (user.type === 'candidate') loadProfile(user.email)
   }
 
-  const logout = () => {
+  const logout = async () => {
+    try { await createClient().auth.signOut() } catch { /* non-blocking */ }
     setCurrentUser(null)
     setView('onboard')
     setPhase('gate')
@@ -537,8 +542,9 @@ export default function AppPage() {
         .maybeSingle()
       if (cand?.name) {
         setGateLoading(false)
-        showToast(t(`¡Bienvenido/a de vuelta, ${cand.name.split(' ')[0]}!`, `Welcome back, ${cand.name.split(' ')[0]}!`), t('Accediste a tu cuenta.', 'You\'ve been logged in.'), '👋')
-        enterApp({ name: cand.name, email: cand.email ?? email, type: 'candidate' })
+        setFoundName(cand.name)
+        setUserType('candidate')
+        setPhase('welcome')
         return
       }
 
@@ -549,8 +555,12 @@ export default function AppPage() {
         .maybeSingle()
       if (comp?.name) {
         setGateLoading(false)
-        showToast(t(`¡Bienvenido/a de vuelta, ${comp.name.split(' ')[0]}!`, `Welcome back, ${comp.name.split(' ')[0]}!`), t('Accediste a tu cuenta.', 'You\'ve been logged in.'), '👋')
-        enterApp({ name: comp.name, email: comp.email ?? email, type: 'company', companyName: comp.company_name })
+        setFoundName(comp.name)
+        setUserType('company')
+        // store company_name so welcome → enterApp can use it
+        setConame(comp.company_name || '')
+        setCoem(comp.email ?? email)
+        setPhase('welcome')
         return
       }
     } catch (e) {
@@ -762,7 +772,7 @@ export default function AppPage() {
                       {foundName.split(' ')[0]}
                     </h2>
                     <p className="ob-gate-sub" style={{ textAlign: 'center', marginBottom: '1.6rem' }}>{gateEmail}</p>
-                    <button className="submit-btn" onClick={() => enterApp({ name: foundName, email: gateEmail, type: userType })}>
+                    <button className="submit-btn" onClick={() => enterApp({ name: foundName, email: gateEmail, type: userType, companyName: userType === 'company' ? coname : undefined })}>
                       {t('Ir a mi panel →', 'Go to my dashboard →')}
                     </button>
                     <div className="ob-divider-thin"></div>
@@ -950,8 +960,8 @@ export default function AppPage() {
                             <label>{t('Pretensión salarial', 'Salary expectation')}</label>
                             <select value={csal} onChange={(e) => setCsal(e.target.value)}>
                               <option value="" disabled>{t('Mensual', 'Monthly')}</option>
-                              <option>Hasta $2M</option><option>$2M–$4M</option>
-                              <option>$4M–$7M</option><option>$7M–$12M</option><option>$12M+</option>
+                              <option>Hasta $2M</option><option>$2M – $4M</option>
+                              <option>$4M – $7M</option><option>$7M – $12M</option><option>$12M+</option>
                             </select>
                           </div>
                           <div className="fg fg-full">
@@ -1144,8 +1154,8 @@ export default function AppPage() {
                             <label>{t('Salario mensual', 'Monthly salary')} <span style={{color:'var(--ink-45)',fontWeight:400}}>{t('(opcional)', '(optional)')}</span></label>
                             <select value={jobsal} onChange={(e) => setJobsal(e.target.value)}>
                               <option value="" disabled>{t('Rango', 'Range')}</option>
-                              <option>Hasta $2M</option><option>$2M–$4M</option>
-                              <option>$4M–$7M</option><option>$7M–$12M</option><option>$12M+</option>
+                              <option>Hasta $2M</option><option>$2M – $4M</option>
+                              <option>$4M – $7M</option><option>$7M – $12M</option><option>$12M+</option>
                             </select>
                           </div>
                           <div className="fg fg-full">
@@ -1463,8 +1473,11 @@ export default function AppPage() {
             <button className={`mobile-nav-btn${compView === 'talent' ? ' active' : ''}`} onClick={() => { setCompView('talent'); loadCandidates() }}>
               <span className="mobile-nav-ico">◉</span>{t('Talentos', 'Talent')}
             </button>
-            <button className={`mobile-nav-btn${compView === 'post' ? ' active' : ''}`} onClick={() => setCompView('post')}>
-              <span className="mobile-nav-ico">＋</span>{t('Publicar', 'Post')}
+            <button className={`mobile-nav-btn${compView === 'myjobs' ? ' active' : ''}`} onClick={() => setCompView('myjobs')}>
+              <span className="mobile-nav-ico">📋</span>{t('Vacantes', 'Listings')}
+            </button>
+            <button className={`mobile-nav-btn${compView === 'mycompany' ? ' active' : ''}`} onClick={() => setCompView('mycompany')}>
+              <span className="mobile-nav-ico">🏢</span>{t('Empresa', 'Company')}
             </button>
             <button className="mobile-nav-btn" onClick={logout}>
               <span className="mobile-nav-ico">←</span>{t('Salir', 'Out')}
@@ -1476,7 +1489,7 @@ export default function AppPage() {
           <span>
             {isC
               ? t('Tu perfil está activo · Recibirás matches por email', 'Your profile is active · You\'ll receive matches by email')
-              : `${coName} · ${t('Vacante activa', 'Job listing active')}`}
+              : coName}
           </span>
           <span className="sb-ai">
             {isC
@@ -1840,12 +1853,11 @@ function CandidateView({
             </select>
             <select className="filter-select" value={filterSal} onChange={e => { setFilterSal(e.target.value); loadJobs(query, filterArea, filterCity, filterMod, e.target.value) }}>
               <option value="">{t('Salario', 'Salary')}</option>
-              <option>$1M – $2M</option>
-              <option>$2M – $3M</option>
-              <option>$3M – $5M</option>
-              <option>$5M – $8M</option>
-              <option>$8M – $12M</option>
-              <option>+$12M</option>
+              <option>Hasta $2M</option>
+              <option>$2M – $4M</option>
+              <option>$4M – $7M</option>
+              <option>$7M – $12M</option>
+              <option>$12M+</option>
             </select>
             {(query || filterArea || filterCity || filterMod || filterSal) && (
               <button
@@ -1906,16 +1918,17 @@ function CandidateView({
       setSaving(true)
       try {
         const sb = createClient()
-        const updates: Record<string, unknown> = {}
-        if (editData.phone) updates.whatsapp = editData.phone
-        if (editData.city) updates.city = editData.city
-        if (editData.modality) updates.modality = editData.modality
-        if (editData.area) updates.area = editData.area
-        if (editData.experience) updates.experience = editData.experience
-        if (editData.salary_range) updates.salary_range = editData.salary_range
-        if (editData.linkedin) updates.linkedin = editData.linkedin
-        if (editData.notes) updates.notes = editData.notes
-        if (editSkills.length > 0) updates.skills = editSkills
+        const updates: Record<string, unknown> = {
+          whatsapp: editData.phone.trim() || null,
+          city: editData.city || null,
+          modality: editData.modality || null,
+          area: editData.area || null,
+          experience: editData.experience || null,
+          salary_range: editData.salary_range || null,
+          linkedin: editData.linkedin.trim() || null,
+          notes: editData.notes.trim() || null,
+          skills: editSkills.length > 0 ? editSkills : null,
+        }
         const emailChanged = editData.email.trim() && editData.email.trim().toLowerCase() !== (user?.email || '').toLowerCase()
         if (emailChanged) updates.email = editData.email.trim().toLowerCase()
         const { data, error } = await sb.from('candidates').update(updates).ilike('email', user?.email || '').select().maybeSingle()
@@ -2043,7 +2056,7 @@ function CandidateView({
                 {isEditing
                   ? <select style={sel} value={editData.experience} onChange={e => setEdit('experience', e.target.value)}>
                       <option value="">{t('Seleccioná', 'Select')}</option>
-                      {['Sin experiencia','0-1 año','1-3 años','3-5 años','5-10 años','+10 años'].map(o => <option key={o}>{o}</option>)}
+                      {[t('Sin experiencia','No experience'),t('1–2 años','1–2 years'),t('3–5 años','3–5 years'),t('5–10 años','5–10 years'),t('10+ años','10+ years')].map(o => <option key={o}>{o}</option>)}
                     </select>
                   : <span style={{ fontSize: '.82rem' }}>{experience || <span style={{ color: 'var(--ink-45)' }}>—</span>}</span>}
               </div>
@@ -2070,7 +2083,7 @@ function CandidateView({
                 {isEditing
                   ? <select style={sel} value={editData.salary_range} onChange={e => setEdit('salary_range', e.target.value)}>
                       <option value="">{t('Seleccioná', 'Select')}</option>
-                      {['$1M – $2M','$2M – $3M','$3M – $5M','$5M – $8M','$8M – $12M','+$12M'].map(o => <option key={o}>{o}</option>)}
+                      {['Hasta $2M','$2M – $4M','$4M – $7M','$7M – $12M','$12M+'].map(o => <option key={o}>{o}</option>)}
                     </select>
                   : <span style={{ fontSize: '.82rem' }}>{salaryRange || <span style={{ color: 'var(--ink-45)' }}>—</span>}</span>}
               </div>
@@ -2391,8 +2404,8 @@ function CompanyView({
           </div>
         )}
 
-        {/* Recent candidates fallback */}
-        {candidates.length > 0 && (
+        {/* Recent candidates — only shown when no matching profile configured */}
+        {!hasProfile && candidates.length > 0 && (
           <div className="card" style={{ padding: '1.1rem 1.2rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '.85rem' }}>
               <div style={{ fontFamily: 'var(--head)', fontWeight: 700, fontSize: '.9rem', color: 'var(--ink)' }}>
@@ -2478,20 +2491,21 @@ function MyCompanyView({ userEmail, coProfile, onUpdate, t }: {
     setSaving(true)
     try {
       const sb = createClient()
-      const payload: Record<string, unknown> = {}
-      if (form.company_name) payload.company_name = form.company_name
-      if (form.website) payload.website = form.website
-      if (form.linkedin) payload.linkedin = form.linkedin
-      if (form.city) payload.city = form.city
-      if (form.industry) payload.industry = form.industry
-      if (form.size) payload.size = form.size
-      if (form.description) payload.description = form.description
-      if (form.mission) payload.mission = form.mission
-      if (form.values) payload.values = form.values
-      if (form.looking_for_experience) payload.looking_for_experience = form.looking_for_experience
-      if (form.looking_for_modality) payload.looking_for_modality = form.looking_for_modality
-      if (lookingAreas.length > 0) payload.looking_for_areas = lookingAreas
-      if (lookingSkills.length > 0) payload.looking_for_skills = lookingSkills
+      const payload: Record<string, unknown> = {
+        company_name: form.company_name.trim() || null,
+        website: form.website.trim() || null,
+        linkedin: form.linkedin.trim() || null,
+        city: form.city || null,
+        industry: form.industry || null,
+        size: form.size || null,
+        description: form.description.trim() || null,
+        mission: form.mission.trim() || null,
+        values: form.values.trim() || null,
+        looking_for_experience: form.looking_for_experience || null,
+        looking_for_modality: form.looking_for_modality || null,
+        looking_for_areas: lookingAreas.length > 0 ? lookingAreas : null,
+        looking_for_skills: lookingSkills.length > 0 ? lookingSkills : null,
+      }
       const { data } = await sb.from('companies').update(payload).ilike('email', userEmail).select().maybeSingle()
       if (data) { onUpdate(data); setEditing(false) }
     } catch (e) { console.warn(e) }
@@ -2704,10 +2718,10 @@ function MyCompanyView({ userEmail, coProfile, onUpdate, t }: {
                   <select style={inp} value={form.looking_for_experience} onChange={e => f('looking_for_experience', e.target.value)}>
                     <option value="">{t('Cualquiera', 'Any')}</option>
                     <option>{t('Sin experiencia', 'No experience')}</option>
-                    <option>1–3 años</option>
-                    <option>3–5 años</option>
-                    <option>5–10 años</option>
-                    <option>10+ años</option>
+                    <option>{t('1–2 años', '1–2 years')}</option>
+                    <option>{t('3–5 años', '3–5 years')}</option>
+                    <option>{t('5–10 años', '5–10 years')}</option>
+                    <option>{t('10+ años', '10+ years')}</option>
                   </select>
                 </div>
 
@@ -2836,12 +2850,11 @@ function TalentView({ candidates, loadCandidates, t }: {
           </select>
           <select className="filter-select" value={filterSal} onChange={e => { setFilterSal(e.target.value); setSearchErr(''); loadCandidates(query, filterArea, filterCity, filterMod, e.target.value) }}>
             <option value="">{t('Pretensión salarial', 'Expected salary')}</option>
-            <option>$1M – $2M</option>
-            <option>$2M – $3M</option>
-            <option>$3M – $5M</option>
-            <option>$5M – $8M</option>
-            <option>$8M – $12M</option>
-            <option>+$12M</option>
+            <option>Hasta $2M</option>
+            <option>$2M – $4M</option>
+            <option>$4M – $7M</option>
+            <option>$7M – $12M</option>
+            <option>$12M+</option>
           </select>
         </div>
       </div>
@@ -2950,6 +2963,8 @@ function MyJobsView({ userEmail, onPost, t }: {
   const [editDesc, setEditDesc] = useState('')
   const [editSal, setEditSal] = useState('')
   const [editMod, setEditMod] = useState('')
+  const [editCity, setEditCity] = useState('')
+  const [editArea, setEditArea] = useState('')
   const [saving, setSaving] = useState(false)
   // applicant counts per job_id
   const [appCounts, setAppCounts] = useState<Record<string, number>>({})
@@ -3011,13 +3026,22 @@ function MyJobsView({ userEmail, onPost, t }: {
     setEditDesc(j.description || '')
     setEditSal(j.salary_range || '')
     setEditMod(j.modality || '')
+    setEditCity(j.city || '')
+    setEditArea(j.area || '')
+  }
+
+  async function toggleActive(id: string, current: boolean) {
+    try {
+      await createClient().from('jobs').update({ active: !current }).eq('id', id)
+      setMyJobs(prev => prev.map(j => j.id === id ? { ...j, active: !current } : j))
+    } catch (e) { console.warn(e) }
   }
 
   async function saveEdit(id: string) {
     setSaving(true)
     try {
       const sb = createClient()
-      await sb.from('jobs').update({ title: editTitle, description: editDesc, salary_range: editSal, modality: editMod }).eq('id', id)
+      await sb.from('jobs').update({ title: editTitle, description: editDesc, salary_range: editSal, modality: editMod, city: editCity, area: editArea }).eq('id', id)
       setEditingId(null)
       await loadMyJobs()
     } catch (e) { console.warn(e) }
@@ -3140,9 +3164,25 @@ function MyJobsView({ userEmail, onPost, t }: {
                     <option>{t('Remoto', 'Remote')}</option>
                     <option>{t('Híbrido', 'Hybrid')}</option>
                   </select>
+                  <select style={{ ...inp, flex: 1 }} value={editCity} onChange={e => setEditCity(e.target.value)}>
+                    <option value="">{t('Ciudad', 'City')}</option>
+                    <option>Cali</option><option>Bogotá</option><option>Medellín</option><option>Barranquilla</option>
+                  </select>
+                </div>
+                <div style={{ display: 'flex', gap: '.5rem' }}>
+                  <select style={{ ...inp, flex: 1 }} value={editArea} onChange={e => setEditArea(e.target.value)}>
+                    <option value="">{t('Área', 'Area')}</option>
+                    <option>{t('Tecnología / IT', 'Technology / IT')}</option>
+                    <option>{t('Diseño UX/UI', 'UX/UI Design')}</option>
+                    <option>Marketing</option>
+                    <option>{t('Ventas y Comercial', 'Sales')}</option>
+                    <option>{t('Finanzas', 'Finance')}</option>
+                    <option>{t('Recursos Humanos', 'HR')}</option>
+                    <option>{t('Operaciones', 'Operations')}</option>
+                  </select>
                   <select style={{ ...inp, flex: 1 }} value={editSal} onChange={e => setEditSal(e.target.value)}>
                     <option value="">{t('Salario', 'Salary')}</option>
-                    <option>Hasta $2M</option><option>$2M–$4M</option><option>$4M–$7M</option><option>$7M–$12M</option><option>$12M+</option>
+                    <option>Hasta $2M</option><option>$2M – $4M</option><option>$4M – $7M</option><option>$7M – $12M</option><option>$12M+</option>
                   </select>
                 </div>
                 <textarea style={{ ...inp, resize: 'none', minHeight: 80, lineHeight: 1.55 }} value={editDesc} onChange={e => setEditDesc(e.target.value)} placeholder={t('Descripción…', 'Description…')} />
@@ -3158,10 +3198,13 @@ function MyJobsView({ userEmail, onPost, t }: {
                     <div style={{ fontFamily: 'var(--head)', fontWeight: 700, fontSize: '.95rem', color: 'var(--ink)' }}>{j.title}</div>
                     <div style={{ fontSize: '.74rem', color: 'var(--ink-45)', marginTop: '2px' }}>{timeAgo(j.created_at)}</div>
                   </div>
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '.72rem', fontWeight: 700, padding: '4px 10px 4px 8px', borderRadius: '50px', background: j.active ? '#dcfce7' : 'var(--off)', color: j.active ? '#15803d' : 'var(--ink-45)', border: j.active ? '1px solid #bbf7d0' : '1px solid var(--line)' }}>
+                  <button
+                    onClick={() => toggleActive(j.id, j.active ?? false)}
+                    title={j.active ? t('Pausar vacante', 'Pause listing') : t('Activar vacante', 'Activate listing')}
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '.72rem', fontWeight: 700, padding: '4px 10px 4px 8px', borderRadius: '50px', background: j.active ? '#dcfce7' : 'var(--off)', color: j.active ? '#15803d' : 'var(--ink-45)', border: j.active ? '1px solid #bbf7d0' : '1px solid var(--line)', cursor: 'pointer' }}>
                     {j.active && <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#16a34a', display: 'inline-block', flexShrink: 0 }} />}
                     {j.active ? t('Activa', 'Active') : t('Inactiva', 'Inactive')}
-                  </span>
+                  </button>
                 </div>
                 <div className="jc-tags" style={{ margin: '0 0 .8rem' }}>
                   {j.modality && <span className="jc-tag">{j.modality}</span>}
@@ -3217,7 +3260,7 @@ function PostJobView({ userEmail, onSuccess, t }: {
     setSaving(true)
     try {
       const sb = createClient()
-      const { data: co } = await sb.from('companies').select('id').eq('email', userEmail).maybeSingle()
+      const { data: co } = await sb.from('companies').select('id').ilike('email', userEmail).maybeSingle()
       const jobPayload = {
         company_id: co?.id || null,
         title: title.trim(),
