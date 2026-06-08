@@ -23,7 +23,7 @@ const noopChain: Record<string, unknown> = new Proxy(Object.assign(() => noopCha
     if (prop === 'then') return resolved.then.bind(resolved)
     if (prop === 'catch') return resolved.catch.bind(resolved)
     if (prop === 'finally') return resolved.finally.bind(resolved)
-    return () => noopChain
+    return noopChain
   },
   apply: () => noopChain,
 })
