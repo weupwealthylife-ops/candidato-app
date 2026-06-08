@@ -65,6 +65,27 @@ interface Application {
   }
 }
 
+interface CompanyProfile {
+  id?: string
+  name?: string
+  email?: string
+  company_name?: string
+  industry?: string
+  size?: string
+  city?: string
+  whatsapp?: string
+  website?: string
+  linkedin?: string
+  description?: string
+  mission?: string
+  values?: string
+  looking_for_areas?: string[]
+  looking_for_experience?: string
+  looking_for_modality?: string
+  looking_for_skills?: string[]
+  created_at?: string
+}
+
 function timeAgo(ts?: string) {
   if (!ts) return ''
   const diff = Date.now() - new Date(ts).getTime()
@@ -101,7 +122,7 @@ function initials(name: string) {
 }
 
 type CandView = 'dashboard' | 'jobs' | 'profile' | 'settings'
-type CompView = 'codashboard' | 'matches' | 'post' | 'talent' | 'myjobs'
+type CompView = 'codashboard' | 'matches' | 'post' | 'talent' | 'myjobs' | 'mycompany'
 
 export default function AppPage() {
   const [appLang, setAppLang] = useState<'es' | 'en'>('es')
@@ -1245,6 +1266,9 @@ export default function AppPage() {
                 <button className={`tab-btn${compView === 'post' ? ' active' : ''}`} onClick={() => setCompView('post')}>
                   {t('Publicar vacante', 'Post listing')}
                 </button>
+                <button className={`tab-btn${compView === 'mycompany' ? ' active' : ''}`} onClick={() => setCompView('mycompany')}>
+                  {t('Mi empresa', 'My company')}
+                </button>
               </>
             )}
           </div>
@@ -1320,7 +1344,7 @@ export default function AppPage() {
                       {!isC && (
                         <button
                           className="ava-menu-item"
-                          onClick={() => { setCompView('codashboard'); setAvatarOpen(false) }}
+                          onClick={() => { setCompView('mycompany'); setAvatarOpen(false) }}
                         >
                           🏢 {t('Mi empresa', 'My company')}
                         </button>
@@ -1373,6 +1397,9 @@ export default function AppPage() {
                 </button>
                 <button className={`nav-item${compView === 'post' ? ' active' : ''}`} onClick={() => setCompView('post')}>
                   {t('Publicar vacante', 'Post listing')}
+                </button>
+                <button className={`nav-item${compView === 'mycompany' ? ' active' : ''}`} onClick={() => setCompView('mycompany')}>
+                  {t('Mi empresa', 'My company')}
                 </button>
                 <div className="sidebar-spacer"></div>
                 <button className="nav-item nav-item-logout" onClick={logout}>{t('Salir', 'Log out')}</button>
@@ -2215,7 +2242,38 @@ function CompanyView({
   setView: (v: CompView) => void
   t: (es: string, en: string) => string
 }) {
-  if (view === 'codashboard')
+  const [coProfile, setCoProfile] = useState<CompanyProfile | null>(null)
+
+  useEffect(() => {
+    if (!userEmail) return
+    createClient().from('companies').select('*').ilike('email', userEmail).maybeSingle()
+      .then(({ data }) => { if (data) setCoProfile(data) })
+  }, [userEmail])
+
+  // Simple skill/area-based candidate matching
+  function getMatchedCandidates(): Array<Candidate & { score: number }> {
+    const areas = coProfile?.looking_for_areas || []
+    const exp = coProfile?.looking_for_experience || ''
+    const mod = coProfile?.looking_for_modality || ''
+    const skills = coProfile?.looking_for_skills || []
+    return candidates
+      .map(c => {
+        let score = 0
+        if (c.area && areas.includes(c.area)) score += 3
+        if (exp && c.experience && c.experience.includes(exp.split(' ')[0])) score += 2
+        if (mod && c.modality === mod) score += 2
+        const cSkills = c.skills || []
+        score += cSkills.filter(s => skills.some(sk => sk.toLowerCase() === s.toLowerCase())).length
+        return { ...c, score }
+      })
+      .filter(c => c.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 6)
+  }
+
+  if (view === 'codashboard') {
+    const matches = getMatchedCandidates()
+    const hasProfile = !!(coProfile?.looking_for_areas?.length || coProfile?.looking_for_experience)
     return (
       <>
         <div className="page-head">
@@ -2223,43 +2281,138 @@ function CompanyView({
           <div className="page-sub">{t('Panel de reclutamiento', 'Recruitment dashboard')}</div>
           <div className="page-actions">
             <button className="btn btn-forest btn-sm" onClick={() => setView('post')}>
-              {t('Publicar vacante', 'Post a listing')}
+              {t('+ Publicar vacante', '+ Post a listing')}
             </button>
             <button className="btn btn-outline btn-sm" onClick={() => { setView('talent'); loadCandidates() }}>
-              {t('Ver candidatos →', 'View candidates →')}
-            </button>
-          </div>
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-          <div className="card">
-            <div className="card-label">{t('Candidatos en el pool', 'Candidates in pool')}</div>
-            <div className="card-big-num">{candidates.length || '—'}</div>
-            <button className="btn btn-outline btn-sm" style={{ marginTop: '.8rem' }} onClick={() => { setView('talent'); loadCandidates() }}>
               {t('Ver todos →', 'View all →')}
-            </button>
-          </div>
-          <div className="card">
-            <div className="card-label">{t('Tu empresa', 'Your company')}</div>
-            <div style={{ fontSize: '.82rem', color: 'var(--ink-70)', marginTop: '.4rem', lineHeight: 1.7 }}>
-              <div><strong>{t('Empresa:', 'Company:')}</strong> {coName}</div>
-              <div><strong>Email:</strong> {userEmail}</div>
-            </div>
-            <button className="btn btn-forest btn-sm" style={{ marginTop: '.8rem' }} onClick={() => setView('post')}>
-              {t('Nueva vacante →', 'New listing →')}
             </button>
           </div>
         </div>
 
+        {/* Stats row */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '1rem', marginBottom: '1.2rem' }}>
+          <div className="card" style={{ padding: '1rem 1.1rem' }}>
+            <div style={{ fontSize: '.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.07em', color: 'var(--ink-45)', marginBottom: '.35rem' }}>{t('Candidatos en el pool', 'Candidates in pool')}</div>
+            <div style={{ fontFamily: 'var(--head)', fontSize: '1.8rem', fontWeight: 800, color: 'var(--ink)', lineHeight: 1 }}>{candidates.length || '0'}</div>
+            <button className="btn btn-outline btn-sm" style={{ marginTop: '.7rem', fontSize: '.73rem' }} onClick={() => { setView('talent'); loadCandidates() }}>
+              {t('Ver todos →', 'View all →')}
+            </button>
+          </div>
+          <div className="card" style={{ padding: '1rem 1.1rem' }}>
+            <div style={{ fontSize: '.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.07em', color: 'var(--ink-45)', marginBottom: '.35rem' }}>{t('Mejores matches', 'Best matches')}</div>
+            <div style={{ fontFamily: 'var(--head)', fontSize: '1.8rem', fontWeight: 800, color: hasProfile ? 'var(--forest)' : 'var(--ink-45)', lineHeight: 1 }}>{hasProfile ? matches.length : '—'}</div>
+            <div style={{ fontSize: '.72rem', color: 'var(--ink-45)', marginTop: '.45rem' }}>
+              {hasProfile ? t('basado en tu perfil', 'based on your profile') : (
+                <button className="btn btn-outline btn-sm" style={{ fontSize: '.7rem', marginTop: '.1rem' }} onClick={() => setView('mycompany')}>
+                  {t('Completar perfil →', 'Complete profile →')}
+                </button>
+              )}
+            </div>
+          </div>
+          <div className="card" style={{ padding: '1rem 1.1rem' }}>
+            <div style={{ fontSize: '.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.07em', color: 'var(--ink-45)', marginBottom: '.35rem' }}>{t('Tu empresa', 'Your company')}</div>
+            <div style={{ fontSize: '.8rem', color: 'var(--ink-70)', lineHeight: 1.65, marginTop: '.2rem' }}>
+              <div style={{ fontWeight: 600, color: 'var(--ink)' }}>{coName}</div>
+              {coProfile?.industry && <div>{coProfile.industry}</div>}
+              {coProfile?.city && <div>📍 {coProfile.city}</div>}
+            </div>
+            <button className="btn btn-outline btn-sm" style={{ marginTop: '.7rem', fontSize: '.73rem' }} onClick={() => setView('mycompany')}>
+              {t('Editar perfil →', 'Edit profile →')}
+            </button>
+          </div>
+        </div>
+
+        {/* Best match candidates */}
+        {hasProfile && matches.length > 0 && (
+          <div className="card" style={{ marginBottom: '1rem', padding: '1.1rem 1.2rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '.85rem' }}>
+              <div>
+                <div style={{ fontFamily: 'var(--head)', fontWeight: 700, fontSize: '.9rem', color: 'var(--ink)' }}>
+                  ✨ {t('Candidatos recomendados', 'Recommended candidates')}
+                </div>
+                <div style={{ fontSize: '.75rem', color: 'var(--ink-45)', marginTop: '2px' }}>
+                  {t('Mejor match con el perfil de tu empresa', 'Best match with your company profile')}
+                </div>
+              </div>
+              <button className="btn btn-outline btn-sm" style={{ fontSize: '.73rem' }} onClick={() => { setView('talent'); loadCandidates() }}>
+                {t('Ver todos →', 'View all →')}
+              </button>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(300px,1fr))', gap: '.85rem' }}>
+              {matches.map(c => (
+                <div key={c.id} style={{ background: 'var(--off)', borderRadius: 10, padding: '.9rem 1rem', border: '1.5px solid var(--line)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '.7rem', marginBottom: '.6rem' }}>
+                    <div style={{ position: 'relative', flexShrink: 0 }}>
+                      <div style={{ width: 38, height: 38, borderRadius: '50%', background: 'linear-gradient(135deg,var(--forest),var(--forest-lt))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--head)', fontSize: '.78rem', fontWeight: 700, color: 'white' }}>
+                        {initials(c.name)}
+                      </div>
+                      <span style={{ position: 'absolute', bottom: 0, right: 0, width: 10, height: 10, borderRadius: '50%', background: '#16a34a', border: '2px solid var(--off)' }} />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontFamily: 'var(--head)', fontWeight: 700, fontSize: '.83rem', color: 'var(--ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</div>
+                      {c.area && <div style={{ fontSize: '.72rem', color: 'var(--forest)', fontWeight: 600, marginTop: '1px' }}>{c.area}</div>}
+                    </div>
+                    {/* Match score badge */}
+                    <span style={{ background: 'var(--pale)', color: 'var(--forest)', border: '1px solid var(--mist)', borderRadius: 50, padding: '2px 8px', fontSize: '.67rem', fontWeight: 700, flexShrink: 0 }}>
+                      {c.score >= 5 ? '🔥' : c.score >= 3 ? '⭐' : '✓'} {t('Match', 'Match')}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '.3rem', marginBottom: '.6rem' }}>
+                    {[c.experience, c.city, c.modality].filter(Boolean).map(tag => (
+                      <span key={tag} className="jc-tag" style={{ fontSize: '.68rem', padding: '2px 7px' }}>{tag}</span>
+                    ))}
+                  </div>
+                  {c.email && (
+                    <a href={`mailto:${c.email}`} className="btn btn-forest btn-sm" style={{ width: '100%', justifyContent: 'center', fontSize: '.74rem', borderRadius: 7, marginTop: '.2rem' }}>
+                      {t('Contactar →', 'Contact →')}
+                    </a>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Profile completion nudge */}
+        {!hasProfile && (
+          <div style={{ background: 'linear-gradient(135deg,var(--pale),#f0faf0)', border: '1.5px solid var(--mist)', borderRadius: 12, padding: '1.3rem 1.4rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <div style={{ fontSize: '1.8rem' }}>🎯</div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontFamily: 'var(--head)', fontWeight: 700, fontSize: '.88rem', color: 'var(--ink)', marginBottom: '.2rem' }}>
+                {t('Activá el matching inteligente', 'Activate smart matching')}
+              </div>
+              <div style={{ fontSize: '.78rem', color: 'var(--ink-70)', lineHeight: 1.6 }}>
+                {t('Completá el perfil de tu empresa para que el algoritmo identifique los candidatos más compatibles automáticamente.', 'Complete your company profile so the algorithm identifies the most compatible candidates automatically.')}
+              </div>
+            </div>
+            <button className="btn btn-forest btn-sm" style={{ flexShrink: 0 }} onClick={() => setView('mycompany')}>
+              {t('Completar perfil →', 'Complete profile →')}
+            </button>
+          </div>
+        )}
+
+        {/* Recent candidates fallback */}
         {candidates.length > 0 && (
-          <div className="card" style={{ marginTop: '1rem' }}>
-            <div className="card-section-title">{t('Candidatos recientes', 'Recent candidates')}</div>
-            <div className="cand-list" style={{ marginTop: '.75rem' }}>
+          <div className="card" style={{ padding: '1.1rem 1.2rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '.85rem' }}>
+              <div style={{ fontFamily: 'var(--head)', fontWeight: 700, fontSize: '.9rem', color: 'var(--ink)' }}>
+                {t('Candidatos recientes', 'Recent candidates')}
+              </div>
+              <button className="btn btn-outline btn-sm" style={{ fontSize: '.73rem' }} onClick={() => { setView('talent'); loadCandidates() }}>
+                {t('Ver todos →', 'View all →')}
+              </button>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(300px,1fr))', gap: '.85rem' }}>
               {candidates.slice(0, 4).map(c => <CandCard key={c.id} c={c} t={t} />)}
             </div>
           </div>
         )}
       </>
     )
+  }
+
+  if (view === 'mycompany')
+    return <MyCompanyView userEmail={userEmail} coProfile={coProfile} onUpdate={setCoProfile} t={t} />
 
   if (view === 'talent')
     return <TalentView candidates={candidates} loadCandidates={loadCandidates} t={t} />
@@ -2271,6 +2424,333 @@ function CompanyView({
     return <PostJobView userEmail={userEmail} onSuccess={() => setView('myjobs')} t={t} />
 
   return null
+}
+
+function MyCompanyView({ userEmail, coProfile, onUpdate, t }: {
+  userEmail: string
+  coProfile: CompanyProfile | null
+  onUpdate: (p: CompanyProfile) => void
+  t: (es: string, en: string) => string
+}) {
+  const [editing, setEditing] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [areaInput, setAreaInput] = useState('')
+  const [skillInput, setSkillInput] = useState('')
+
+  const [form, setForm] = useState({
+    company_name: '',
+    website: '',
+    linkedin: '',
+    city: '',
+    industry: '',
+    size: '',
+    description: '',
+    mission: '',
+    values: '',
+    looking_for_experience: '',
+    looking_for_modality: '',
+  })
+  const [lookingAreas, setLookingAreas] = useState<string[]>([])
+  const [lookingSkills, setLookingSkills] = useState<string[]>([])
+
+  useEffect(() => {
+    if (!coProfile) return
+    setForm({
+      company_name: (coProfile.company_name as string) || '',
+      website: (coProfile.website as string) || '',
+      linkedin: (coProfile.linkedin as string) || '',
+      city: (coProfile.city as string) || '',
+      industry: (coProfile.industry as string) || '',
+      size: (coProfile.size as string) || '',
+      description: (coProfile.description as string) || '',
+      mission: (coProfile.mission as string) || '',
+      values: (coProfile.values as string) || '',
+      looking_for_experience: (coProfile.looking_for_experience as string) || '',
+      looking_for_modality: (coProfile.looking_for_modality as string) || '',
+    })
+    setLookingAreas((coProfile.looking_for_areas as string[]) || [])
+    setLookingSkills((coProfile.looking_for_skills as string[]) || [])
+  }, [coProfile])
+
+  const f = (k: string, v: string) => setForm(prev => ({ ...prev, [k]: v }))
+
+  async function save() {
+    setSaving(true)
+    try {
+      const sb = createClient()
+      const payload: Record<string, unknown> = {}
+      if (form.company_name) payload.company_name = form.company_name
+      if (form.website) payload.website = form.website
+      if (form.linkedin) payload.linkedin = form.linkedin
+      if (form.city) payload.city = form.city
+      if (form.industry) payload.industry = form.industry
+      if (form.size) payload.size = form.size
+      if (form.description) payload.description = form.description
+      if (form.mission) payload.mission = form.mission
+      if (form.values) payload.values = form.values
+      if (form.looking_for_experience) payload.looking_for_experience = form.looking_for_experience
+      if (form.looking_for_modality) payload.looking_for_modality = form.looking_for_modality
+      if (lookingAreas.length > 0) payload.looking_for_areas = lookingAreas
+      if (lookingSkills.length > 0) payload.looking_for_skills = lookingSkills
+      const { data } = await sb.from('companies').update(payload).ilike('email', userEmail).select().maybeSingle()
+      if (data) { onUpdate(data); setEditing(false) }
+    } catch (e) { console.warn(e) }
+    setSaving(false)
+  }
+
+  const inp: React.CSSProperties = { width: '100%', background: 'var(--off)', border: '1.5px solid transparent', borderRadius: 8, padding: '9px 11px', color: 'var(--ink)', fontFamily: 'var(--body)', fontSize: '.83rem', outline: 'none' }
+  const inpFocus: React.CSSProperties = { ...inp, border: '1.5px solid var(--forest)' }
+  const lbl: React.CSSProperties = { fontSize: '.65rem', fontWeight: 700, letterSpacing: '.07em', textTransform: 'uppercase', color: 'var(--ink-45)', display: 'block', marginBottom: '.3rem' }
+  const matchLbl: React.CSSProperties = { ...lbl, color: 'var(--forest)' }
+
+  const SectionTitle = ({ children }: { children: React.ReactNode }) => (
+    <div style={{ fontFamily: 'var(--head)', fontWeight: 700, fontSize: '.88rem', color: 'var(--ink)', marginBottom: '.85rem', paddingBottom: '.5rem', borderBottom: '1px solid var(--line)' }}>{children}</div>
+  )
+
+  return (
+    <>
+      <div className="page-head">
+        <div className="page-title">{t('Mi empresa', 'My company')}</div>
+        <div className="page-sub">{t('Perfil de tu empresa · Información de matching', 'Company profile · Matching info')}</div>
+        {!editing && (
+          <div className="page-actions">
+            <button className="btn btn-forest btn-sm" onClick={() => setEditing(true)}>{t('Editar perfil', 'Edit profile')}</button>
+          </div>
+        )}
+      </div>
+
+      {!editing ? (
+        // ── VIEW MODE ──
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+          {/* Left col — company info */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div className="card">
+              <SectionTitle>🏢 {t('Información general', 'General info')}</SectionTitle>
+              <div className="profile-row"><span className="profile-lbl">{t('Empresa', 'Company')}</span><span>{coProfile?.company_name || '—'}</span></div>
+              <div className="profile-row"><span className="profile-lbl">Email</span><span>{userEmail}</span></div>
+              <div className="profile-row"><span className="profile-lbl">{t('Industria', 'Industry')}</span><span>{(coProfile?.industry as string) || '—'}</span></div>
+              <div className="profile-row"><span className="profile-lbl">{t('Tamaño', 'Size')}</span><span>{(coProfile?.size as string) || '—'}</span></div>
+              <div className="profile-row"><span className="profile-lbl">{t('Ciudad', 'City')}</span><span>{(coProfile?.city as string) || '—'}</span></div>
+              {(coProfile?.website) && (
+                <div className="profile-row"><span className="profile-lbl">Web</span><a href={String(coProfile.website).startsWith('http') ? String(coProfile.website) : `https://${String(coProfile.website)}`} target="_blank" rel="noreferrer" style={{ color: 'var(--forest)' }}>{String(coProfile.website)}</a></div>
+              )}
+              {(coProfile?.linkedin) && (
+                <div className="profile-row"><span className="profile-lbl">LinkedIn</span><a href={String(coProfile.linkedin).startsWith('http') ? String(coProfile.linkedin) : `https://${String(coProfile.linkedin)}`} target="_blank" rel="noreferrer" style={{ color: 'var(--forest)' }}>Ver perfil →</a></div>
+              )}
+            </div>
+
+            <div className="card">
+              <SectionTitle>📖 {t('Sobre nosotros', 'About us')}</SectionTitle>
+              {(coProfile?.description as string) ? (
+                <p style={{ fontSize: '.83rem', color: 'var(--ink-70)', lineHeight: 1.7 }}>{coProfile?.description as string}</p>
+              ) : <p style={{ fontSize: '.8rem', color: 'var(--ink-45)' }}>{t('Sin descripción aún.', 'No description yet.')}</p>}
+
+              {(coProfile?.mission as string) && (
+                <div style={{ marginTop: '.9rem' }}>
+                  <div style={{ ...lbl, marginBottom: '.3rem' }}>{t('Misión', 'Mission')}</div>
+                  <p style={{ fontSize: '.83rem', color: 'var(--ink-70)', lineHeight: 1.65 }}>{coProfile?.mission as string}</p>
+                </div>
+              )}
+              {(coProfile?.values as string) && (
+                <div style={{ marginTop: '.9rem' }}>
+                  <div style={{ ...lbl, marginBottom: '.3rem' }}>{t('Valores', 'Values')}</div>
+                  <p style={{ fontSize: '.83rem', color: 'var(--ink-70)', lineHeight: 1.65 }}>{coProfile?.values as string}</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Right col — matching config */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div className="card" style={{ border: '2px solid var(--mist)', background: 'linear-gradient(135deg,#f8fdfd,var(--white))' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem', marginBottom: '.85rem', paddingBottom: '.5rem', borderBottom: '1px solid var(--line)' }}>
+                <span style={{ fontSize: '1.1rem' }}>🎯</span>
+                <div>
+                  <div style={{ fontFamily: 'var(--head)', fontWeight: 700, fontSize: '.88rem', color: 'var(--forest)' }}>{t('Perfil de matching', 'Matching profile')}</div>
+                  <div style={{ fontSize: '.7rem', color: 'var(--ink-45)', marginTop: '1px' }}>{t('Estos datos alimentan el algoritmo de matching', 'These fields power the matching algorithm')}</div>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '.8rem' }}>
+                <div>
+                  <div style={matchLbl}>{t('Áreas buscadas', 'Target areas')}</div>
+                  {((coProfile?.looking_for_areas as string[]) || []).length > 0 ? (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '.35rem' }}>
+                      {((coProfile?.looking_for_areas as string[]) || []).map(a => (
+                        <span key={a} style={{ background: 'var(--pale)', color: 'var(--forest)', border: '1px solid var(--mist)', borderRadius: 6, padding: '3px 9px', fontSize: '.76rem', fontWeight: 600 }}>{a}</span>
+                      ))}
+                    </div>
+                  ) : <span style={{ fontSize: '.78rem', color: 'var(--ink-45)' }}>{t('Sin definir', 'Not set')}</span>}
+                </div>
+
+                <div>
+                  <div style={matchLbl}>{t('Experiencia requerida', 'Required experience')}</div>
+                  <span style={{ fontSize: '.83rem', color: (coProfile?.looking_for_experience as string) ? 'var(--ink)' : 'var(--ink-45)' }}>
+                    {(coProfile?.looking_for_experience as string) || t('Sin definir', 'Not set')}
+                  </span>
+                </div>
+
+                <div>
+                  <div style={matchLbl}>{t('Modalidad preferida', 'Preferred mode')}</div>
+                  <span style={{ fontSize: '.83rem', color: (coProfile?.looking_for_modality as string) ? 'var(--ink)' : 'var(--ink-45)' }}>
+                    {(coProfile?.looking_for_modality as string) || t('Sin definir', 'Not set')}
+                  </span>
+                </div>
+
+                <div>
+                  <div style={matchLbl}>{t('Skills clave', 'Key skills')}</div>
+                  {((coProfile?.looking_for_skills as string[]) || []).length > 0 ? (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '.35rem' }}>
+                      {((coProfile?.looking_for_skills as string[]) || []).map(s => (
+                        <span key={s} className="jc-tag jc-tag-skill">{s}</span>
+                      ))}
+                    </div>
+                  ) : <span style={{ fontSize: '.78rem', color: 'var(--ink-45)' }}>{t('Sin definir', 'Not set')}</span>}
+                </div>
+              </div>
+
+              <button className="btn btn-forest btn-sm" style={{ width: '100%', marginTop: '1.1rem', justifyContent: 'center', borderRadius: 8 }} onClick={() => setEditing(true)}>
+                {t('Actualizar perfil de matching →', 'Update matching profile →')}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : (
+        // ── EDIT MODE ──
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+          {/* Left — General info */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div className="card">
+              <SectionTitle>🏢 {t('Información general', 'General info')}</SectionTitle>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '.7rem' }}>
+                <div><label style={lbl}>{t('Nombre de la empresa', 'Company name')}</label><input style={inp} value={form.company_name} onChange={e => f('company_name', e.target.value)} /></div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '.6rem' }}>
+                  <div><label style={lbl}>{t('Industria', 'Industry')}</label>
+                    <select style={inp} value={form.industry} onChange={e => f('industry', e.target.value)}>
+                      <option value="">{t('Seleccioná', 'Select')}</option>
+                      <option>{t('Tecnología', 'Technology')}</option>
+                      <option>{t('Finanzas', 'Finance')}</option>
+                      <option>Retail</option>
+                      <option>{t('Salud', 'Healthcare')}</option>
+                      <option>{t('Educación', 'Education')}</option>
+                      <option>{t('Manufactura', 'Manufacturing')}</option>
+                      <option>{t('Consultoría', 'Consulting')}</option>
+                      <option>{t('Otra', 'Other')}</option>
+                    </select>
+                  </div>
+                  <div><label style={lbl}>{t('Tamaño', 'Size')}</label>
+                    <select style={inp} value={form.size} onChange={e => f('size', e.target.value)}>
+                      <option value="">{t('Seleccioná', 'Select')}</option>
+                      <option>1–10</option><option>11–50</option><option>51–200</option><option>201–500</option><option>500+</option>
+                    </select>
+                  </div>
+                </div>
+                <div><label style={lbl}>{t('Ciudad', 'City')}</label>
+                  <select style={inp} value={form.city} onChange={e => f('city', e.target.value)}>
+                    <option value="">{t('Seleccioná', 'Select')}</option>
+                    <option>Cali</option><option>Bogotá</option><option>Medellín</option><option>Barranquilla</option><option>Cartagena</option>
+                  </select>
+                </div>
+                <div><label style={lbl}>Website</label><input style={inp} value={form.website} onChange={e => f('website', e.target.value)} placeholder="www.tuempresa.com" /></div>
+                <div><label style={lbl}>LinkedIn</label><input style={inp} value={form.linkedin} onChange={e => f('linkedin', e.target.value)} placeholder="linkedin.com/company/..." /></div>
+              </div>
+            </div>
+
+            <div className="card">
+              <SectionTitle>📖 {t('Sobre nosotros', 'About us')}</SectionTitle>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '.7rem' }}>
+                <div><label style={lbl}>{t('Descripción', 'Description')}</label><textarea style={{ ...inp, resize: 'none', minHeight: 80, lineHeight: 1.6 }} value={form.description} onChange={e => f('description', e.target.value)} placeholder={t('¿Qué hace tu empresa?', 'What does your company do?')} /></div>
+                <div><label style={lbl}>{t('Misión', 'Mission')}</label><textarea style={{ ...inp, resize: 'none', minHeight: 65, lineHeight: 1.6 }} value={form.mission} onChange={e => f('mission', e.target.value)} placeholder={t('¿Cuál es tu misión?', 'What is your mission?')} /></div>
+                <div><label style={lbl}>{t('Valores', 'Values')}</label><textarea style={{ ...inp, resize: 'none', minHeight: 65, lineHeight: 1.6 }} value={form.values} onChange={e => f('values', e.target.value)} placeholder={t('Ej: Innovación, Respeto, Excelencia', 'E.g. Innovation, Respect, Excellence')} /></div>
+              </div>
+            </div>
+          </div>
+
+          {/* Right — Matching profile */}
+          <div>
+            <div className="card" style={{ border: '2px solid var(--forest)', background: 'linear-gradient(135deg,#f8fdfd,var(--white))' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem', marginBottom: '1rem', paddingBottom: '.6rem', borderBottom: '1px solid var(--line)' }}>
+                <span style={{ fontSize: '1.1rem' }}>🎯</span>
+                <div>
+                  <div style={{ fontFamily: 'var(--head)', fontWeight: 700, fontSize: '.88rem', color: 'var(--forest)' }}>{t('Perfil de matching', 'Matching profile')}</div>
+                  <div style={{ fontSize: '.7rem', color: 'var(--ink-45)', marginTop: '1px' }}>{t('Completá estos campos para activar el matching', 'Complete these fields to activate matching')}</div>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '.85rem' }}>
+                {/* Areas */}
+                <div>
+                  <label style={matchLbl}>🏷 {t('Áreas que buscás contratar', 'Areas you\'re hiring for')}</label>
+                  <div style={{ display: 'flex', gap: '.4rem', marginBottom: '.4rem' }}>
+                    <select style={{ ...inp, flex: 1 }} value={areaInput} onChange={e => setAreaInput(e.target.value)}>
+                      <option value="">{t('Seleccioná un área', 'Select an area')}</option>
+                      {[t('Tecnología / IT','Technology / IT'),t('Diseño UX/UI','UX/UI Design'),t('Marketing y Comunicaciones','Marketing & Comms'),t('Ventas y Comercial','Sales'),t('Finanzas y Contabilidad','Finance & Accounting'),t('Recursos Humanos','Human Resources'),t('Operaciones','Operations'),t('Producto / Product','Product'),t('Legal','Legal')].map(a => <option key={a}>{a}</option>)}
+                    </select>
+                    <button className="btn btn-forest btn-sm" style={{ flexShrink: 0 }} onClick={() => { if (areaInput && !lookingAreas.includes(areaInput)) { setLookingAreas([...lookingAreas, areaInput]); setAreaInput('') } }}>+</button>
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '.3rem' }}>
+                    {lookingAreas.map(a => (
+                      <span key={a} style={{ background: 'var(--pale)', color: 'var(--forest)', border: '1px solid var(--mist)', borderRadius: 6, padding: '3px 8px 3px 10px', fontSize: '.74rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '.3rem' }}>
+                        {a}
+                        <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--forest)', fontSize: '.75rem', padding: 0, lineHeight: 1 }} onClick={() => setLookingAreas(lookingAreas.filter(x => x !== a))}>✕</button>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Experience */}
+                <div>
+                  <label style={matchLbl}>📊 {t('Nivel de experiencia requerido', 'Required experience level')}</label>
+                  <select style={inp} value={form.looking_for_experience} onChange={e => f('looking_for_experience', e.target.value)}>
+                    <option value="">{t('Cualquiera', 'Any')}</option>
+                    <option>{t('Sin experiencia', 'No experience')}</option>
+                    <option>1–3 años</option>
+                    <option>3–5 años</option>
+                    <option>5–10 años</option>
+                    <option>10+ años</option>
+                  </select>
+                </div>
+
+                {/* Modality */}
+                <div>
+                  <label style={matchLbl}>🏠 {t('Modalidad de trabajo', 'Work mode')}</label>
+                  <select style={inp} value={form.looking_for_modality} onChange={e => f('looking_for_modality', e.target.value)}>
+                    <option value="">{t('Cualquiera', 'Any')}</option>
+                    <option>{t('Presencial', 'On-site')}</option>
+                    <option>{t('Remoto', 'Remote')}</option>
+                    <option>{t('Híbrido', 'Hybrid')}</option>
+                  </select>
+                </div>
+
+                {/* Skills */}
+                <div>
+                  <label style={matchLbl}>⚡ {t('Skills clave que buscás', 'Key skills you\'re looking for')}</label>
+                  <div style={{ display: 'flex', gap: '.4rem', marginBottom: '.4rem' }}>
+                    <input style={{ ...inp, flex: 1 }} value={skillInput} onChange={e => setSkillInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); if (skillInput.trim() && !lookingSkills.includes(skillInput.trim())) { setLookingSkills([...lookingSkills, skillInput.trim()]); setSkillInput('') } } }} placeholder="React, Excel, SQL…" />
+                    <button className="btn btn-forest btn-sm" style={{ flexShrink: 0 }} onClick={() => { const v = skillInput.trim(); if (v && !lookingSkills.includes(v)) { setLookingSkills([...lookingSkills, v]); setSkillInput('') } }}>+</button>
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '.3rem' }}>
+                    {lookingSkills.map(s => (
+                      <span key={s} className="jc-tag jc-tag-skill" style={{ display: 'flex', alignItems: 'center', gap: '.3rem' }}>
+                        {s}
+                        <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--forest)', fontSize: '.75rem', padding: 0, lineHeight: 1 }} onClick={() => setLookingSkills(lookingSkills.filter(x => x !== s))}>✕</button>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Save / Cancel bar */}
+          <div style={{ gridColumn: '1/-1', display: 'flex', gap: '.7rem', paddingTop: '.5rem' }}>
+            <button className="btn btn-outline" onClick={() => setEditing(false)}>{t('Cancelar', 'Cancel')}</button>
+            <button className="btn btn-forest" onClick={save} disabled={saving}>{saving ? t('Guardando…', 'Saving…') : t('Guardar cambios', 'Save changes')}</button>
+          </div>
+        </div>
+      )}
+    </>
+  )
 }
 
 function TalentView({ candidates, loadCandidates, t }: {
