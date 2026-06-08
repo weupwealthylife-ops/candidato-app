@@ -1328,8 +1328,13 @@ export default function AppPage() {
                 className="user-ava"
                 onClick={() => setAvatarOpen(v => !v)}
                 title={name}
+                style={{ overflow: 'hidden', padding: 0 }}
               >
-                {name.substring(0, 2).toUpperCase()}
+                {(isC && candProfile?.photo_url) ? (
+                  <img src={candProfile.photo_url as string} alt={name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+                ) : (
+                  name.substring(0, 2).toUpperCase()
+                )}
               </div>
               {avatarOpen && (
                 <>
@@ -1337,12 +1342,21 @@ export default function AppPage() {
                   <div style={{ position: 'fixed', inset: 0, zIndex: 199 }} onClick={() => setAvatarOpen(false)} />
                   <div style={{ position: 'absolute', top: 'calc(100% + 8px)', right: 0, zIndex: 200, background: 'var(--white)', border: '1.5px solid var(--line)', borderRadius: 12, boxShadow: '0 8px 32px rgba(14,30,32,.13)', minWidth: 200, overflow: 'hidden' }}>
                     {/* User info header */}
-                    <div style={{ padding: '.75rem 1rem .6rem', borderBottom: '1px solid var(--line)' }}>
-                      <div style={{ fontFamily: 'var(--head)', fontWeight: 700, fontSize: '.83rem', color: 'var(--ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{name}</div>
-                      <div style={{ fontSize: '.72rem', color: 'var(--ink-45)', marginTop: '1px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{currentUser?.email}</div>
-                      {!isC && currentUser?.companyName && (
-                        <div style={{ fontSize: '.72rem', color: 'var(--forest)', fontWeight: 600, marginTop: '2px' }}>{currentUser.companyName}</div>
+                    <div style={{ padding: '.75rem 1rem .6rem', borderBottom: '1px solid var(--line)', display: 'flex', alignItems: 'center', gap: '.65rem' }}>
+                      {(isC && candProfile?.photo_url) ? (
+                        <img src={candProfile.photo_url as string} alt={name} style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
+                      ) : (
+                        <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'linear-gradient(135deg,var(--forest),var(--forest-lt))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '.75rem', color: 'white', flexShrink: 0 }}>
+                          {name.substring(0, 2).toUpperCase()}
+                        </div>
                       )}
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontFamily: 'var(--head)', fontWeight: 700, fontSize: '.83rem', color: 'var(--ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{name}</div>
+                        <div style={{ fontSize: '.72rem', color: 'var(--ink-45)', marginTop: '1px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{currentUser?.email}</div>
+                        {!isC && currentUser?.companyName && (
+                          <div style={{ fontSize: '.72rem', color: 'var(--forest)', fontWeight: 600, marginTop: '2px' }}>{currentUser.companyName}</div>
+                        )}
+                      </div>
                     </div>
                     {/* Menu items */}
                     <div style={{ padding: '.35rem' }}>
@@ -1552,6 +1566,7 @@ function CandidateView({
   const [appliedJob, setAppliedJob] = useState<Job | null>(null)
   const [selectedJob, setSelectedJob] = useState<Job | null>(null)
   const [profileLoadFailed, setProfileLoadFailed] = useState(false)
+  const [photoUploading, setPhotoUploading] = useState(false)
   // Settings toggles — must be at top level (no conditional hooks)
   const [notifMatches, setNotifMatches] = useState(true)
   const [notifUpdates, setNotifUpdates] = useState(true)
@@ -1771,11 +1786,30 @@ function CandidateView({
 
   // ── DASHBOARD ──
   if (view === 'dashboard') {
+    const now = Date.now()
+    const oneWeek = 7 * 24 * 3600000
     const newThisWeek = jobs.filter(j => {
-      const d = j.created_at ? Date.now() - new Date(j.created_at).getTime() : Infinity
-      return d < 7 * 24 * 3600000
+      const d = j.created_at ? now - new Date(j.created_at).getTime() : Infinity
+      return d < oneWeek
     }).length
-    const remoteCount = jobs.filter(j => j.modality?.toLowerCase().includes('remot')).length
+    const appliedThisWeek = [...myApplied.values()].filter(ts => {
+      return ts && (now - new Date(ts).getTime()) < oneWeek
+    }).length
+
+    // Profile completeness (0–100)
+    const p = candProfile
+    const profileFields = [p?.whatsapp, p?.area, p?.city, p?.modality, p?.experience, p?.linkedin, (p?.skills as string[] | undefined)?.length ? true : false]
+    const profilePct = Math.round((profileFields.filter(Boolean).length / profileFields.length) * 100)
+
+    // Recent applications (last 3)
+    const recentApplied = jobs
+      .filter(j => myApplied.has(j.id))
+      .sort((a, b) => {
+        const ta = myApplied.get(a.id) ? new Date(myApplied.get(a.id)!).getTime() : 0
+        const tb = myApplied.get(b.id) ? new Date(myApplied.get(b.id)!).getTime() : 0
+        return tb - ta
+      })
+      .slice(0, 3)
 
     return (
       <>
@@ -1786,7 +1820,7 @@ function CandidateView({
         </div>
 
         {/* Stat chips */}
-        <div className="stats-row" style={{ gridTemplateColumns: 'repeat(3,1fr)', marginBottom: '1.4rem' }}>
+        <div className="stats-row" style={{ gridTemplateColumns: 'repeat(4,1fr)', marginBottom: '1.4rem' }}>
           <div className="stat-card">
             <div className="stat-tag">{t('Total vacantes', 'Total listings')}</div>
             <div className="stat-num">{jobs.length || '0'}</div>
@@ -1798,11 +1832,41 @@ function CandidateView({
             <div className="stat-label">{t('publicadas recientemente', 'recently posted')}</div>
           </div>
           <div className="stat-card">
-            <div className="stat-tag">{t('Remotas', 'Remote')}</div>
-            <div className="stat-num">{remoteCount}</div>
-            <div className="stat-label">{t('trabaja desde casa', 'work from anywhere')}</div>
+            <div className="stat-tag">{t('Postuladas (7 días)', 'Applied (7 days)')}</div>
+            <div className="stat-num" style={{ color: 'var(--forest)' }}>{appliedThisWeek}</div>
+            <div className="stat-label">{t('enviadas esta semana', 'sent this week')}</div>
+          </div>
+          <div className="stat-card" style={{ cursor: profilePct < 100 ? 'pointer' : 'default' }} onClick={profilePct < 100 ? () => setView('profile') : undefined}>
+            <div className="stat-tag">{t('Perfil completo', 'Profile complete')}</div>
+            <div className="stat-num" style={{ color: profilePct >= 80 ? 'var(--forest)' : profilePct >= 50 ? '#e6a817' : 'var(--coral)' }}>{profilePct}%</div>
+            <div className="stat-label" style={{ color: profilePct < 100 ? 'var(--forest)' : undefined }}>{profilePct < 100 ? t('Completar →', 'Complete →') : t('Todo listo ✓', 'All set ✓')}</div>
           </div>
         </div>
+
+        {/* Recent applications */}
+        {recentApplied.length > 0 && (
+          <div className="card" style={{ padding: '0', marginBottom: '1rem' }}>
+            <div style={{ padding: '1rem 1.1rem .5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div className="card-section-title">{t('Mis postulaciones recientes', 'My recent applications')}</div>
+              <span style={{ fontSize: '.74rem', color: 'var(--ink-45)' }}>{myApplied.size} {t('total', 'total')}</span>
+            </div>
+            <div style={{ padding: '0 .7rem .7rem' }}>
+              {recentApplied.map(j => (
+                <div key={j.id} style={{ display: 'flex', alignItems: 'center', gap: '.75rem', padding: '.55rem .4rem', borderBottom: '1px solid var(--line)', cursor: 'pointer' }} onClick={() => setSelectedJob(j)}>
+                  <div className="jc-ava" style={{ width: 34, height: 34, fontSize: '.72rem', flexShrink: 0 }}>
+                    {initials(j.companies?.company_name || '—')}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 600, fontSize: '.82rem', color: 'var(--ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{j.title}</div>
+                    <div style={{ fontSize: '.73rem', color: 'var(--ink-45)', marginTop: '1px' }}>{j.companies?.company_name || '—'}{j.city ? ` · ${j.city}` : ''}</div>
+                  </div>
+                  <span style={{ fontSize: '.7rem', color: 'var(--ink-45)', flexShrink: 0 }}>{appliedAgo(myApplied.get(j.id)!, t)}</span>
+                  <span style={{ fontSize: '.68rem', background: 'var(--pale)', color: 'var(--forest)', borderRadius: 5, padding: '2px 7px', fontWeight: 600, flexShrink: 0 }}>✓ {t('Enviada', 'Sent')}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Job list */}
         {dataLoading && <div className="loading-state">{t('Cargando vacantes…', 'Loading listings…')}</div>}
@@ -2010,6 +2074,30 @@ function CandidateView({
       setCvDeleting(false)
     }
 
+    const uploadPhoto = async (file: File) => {
+      if (!user?.email) return
+      setPhotoUploading(true)
+      try {
+        const sb = createClient()
+        const ext = file.name.split('.').pop() || 'jpg'
+        const path = `photos/${user.email.replace(/[^a-z0-9]/gi, '_')}-photo.${ext}`
+        // Remove old photo if exists
+        const oldUrl = (candProfile?.photo_url as string | undefined)
+        if (oldUrl) {
+          const m = oldUrl.match(/\/candidatos\/(.+)$/)
+          if (m) await sb.storage.from('candidatos').remove([m[1]])
+        }
+        const { data: upData } = await sb.storage.from('candidatos').upload(path, file, { upsert: true })
+        if (upData) {
+          const { data: urlData } = sb.storage.from('candidatos').getPublicUrl(upData.path)
+          const newUrl = urlData?.publicUrl || ''
+          const { data: updated } = await sb.from('candidates').update({ photo_url: newUrl }).ilike('email', user.email).select().maybeSingle()
+          if (updated) onProfileUpdate(updated)
+        }
+      } catch (e) { console.error(e) }
+      setPhotoUploading(false)
+    }
+
     const addEditSkill = () => {
       const v = editSkInput.trim()
       if (v && !editSkills.includes(v)) setEditSkills(prev => [...prev, v])
@@ -2029,8 +2117,20 @@ function CandidateView({
         <div style={{ maxWidth: 860 }}>
           {/* Avatar + name + edit button */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.2rem', padding: '1.1rem 1.2rem', background: 'var(--white)', border: '1px solid var(--line)', borderRadius: '12px' }}>
-            <div style={{ width: 52, height: 52, borderRadius: '50%', background: 'linear-gradient(135deg,var(--forest),var(--forest-lt))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--head)', fontSize: '1.05rem', fontWeight: 700, color: 'white', flexShrink: 0 }}>
-              {(user?.name || '').split(' ').map((w: string) => w[0]).join('').substring(0, 2).toUpperCase()}
+            <div style={{ position: 'relative', flexShrink: 0 }}>
+              {(candProfile?.photo_url as string | undefined) ? (
+                <img src={candProfile?.photo_url as string} alt={user?.name || ''} style={{ width: 64, height: 64, borderRadius: '50%', objectFit: 'cover', display: 'block' }} />
+              ) : (
+                <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'linear-gradient(135deg,var(--forest),var(--forest-lt))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--head)', fontSize: '1.2rem', fontWeight: 700, color: 'white' }}>
+                  {(user?.name || '').split(' ').map((w: string) => w[0]).join('').substring(0, 2).toUpperCase()}
+                </div>
+              )}
+              {isEditing && (
+                <label style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'rgba(0,0,0,.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }} title={t('Cambiar foto', 'Change photo')}>
+                  <span style={{ fontSize: '.75rem', color: 'white', fontWeight: 600, textAlign: 'center', lineHeight: 1.2 }}>{photoUploading ? '⏳' : '📷'}</span>
+                  <input type="file" accept="image/jpeg,image/png,image/webp" style={{ display: 'none' }} onChange={e => { const f = e.target.files?.[0]; if (f) uploadPhoto(f) }} />
+                </label>
+              )}
             </div>
             <div style={{ flex: 1 }}>
               <div style={{ fontFamily: 'var(--head)', fontSize: '1rem', fontWeight: 700, color: 'var(--ink)', letterSpacing: '-.02em' }}>{user?.name || '—'}</div>
