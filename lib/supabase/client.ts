@@ -17,7 +17,8 @@ const configured = !!(url && key)
 // Stub that silently no-ops every Supabase call when env vars are missing.
 // Returns a Thenable chain so await resolves to { data: null, error: null }.
 const resolved = Promise.resolve({ data: null, error: null })
-const noopChain: Record<string, unknown> = new Proxy(Object.assign(() => noopChain, resolved), {
+// eslint-disable-next-line
+const noopChain: object = new Proxy(Object.assign(() => noopChain, resolved), {
   get(_t, prop) {
     // Propagate Promise protocol so `await noopChain` resolves to null result
     if (prop === 'then') return resolved.then.bind(resolved)
