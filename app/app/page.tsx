@@ -1431,6 +1431,7 @@ export default function AppPage() {
                 loadJobs={loadJobs}
                 setView={setCandView}
                 t={t}
+                onRetryProfile={() => currentUser && loadProfile(currentUser.email)}
               />
             ) : (
               <CompanyView
@@ -1512,7 +1513,7 @@ export default function AppPage() {
 }
 
 function CandidateView({
-  view, firstName, skills, user, candProfile, onProfileUpdate, jobs, dataLoading, loadJobs, setView, t,
+  view, firstName, skills, user, candProfile, onProfileUpdate, jobs, dataLoading, loadJobs, setView, t, onRetryProfile,
 }: {
   view: CandView
   firstName: string
@@ -1524,6 +1525,7 @@ function CandidateView({
   dataLoading: boolean
   loadJobs: (q?: string, area?: string, city?: string, mod?: string, sal?: string) => void
   setView: (v: CandView) => void
+  onRetryProfile: () => void
   t: (es: string, en: string) => string
 }) {
   const [query, setQuery] = useState('')
@@ -1538,6 +1540,22 @@ function CandidateView({
   const [withdrawing, setWithdrawing] = useState<string | null>(null)
   const [appliedJob, setAppliedJob] = useState<Job | null>(null)
   const [selectedJob, setSelectedJob] = useState<Job | null>(null)
+  const [profileLoadFailed, setProfileLoadFailed] = useState(false)
+
+  // Show a retry banner if profile still null after 5 seconds
+  useEffect(() => {
+    if (candProfile) { setProfileLoadFailed(false); return }
+    const timer = setTimeout(() => { if (!candProfile) setProfileLoadFailed(true) }, 5000)
+    return () => clearTimeout(timer)
+  }, [candProfile])
+
+  const ProfileErrorBanner = profileLoadFailed && !candProfile ? (
+    <div style={{ background: '#fff8f0', border: '1.5px solid #f5c97a', borderRadius: 10, padding: '.7rem 1rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '.75rem', fontSize: '.8rem' }}>
+      <span>⚠️</span>
+      <span style={{ flex: 1, color: 'var(--ink-70)' }}>{t('No se pudo cargar tu perfil. Algunas funciones podrían no estar disponibles.', 'Could not load your profile. Some features may be unavailable.')}</span>
+      <button className="btn btn-outline btn-sm" onClick={onRetryProfile}>{t('Reintentar', 'Retry')}</button>
+    </div>
+  ) : null
 
   useEffect(() => {
     const candidateId = candProfile?.id as string | undefined
@@ -1746,6 +1764,7 @@ function CandidateView({
 
     return (
       <>
+        {ProfileErrorBanner}
         <div className="page-head">
           <div className="page-title">{t(`Hola, ${firstName}`, `Hi, ${firstName}`)}</div>
           <div className="page-sub">{t('Vacantes disponibles para tu perfil', 'Job listings matched to your profile')}</div>
@@ -1805,6 +1824,7 @@ function CandidateView({
   if (view === 'jobs')
     return (
       <>
+        {ProfileErrorBanner}
         <div className="page-head">
           <div className="page-title">{t('Buscar trabajo', 'Find jobs')}</div>
           <div className="page-sub">{t(`${jobs.length} vacante${jobs.length !== 1 ? 's' : ''} disponible${jobs.length !== 1 ? 's' : ''}`, `${jobs.length} listing${jobs.length !== 1 ? 's' : ''} available`)}</div>
@@ -2152,6 +2172,29 @@ function CandidateView({
   }
 
   // ── CONFIGURACIÓN ──
+  const [notifMatches, setNotifMatches] = useState(true)
+  const [notifUpdates, setNotifUpdates] = useState(true)
+  const [profileVisible, setProfileVisible] = useState(true)
+
+  const Toggle = ({ on, onToggle }: { on: boolean; onToggle: () => void }) => (
+    <button
+      onClick={onToggle}
+      aria-checked={on}
+      role="switch"
+      style={{
+        width: 40, height: 22, borderRadius: 11, border: 'none', cursor: 'pointer',
+        background: on ? 'var(--forest)' : 'var(--line)',
+        position: 'relative', transition: 'background .18s', flexShrink: 0, padding: 0,
+      }}
+    >
+      <span style={{
+        position: 'absolute', top: 3, left: on ? 21 : 3,
+        width: 16, height: 16, borderRadius: '50%', background: 'white',
+        transition: 'left .18s', boxShadow: '0 1px 3px rgba(0,0,0,.2)',
+      }} />
+    </button>
+  )
+
   return (
     <>
       <div className="page-head">
@@ -2160,21 +2203,30 @@ function CandidateView({
       </div>
       <div className="card" style={{ maxWidth: 560 }}>
         <div className="settings-section-title">{t('Cuenta', 'Account')}</div>
-        <div className="profile-row"><span className="profile-lbl">Email</span><span>{user?.email || '—'}</span></div>
-        <div className="profile-row"><span className="profile-lbl">{t('Nombre', 'Name')}</span><span>{user?.name || '—'}</span></div>
+        <div className="profile-row"><span className="profile-lbl">Email</span><span style={{ fontSize: '.82rem' }}>{user?.email || '—'}</span></div>
+        <div className="profile-row"><span className="profile-lbl">{t('Nombre', 'Name')}</span><span style={{ fontSize: '.82rem' }}>{user?.name || '—'}</span></div>
         <div className="settings-section-title" style={{ marginTop: '1.4rem' }}>{t('Notificaciones', 'Notifications')}</div>
-        <div className="profile-row">
-          <span className="profile-lbl">{t('Matches por email', 'Email matches')}</span>
-          <span className="settings-badge on">{t('Activo', 'Active')}</span>
+        <div className="profile-row" style={{ justifyContent: 'space-between' }}>
+          <div>
+            <span className="profile-lbl" style={{ display: 'block' }}>{t('Matches por email', 'Email matches')}</span>
+            <span style={{ fontSize: '.72rem', color: 'var(--ink-45)' }}>{t('Recibir notificaciones cuando haya nuevos matches', 'Get notified when new matches are found')}</span>
+          </div>
+          <Toggle on={notifMatches} onToggle={() => setNotifMatches(v => !v)} />
         </div>
-        <div className="profile-row">
-          <span className="profile-lbl">{t('Actualizaciones', 'Updates')}</span>
-          <span className="settings-badge on">{t('Activo', 'Active')}</span>
+        <div className="profile-row" style={{ justifyContent: 'space-between' }}>
+          <div>
+            <span className="profile-lbl" style={{ display: 'block' }}>{t('Actualizaciones de plataforma', 'Platform updates')}</span>
+            <span style={{ fontSize: '.72rem', color: 'var(--ink-45)' }}>{t('Novedades y mejoras de Candidato®', 'News and improvements from Candidato®')}</span>
+          </div>
+          <Toggle on={notifUpdates} onToggle={() => setNotifUpdates(v => !v)} />
         </div>
         <div className="settings-section-title" style={{ marginTop: '1.4rem' }}>{t('Privacidad', 'Privacy')}</div>
-        <div className="profile-row">
-          <span className="profile-lbl">{t('Perfil visible', 'Profile visible')}</span>
-          <span className="settings-badge on">{t('Sí', 'Yes')}</span>
+        <div className="profile-row" style={{ justifyContent: 'space-between' }}>
+          <div>
+            <span className="profile-lbl" style={{ display: 'block' }}>{t('Perfil visible para empresas', 'Profile visible to companies')}</span>
+            <span style={{ fontSize: '.72rem', color: 'var(--ink-45)' }}>{t('Las empresas pueden encontrarte en búsquedas', 'Companies can discover you in searches')}</span>
+          </div>
+          <Toggle on={profileVisible} onToggle={() => setProfileVisible(v => !v)} />
         </div>
       </div>
     </>
@@ -2966,6 +3018,7 @@ function MyJobsView({ userEmail, onPost, t }: {
   const [editCity, setEditCity] = useState('')
   const [editArea, setEditArea] = useState('')
   const [saving, setSaving] = useState(false)
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
   // applicant counts per job_id
   const [appCounts, setAppCounts] = useState<Record<string, number>>({})
   // which job's applicants are being viewed (null = show job list)
@@ -3049,11 +3102,11 @@ function MyJobsView({ userEmail, onPost, t }: {
   }
 
   async function deleteJob(id: string) {
-    if (!confirm(t('¿Eliminar esta vacante?', 'Delete this listing?'))) return
     try {
       const sb = createClient()
       await sb.from('jobs').delete().eq('id', id)
       setMyJobs(prev => prev.filter(j => j.id !== id))
+      setConfirmDeleteId(null)
     } catch (e) { console.warn(e) }
   }
 
@@ -3213,9 +3266,17 @@ function MyJobsView({ userEmail, onPost, t }: {
                   {j.salary_range && <span className="jc-tag" style={{ background: 'var(--pale)', color: 'var(--forest)' }}>{j.salary_range}</span>}
                 </div>
                 {j.description && <p style={{ fontSize: '.8rem', color: 'var(--ink-70)', lineHeight: 1.6, margin: '0 0 .8rem' }}>{j.description.slice(0, 160)}{j.description.length > 160 ? '…' : ''}</p>}
-                <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap', paddingTop: '.75rem', borderTop: '1px solid var(--line)' }}>
+                <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap', paddingTop: '.75rem', borderTop: '1px solid var(--line)', alignItems: 'center' }}>
                   <button className="btn btn-outline btn-sm" onClick={() => startEdit(j)}>{t('Editar', 'Edit')}</button>
-                  <button className="btn btn-sm" style={{ background: 'none', border: '1.5px solid var(--line)', color: 'var(--coral)', borderRadius: 7, padding: '4px 12px', fontSize: '.78rem', cursor: 'pointer' }} onClick={() => deleteJob(j.id)}>{t('Eliminar', 'Delete')}</button>
+                  {confirmDeleteId === j.id ? (
+                    <>
+                      <span style={{ fontSize: '.76rem', color: 'var(--coral)', fontWeight: 600 }}>{t('¿Confirmar?', 'Confirm delete?')}</span>
+                      <button className="btn btn-sm" style={{ background: 'var(--coral)', border: 'none', color: 'white', borderRadius: 7, padding: '4px 12px', fontSize: '.76rem', cursor: 'pointer' }} onClick={() => deleteJob(j.id)}>{t('Sí, eliminar', 'Yes, delete')}</button>
+                      <button className="btn btn-outline btn-sm" onClick={() => setConfirmDeleteId(null)}>{t('Cancelar', 'Cancel')}</button>
+                    </>
+                  ) : (
+                    <button className="btn btn-sm" style={{ background: 'none', border: '1.5px solid var(--line)', color: 'var(--coral)', borderRadius: 7, padding: '4px 12px', fontSize: '.78rem', cursor: 'pointer' }} onClick={() => setConfirmDeleteId(j.id)}>{t('Eliminar', 'Delete')}</button>
+                  )}
                   <button
                     className="btn btn-forest btn-sm"
                     style={{ marginLeft: 'auto' }}
