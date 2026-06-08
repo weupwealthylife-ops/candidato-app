@@ -207,6 +207,16 @@ export default function AppPage() {
     const urlType = params.get('type')
     if (urlType === 'company') setUserType('company')
 
+    // Demo mode for UI auditing (no Supabase required)
+    if (params.get('demo') === 'candidate') {
+      enterApp({ email: 'demo@candidato.co', name: 'Ana García', type: 'candidate' })
+      return
+    }
+    if (params.get('demo') === 'company') {
+      enterApp({ email: 'empresa@demo.co', name: 'Carlos López', type: 'company', companyName: 'Tech Startup SA' })
+      return
+    }
+
     // After email verification the callback route redirects here with ?verified=1
     // and a live Supabase session — auto-login without requiring the gate again.
     const sb = createClient()
@@ -499,6 +509,7 @@ export default function AppPage() {
 
   const enterApp = (user: CurrentUser) => {
     setCurrentUser(user)
+    setUserType(user.type === 'company' ? 'company' : 'candidate')
     setView('app')
     loadJobs()
     loadCandidates()
@@ -1541,6 +1552,10 @@ function CandidateView({
   const [appliedJob, setAppliedJob] = useState<Job | null>(null)
   const [selectedJob, setSelectedJob] = useState<Job | null>(null)
   const [profileLoadFailed, setProfileLoadFailed] = useState(false)
+  // Settings toggles — must be at top level (no conditional hooks)
+  const [notifMatches, setNotifMatches] = useState(true)
+  const [notifUpdates, setNotifUpdates] = useState(true)
+  const [profileVisible, setProfileVisible] = useState(true)
 
   // Show a retry banner if profile still null after 5 seconds
   useEffect(() => {
@@ -2172,10 +2187,6 @@ function CandidateView({
   }
 
   // ── CONFIGURACIÓN ──
-  const [notifMatches, setNotifMatches] = useState(true)
-  const [notifUpdates, setNotifUpdates] = useState(true)
-  const [profileVisible, setProfileVisible] = useState(true)
-
   const Toggle = ({ on, onToggle }: { on: boolean; onToggle: () => void }) => (
     <button
       onClick={onToggle}
