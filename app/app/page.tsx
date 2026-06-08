@@ -1567,6 +1567,7 @@ function CandidateView({
   const [selectedJob, setSelectedJob] = useState<Job | null>(null)
   const [profileLoadFailed, setProfileLoadFailed] = useState(false)
   const [photoUploading, setPhotoUploading] = useState(false)
+  const [photoMsg, setPhotoMsg] = useState<{ ok: boolean; text: string } | null>(null)
   // Settings toggles — must be at top level (no conditional hooks)
   const [notifMatches, setNotifMatches] = useState(true)
   const [notifUpdates, setNotifUpdates] = useState(true)
@@ -1900,82 +1901,91 @@ function CandidateView({
   }
 
   // ── BUSCAR TRABAJO ──
-  if (view === 'jobs')
+  if (view === 'jobs') {
+    const activeFilters = [filterArea, filterCity, filterMod, filterSal].filter(Boolean).length
     return (
       <>
         {ProfileErrorBanner}
-        <div className="page-head">
+        <div className="page-head" style={{ marginBottom: '1rem' }}>
           <div className="page-title">{t('Buscar trabajo', 'Find jobs')}</div>
-          <div className="page-sub">{t(`${jobs.length} vacante${jobs.length !== 1 ? 's' : ''} disponible${jobs.length !== 1 ? 's' : ''}`, `${jobs.length} listing${jobs.length !== 1 ? 's' : ''} available`)}</div>
+          <div className="page-sub">
+            {dataLoading
+              ? t('Buscando…', 'Searching…')
+              : t(`${jobs.length} vacante${jobs.length !== 1 ? 's' : ''} disponible${jobs.length !== 1 ? 's' : ''}`, `${jobs.length} listing${jobs.length !== 1 ? 's' : ''} available`)}
+          </div>
         </div>
 
-        {/* Search + filters in one contained row */}
-        <div style={{ background: 'var(--white)', border: '1.5px solid var(--line)', borderRadius: '12px', padding: '1rem 1.1rem', marginBottom: '1rem' }}>
-          <div style={{ display: 'flex', gap: '.6rem', marginBottom: '.75rem' }}>
-            <div className="search-wrap" style={{ flex: '0 1 320px', minWidth: 0, margin: 0, border: 'none', background: 'var(--off)', borderRadius: '8px', padding: '.55rem .9rem' }}>
-              <input
-                className="search-input"
-                value={query}
-                onChange={e => setQuery(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && doSearch()}
-                placeholder={t('Cargo o keyword…', 'Job title or keyword…')}
-                style={{ background: 'transparent' }}
-              />
-            </div>
-            <button className="btn btn-forest" onClick={doSearch} disabled={dataLoading} style={{ padding: '0 1.4rem', borderRadius: '8px', fontSize: '.82rem', flexShrink: 0 }}>
-              {dataLoading ? t('Buscando…', 'Searching…') : t('Buscar', 'Search')}
+        {/* Search bar */}
+        <div className="search-wrap" style={{ marginBottom: '.65rem' }}>
+          <span className="search-ico">🔍</span>
+          <input
+            className="search-input"
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && doSearch()}
+            placeholder={t('Cargo, empresa o keyword…', 'Title, company or keyword…')}
+          />
+          <button
+            className="btn btn-forest"
+            onClick={doSearch}
+            disabled={dataLoading}
+            style={{ padding: '6px 20px', borderRadius: '7px', fontSize: '.82rem', flexShrink: 0 }}
+          >
+            {t('Buscar', 'Search')}
+          </button>
+        </div>
+
+        {/* Filters row */}
+        <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap', alignItems: 'center', marginBottom: '1.1rem' }}>
+          <select className="filter-select" value={filterArea} onChange={e => { setFilterArea(e.target.value); loadJobs(query, e.target.value, filterCity, filterMod, filterSal) }}>
+            <option value="">{t('Área', 'Area')}</option>
+            <option>{t('Tecnología / IT', 'Technology / IT')}</option>
+            <option>{t('Diseño UX/UI', 'UX/UI Design')}</option>
+            <option>{t('Marketing y Comunicaciones', 'Marketing & Comms')}</option>
+            <option>{t('Ventas y Comercial', 'Sales & Business Dev')}</option>
+            <option>{t('Finanzas y Contabilidad', 'Finance & Accounting')}</option>
+            <option>{t('Recursos Humanos', 'Human Resources')}</option>
+            <option>{t('Operaciones', 'Operations')}</option>
+            <option>{t('Producto / Product', 'Product')}</option>
+            <option>{t('Legal', 'Legal')}</option>
+          </select>
+          <select className="filter-select" value={filterCity} onChange={e => { setFilterCity(e.target.value); loadJobs(query, filterArea, e.target.value, filterMod, filterSal) }}>
+            <option value="">{t('Ciudad', 'City')}</option>
+            <option>Cali</option><option>Bogotá</option><option>Medellín</option>
+            <option>Barranquilla</option><option>Cartagena</option><option>Bucaramanga</option>
+          </select>
+          <select className="filter-select" value={filterMod} onChange={e => { setFilterMod(e.target.value); loadJobs(query, filterArea, filterCity, e.target.value, filterSal) }}>
+            <option value="">{t('Modalidad', 'Mode')}</option>
+            <option>{t('Presencial', 'On-site')}</option>
+            <option>{t('Remoto', 'Remote')}</option>
+            <option>{t('Híbrido', 'Hybrid')}</option>
+          </select>
+          <select className="filter-select" value={filterSal} onChange={e => { setFilterSal(e.target.value); loadJobs(query, filterArea, filterCity, filterMod, e.target.value) }}>
+            <option value="">{t('Salario', 'Salary')}</option>
+            <option>Hasta $2M</option>
+            <option>$2M – $4M</option>
+            <option>$4M – $7M</option>
+            <option>$7M – $12M</option>
+            <option>$12M+</option>
+          </select>
+          {(query || activeFilters > 0) && (
+            <button
+              className="btn btn-outline btn-sm"
+              style={{ flexShrink: 0 }}
+              onClick={() => { setQuery(''); setFilterArea(''); setFilterCity(''); setFilterMod(''); setFilterSal(''); loadJobs() }}
+            >
+              {t('Limpiar', 'Clear')}{activeFilters > 0 ? ` (${activeFilters})` : ''} ✕
             </button>
-          </div>
-          <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
-            <select className="filter-select" value={filterArea} onChange={e => { setFilterArea(e.target.value); loadJobs(query, e.target.value, filterCity, filterMod, filterSal) }}>
-              <option value="">{t('Área', 'Area')}</option>
-              <option>{t('Tecnología / IT', 'Technology / IT')}</option>
-              <option>{t('Diseño UX/UI', 'UX/UI Design')}</option>
-              <option>{t('Marketing y Comunicaciones', 'Marketing & Comms')}</option>
-              <option>{t('Ventas y Comercial', 'Sales & Business Dev')}</option>
-              <option>{t('Finanzas y Contabilidad', 'Finance & Accounting')}</option>
-              <option>{t('Recursos Humanos', 'Human Resources')}</option>
-              <option>{t('Operaciones', 'Operations')}</option>
-              <option>{t('Producto / Product', 'Product')}</option>
-              <option>{t('Legal', 'Legal')}</option>
-            </select>
-            <select className="filter-select" value={filterCity} onChange={e => { setFilterCity(e.target.value); loadJobs(query, filterArea, e.target.value, filterMod, filterSal) }}>
-              <option value="">{t('Ciudad', 'City')}</option>
-              <option>Cali</option><option>Bogotá</option><option>Medellín</option>
-              <option>Barranquilla</option><option>Cartagena</option><option>Bucaramanga</option>
-            </select>
-            <select className="filter-select" value={filterMod} onChange={e => { setFilterMod(e.target.value); loadJobs(query, filterArea, filterCity, e.target.value, filterSal) }}>
-              <option value="">{t('Modalidad', 'Mode')}</option>
-              <option>{t('Presencial', 'On-site')}</option>
-              <option>{t('Remoto', 'Remote')}</option>
-              <option>{t('Híbrido', 'Hybrid')}</option>
-            </select>
-            <select className="filter-select" value={filterSal} onChange={e => { setFilterSal(e.target.value); loadJobs(query, filterArea, filterCity, filterMod, e.target.value) }}>
-              <option value="">{t('Salario', 'Salary')}</option>
-              <option>Hasta $2M</option>
-              <option>$2M – $4M</option>
-              <option>$4M – $7M</option>
-              <option>$7M – $12M</option>
-              <option>$12M+</option>
-            </select>
-            {(query || filterArea || filterCity || filterMod || filterSal) && (
-              <button
-                className="btn btn-outline btn-sm"
-                style={{ flexShrink: 0 }}
-                onClick={() => { setQuery(''); setFilterArea(''); setFilterCity(''); setFilterMod(''); setFilterSal(''); loadJobs() }}
-              >
-                {t('Limpiar todo ✕', 'Clear all ✕')}
-              </button>
-            )}
-          </div>
+          )}
         </div>
 
         {dataLoading && <div className="loading-state">{t('Cargando vacantes…', 'Loading listings…')}</div>}
 
         {!dataLoading && jobs.length === 0 && (
           <div className="empty-state">
+            <div style={{ fontSize: '2rem', marginBottom: '.75rem' }}>🔍</div>
             <div className="empty-title">{t('Sin resultados', 'No results')}</div>
-            <div className="empty-sub">{t('Intentá con otros filtros.', 'Try different filters.')}</div>
+            <div className="empty-sub">{t('Intentá con otros filtros o keywords.', 'Try different filters or keywords.')}</div>
           </div>
         )}
 
@@ -1990,6 +2000,7 @@ function CandidateView({
         {applyModal}
       </>
     )
+  }
 
   // ── MI PERFIL ──
   if (view === 'profile') {
@@ -2081,18 +2092,33 @@ function CandidateView({
         const sb = createClient()
         const ext = file.name.split('.').pop() || 'jpg'
         const path = `photos/${user.email.replace(/[^a-z0-9]/gi, '_')}-photo.${ext}`
-        // Remove old photo if exists
         const oldUrl = (candProfile?.photo_url as string | undefined)
         if (oldUrl) {
           const m = oldUrl.match(/\/candidatos\/(.+)$/)
           if (m) await sb.storage.from('candidatos').remove([m[1]])
         }
-        const { data: upData } = await sb.storage.from('candidatos').upload(path, file, { upsert: true })
+        const { data: upData, error: upErr } = await sb.storage.from('candidatos').upload(path, file, { upsert: true })
+        if (upErr) {
+          setPhotoMsg({ ok: false, text: upErr.message })
+          setPhotoUploading(false)
+          return
+        }
         if (upData) {
           const { data: urlData } = sb.storage.from('candidatos').getPublicUrl(upData.path)
           const newUrl = urlData?.publicUrl || ''
-          const { data: updated } = await sb.from('candidates').update({ photo_url: newUrl }).ilike('email', user.email).select().maybeSingle()
-          if (updated) onProfileUpdate(updated)
+          const { data: updated, error: dbErr } = await sb.from('candidates').update({ photo_url: newUrl }).ilike('email', user.email).select().maybeSingle()
+          if (dbErr) {
+            setPhotoMsg({
+              ok: false,
+              text: dbErr.code === '42703'
+                ? t('Falta la columna photo_url en la BD. Ejecutá la migración SQL.', 'DB column photo_url missing — run the SQL migration.')
+                : dbErr.message,
+            })
+          } else if (updated) {
+            onProfileUpdate(updated)
+            setPhotoMsg({ ok: true, text: t('Foto actualizada ✓', 'Photo updated ✓') })
+            setTimeout(() => setPhotoMsg(null), 3000)
+          }
         }
       } catch (e) { console.error(e) }
       setPhotoUploading(false)
@@ -2128,7 +2154,7 @@ function CandidateView({
               {isEditing && (
                 <label style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'rgba(0,0,0,.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }} title={t('Cambiar foto', 'Change photo')}>
                   <span style={{ fontSize: '.75rem', color: 'white', fontWeight: 600, textAlign: 'center', lineHeight: 1.2 }}>{photoUploading ? '⏳' : '📷'}</span>
-                  <input type="file" accept="image/jpeg,image/png,image/webp" style={{ display: 'none' }} onChange={e => { const f = e.target.files?.[0]; if (f) uploadPhoto(f) }} />
+                  <input type="file" accept="image/jpeg,image/png,image/webp" style={{ display: 'none' }} disabled={photoUploading} onChange={e => { const f = e.target.files?.[0]; if (f) { setPhotoMsg(null); uploadPhoto(f) } }} />
                 </label>
               )}
             </div>
@@ -2138,13 +2164,20 @@ function CandidateView({
                 {[area, city].filter(Boolean).join(' · ') || user?.email}
               </div>
             </div>
-            {!isEditing
-              ? <button className="btn btn-outline btn-sm" onClick={startEdit}>{t('Editar perfil', 'Edit profile')}</button>
-              : <div style={{ display: 'flex', gap: '.5rem', flexShrink: 0 }}>
-                  <button className="btn btn-outline btn-sm" onClick={cancelEdit}>{t('Cancelar', 'Cancel')}</button>
-                  <button className="btn btn-forest btn-sm" onClick={saveProfile} disabled={saving}>{saving ? t('Guardando…', 'Saving…') : t('Guardar', 'Save')}</button>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '.4rem', flexShrink: 0 }}>
+              {photoMsg && (
+                <div style={{ fontSize: '.72rem', fontWeight: 600, color: photoMsg.ok ? 'var(--forest)' : '#c0392b', background: photoMsg.ok ? 'var(--pale)' : 'rgba(192,57,43,.08)', border: `1px solid ${photoMsg.ok ? 'var(--mist)' : 'rgba(192,57,43,.2)'}`, borderRadius: 6, padding: '3px 9px', maxWidth: 180, textAlign: 'right' }}>
+                  {photoMsg.text}
                 </div>
-            }
+              )}
+              {!isEditing
+                ? <button className="btn btn-outline btn-sm" onClick={startEdit}>{t('Editar perfil', 'Edit profile')}</button>
+                : <div style={{ display: 'flex', gap: '.5rem' }}>
+                    <button className="btn btn-outline btn-sm" onClick={cancelEdit}>{t('Cancelar', 'Cancel')}</button>
+                    <button className="btn btn-forest btn-sm" onClick={saveProfile} disabled={saving}>{saving ? t('Guardando…', 'Saving…') : t('Guardar', 'Save')}</button>
+                  </div>
+              }
+            </div>
           </div>
 
           {/* 2-column grid */}
@@ -2356,23 +2389,35 @@ function JobRow({ job, applied, appliedAt, onApply, onWithdraw, onSelect, t }: {
   const tr = t || ((es: string) => es)
   const coName = job.companies?.company_name || '—'
   const tags = [job.modality, job.city, job.salary_range].filter(Boolean)
+  const skills = Array.isArray(job.skills) ? (job.skills as string[]).slice(0, 3) : []
+  const isNew = job.created_at
+    ? Date.now() - new Date(job.created_at).getTime() < 3 * 24 * 60 * 60 * 1000
+    : false
+  const desc = typeof job.description === 'string' ? job.description.slice(0, 130) : ''
   return (
     <div
-      className="job-card"
-      style={{ cursor: onSelect ? 'pointer' : undefined }}
+      className={`job-card${isNew ? ' featured' : ''}`}
+      style={{ cursor: onSelect ? 'pointer' : undefined, alignItems: 'flex-start' }}
       onClick={() => onSelect?.(job)}
     >
-      <div className="jc-ava">{initials(coName)}</div>
+      {isNew && <span className="new-badge">{tr('Nuevo', 'New')}</span>}
+      <div className="jc-ava" style={{ marginTop: 2 }}>{initials(coName)}</div>
       <div className="jc-body">
         <div className="jc-title">{job.title}</div>
         <div className="jc-meta">{coName}{job.area ? ` · ${job.area}` : ''}</div>
-        {tags.length > 0 && (
-          <div className="jc-tags">
+        {desc && (
+          <div className="jc-desc">
+            {desc}{job.description && job.description.length > 130 ? '…' : ''}
+          </div>
+        )}
+        {(tags.length > 0 || skills.length > 0) && (
+          <div className="jc-tags" style={{ marginTop: '.45rem' }}>
             {tags.map(tag => <span key={tag} className="jc-tag">{tag}</span>)}
+            {skills.map(sk => <span key={sk} className="jc-tag jc-tag-skill">{sk}</span>)}
           </div>
         )}
       </div>
-      <div className="jc-right" onClick={e => e.stopPropagation()}>
+      <div className="jc-right" onClick={e => e.stopPropagation()} style={{ marginTop: 2 }}>
         <span className="jc-time">{timeAgo(job.created_at)}</span>
         {applied ? (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '.2rem', marginTop: '.35rem' }}>
@@ -2396,7 +2441,7 @@ function JobRow({ job, applied, appliedAt, onApply, onWithdraw, onSelect, t }: {
         ) : onApply ? (
           <button
             className="btn btn-sm btn-forest"
-            style={{ marginTop: '.4rem', borderRadius: 7, padding: '4px 14px', fontSize: '.76rem' }}
+            style={{ marginTop: '.4rem', borderRadius: 7, padding: '5px 16px', fontSize: '.78rem' }}
             onClick={() => onApply(job)}
           >
             {tr('Postularme →', 'Apply →')}
