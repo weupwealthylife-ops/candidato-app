@@ -17,15 +17,24 @@ const sora = Sora({
 })
 
 export const metadata: Metadata = {
-  title: 'Candidato® — Creando conexiones',
+  title: 'Candidato® — Matching inteligente de talento en Colombia',
   description:
-    'Candidato conecta el mejor talento colombiano con las empresas que más crecen. Matching inteligente, sin ruido, sin spam.',
+    'Candidato conecta el mejor talento colombiano con las empresas que más crecen. Matching inteligente, sin ruido, sin spam. 100% gratis para candidatos.',
+  keywords: ['empleo colombia', 'trabajo remoto colombia', 'matching empleo', 'ofertas trabajo cali bogota medellin', 'headhunting colombia', 'talento tecnologia'],
+  authors: [{ name: 'Candidato', url: 'https://candidato.com.co' }],
+  robots: { index: true, follow: true },
   openGraph: {
-    title: 'Candidato® — Creando conexiones',
-    description:
-      'La infraestructura de talento para empresas que crecen. Gratis para candidatos.',
+    title: 'Candidato® — La conexión que estaba destinada',
+    description: 'Matching inteligente entre talento y empresas en Colombia. Gratis para candidatos. Sin spam, solo oportunidades que importan.',
     url: 'https://candidato.com.co',
     type: 'website',
+    siteName: 'Candidato',
+    images: [{ url: '/bird-logo.png', width: 400, height: 400, alt: 'Candidato' }],
+  },
+  twitter: {
+    card: 'summary',
+    title: 'Candidato® — Matching inteligente de talento',
+    description: 'Conectamos el talento correcto con la empresa correcta en Colombia.',
   },
 }
 

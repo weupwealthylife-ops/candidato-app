@@ -1607,6 +1607,19 @@ function CandidateView({
         setMyApplied(prev => new Map([...prev, [job.id, now]]))
         setAppliedJob(job)
         setSelectedJob(null)
+        // Fire-and-forget confirmation email
+        if (user?.email) {
+          fetch('/api/notify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: 'application_submitted',
+              to: user.email,
+              name: user.name.split(' ')[0],
+              extra: { jobTitle: job.title, companyName: job.companies?.company_name || '' },
+            }),
+          }).catch(() => {})
+        }
       }
     } catch (e) { console.warn(e) }
     setApplying(null)
@@ -1641,95 +1654,112 @@ function CandidateView({
   const doSearch = () => loadJobs(query, filterArea, filterCity, filterMod, filterSal)
 
   // ── JOB DETAIL MODAL ──
-  const jobDetailModal = selectedJob && (
+  const jobDetailModal = selectedJob && (() => {
+    const jobSkills = (selectedJob.skills || []) as string[]
+    const profSkills = (Array.isArray(candProfile?.skills) ? (candProfile.skills as string[]) : skills) || []
+    const matchingSkills = jobSkills.filter(s => profSkills.some(ps => ps.toLowerCase() === s.toLowerCase()))
+    const missingSkills = jobSkills.filter(s => !profSkills.some(ps => ps.toLowerCase() === s.toLowerCase()))
+    const matchPct = jobSkills.length > 0 ? Math.round((matchingSkills.length / jobSkills.length) * 100) : null
+    return (
     <div className="apply-overlay" onClick={() => setSelectedJob(null)}>
-      <div className="apply-modal" style={{ maxWidth: 480, width: '92vw', maxHeight: '85vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
-        <button
-          onClick={() => setSelectedJob(null)}
-          style={{ position: 'absolute', top: 12, right: 14, background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--ink-45)', padding: '2px 6px', borderRadius: 6 }}
-          aria-label="Cerrar"
-        >✕</button>
-
-        {/* Company avatar + title */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '.85rem', marginBottom: '1.1rem' }}>
-          <div className="jc-ava" style={{ width: 48, height: 48, fontSize: '1rem', flexShrink: 0 }}>
-            {initials(selectedJob.companies?.company_name || '—')}
-          </div>
-          <div>
-            <div style={{ fontFamily: 'var(--head)', fontWeight: 700, fontSize: '1.05rem', color: 'var(--ink)', lineHeight: 1.25 }}>{selectedJob.title}</div>
-            <div style={{ fontSize: '.83rem', color: 'var(--ink-70)', marginTop: '.15rem' }}>{selectedJob.companies?.company_name || '—'}{selectedJob.area ? ` · ${selectedJob.area}` : ''}</div>
-          </div>
-        </div>
-
-        {/* Tags row */}
-        {[selectedJob.modality, selectedJob.city, selectedJob.salary_range].filter(Boolean).length > 0 && (
-          <div className="jc-tags" style={{ marginBottom: '1rem' }}>
-            {[selectedJob.modality, selectedJob.city, selectedJob.salary_range].filter(Boolean).map(tag => (
-              <span key={tag} className="jc-tag">{tag}</span>
-            ))}
-          </div>
-        )}
-
-        {/* Description */}
-        {selectedJob.description && (
-          <div style={{ marginBottom: '1rem' }}>
-            <div style={{ fontSize: '.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.06em', color: 'var(--ink-45)', marginBottom: '.4rem' }}>
-              {t('Descripción', 'Description')}
+      <div className="apply-modal" style={{ maxWidth: 500, width: '92vw', maxHeight: '88vh', overflowY: 'auto', padding: 0 }} onClick={e => e.stopPropagation()}>
+        {/* Header band */}
+        <div style={{ background: 'linear-gradient(135deg,var(--forest),var(--forest-lt))', padding: '1.2rem 1.3rem 1rem', borderRadius: '14px 14px 0 0', position: 'relative' }}>
+          <button
+            onClick={() => setSelectedJob(null)}
+            style={{ position: 'absolute', top: 10, right: 12, background: 'rgba(255,255,255,.15)', border: 'none', fontSize: '1rem', cursor: 'pointer', color: 'white', padding: '3px 7px', borderRadius: 6 }}
+            aria-label="Cerrar"
+          >✕</button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '.85rem' }}>
+            <div className="jc-ava" style={{ width: 48, height: 48, fontSize: '1rem', flexShrink: 0, background: 'rgba(255,255,255,.2)', color: 'white' }}>
+              {initials(selectedJob.companies?.company_name || '—')}
             </div>
-            <div style={{ fontSize: '.84rem', color: 'var(--ink-70)', lineHeight: 1.65, whiteSpace: 'pre-wrap' }}>
-              {selectedJob.description}
+            <div>
+              <div style={{ fontFamily: 'var(--head)', fontWeight: 700, fontSize: '1.05rem', color: 'white', lineHeight: 1.25 }}>{selectedJob.title}</div>
+              <div style={{ fontSize: '.82rem', color: 'rgba(255,255,255,.75)', marginTop: '.15rem' }}>{selectedJob.companies?.company_name || '—'}{selectedJob.area ? ` · ${selectedJob.area}` : ''}</div>
             </div>
-          </div>
-        )}
-
-        {/* Skills */}
-        {selectedJob.skills && selectedJob.skills.length > 0 && (
-          <div style={{ marginBottom: '1.1rem' }}>
-            <div style={{ fontSize: '.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.06em', color: 'var(--ink-45)', marginBottom: '.4rem' }}>
-              {t('Habilidades requeridas', 'Required skills')}
-            </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '.35rem' }}>
-              {selectedJob.skills.map(s => (
-                <span key={s} style={{ background: 'var(--pale)', color: 'var(--forest)', fontSize: '.76rem', borderRadius: 6, padding: '3px 9px', border: '1px solid var(--mist)' }}>{s}</span>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Posted date */}
-        <div style={{ fontSize: '.75rem', color: 'var(--ink-45)', marginBottom: '1.3rem' }}>
-          {t('Publicado', 'Posted')} · {timeAgo(selectedJob.created_at)}
-        </div>
-
-        <div style={{ borderTop: '1px solid var(--line)', paddingTop: '1.1rem', display: 'flex', flexDirection: 'column', gap: '.6rem' }}>
-          {myApplied.has(selectedJob.id) ? (
-            <>
-              <div style={{ textAlign: 'center', fontSize: '.82rem', color: 'var(--forest)', background: 'var(--pale)', borderRadius: 8, padding: '.6rem', border: '1px solid var(--mist)' }}>
-                ✓ {t('Ya te postulaste', 'You applied')} · {appliedAgo(myApplied.get(selectedJob.id)!, t)}
+            {matchPct !== null && (
+              <div style={{ marginLeft: 'auto', flexShrink: 0, textAlign: 'center', background: 'rgba(255,255,255,.18)', borderRadius: 10, padding: '5px 11px' }}>
+                <div style={{ fontFamily: 'var(--head)', fontWeight: 800, fontSize: '1.1rem', color: 'white', lineHeight: 1 }}>{matchPct}%</div>
+                <div style={{ fontSize: '.58rem', color: 'rgba(255,255,255,.75)', textTransform: 'uppercase', letterSpacing: '.05em' }}>match</div>
               </div>
-              <button
-                className="btn btn-sm"
-                style={{ borderRadius: 8, padding: '.65rem', fontSize: '.82rem', border: '1.5px solid #e8b0b0', color: '#c0392b', background: '#fff9f9', width: '100%' }}
-                disabled={withdrawing === selectedJob.id}
-                onClick={() => withdrawApplication(selectedJob)}
-              >
-                {withdrawing === selectedJob.id ? t('Retirando…', 'Withdrawing…') : t('Retirar mi postulación', 'Withdraw application')}
-              </button>
-            </>
-          ) : (
-            <button
-              className="btn btn-forest"
-              style={{ width: '100%', borderRadius: 9, padding: '.75rem', fontSize: '.88rem' }}
-              disabled={applying === selectedJob.id}
-              onClick={() => applyToJob(selectedJob)}
-            >
-              {applying === selectedJob.id ? t('Enviando…', 'Sending…') : t('Quiero postularme →', 'Apply now →')}
-            </button>
+            )}
+          </div>
+          {/* Tags */}
+          <div className="jc-tags" style={{ marginTop: '.75rem' }}>
+            {[selectedJob.modality, selectedJob.city, selectedJob.salary_range].filter(Boolean).map(tag => (
+              <span key={tag} style={{ background: 'rgba(255,255,255,.18)', color: 'white', borderRadius: 50, padding: '2px 9px', fontSize: '.69rem', border: '1px solid rgba(255,255,255,.2)' }}>{tag}</span>
+            ))}
+            <span style={{ fontSize: '.67rem', color: 'rgba(255,255,255,.6)', marginLeft: 'auto' }}>{timeAgo(selectedJob.created_at)}</span>
+          </div>
+        </div>
+
+        <div style={{ padding: '1.2rem 1.3rem' }}>
+          {/* Description */}
+          {selectedJob.description && (
+            <div style={{ marginBottom: '1.1rem' }}>
+              <div style={{ fontSize: '.67rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.07em', color: 'var(--ink-45)', marginBottom: '.45rem' }}>
+                {t('Descripción del cargo', 'Role description')}
+              </div>
+              <div style={{ fontSize: '.84rem', color: 'var(--ink-70)', lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
+                {selectedJob.description}
+              </div>
+            </div>
           )}
+
+          {/* Skills match breakdown */}
+          {jobSkills.length > 0 && (
+            <div style={{ marginBottom: '1.1rem' }}>
+              <div style={{ fontSize: '.67rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.07em', color: 'var(--ink-45)', marginBottom: '.45rem' }}>
+                {t('Habilidades requeridas', 'Required skills')}
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '.35rem' }}>
+                {matchingSkills.map(s => (
+                  <span key={s} style={{ background: 'var(--pale)', color: 'var(--forest)', fontSize: '.75rem', borderRadius: 6, padding: '3px 9px', border: '1px solid var(--mist)', fontWeight: 600 }}>✓ {s}</span>
+                ))}
+                {missingSkills.map(s => (
+                  <span key={s} style={{ background: 'var(--off)', color: 'var(--ink-45)', fontSize: '.75rem', borderRadius: 6, padding: '3px 9px', border: '1px solid var(--line)' }}>{s}</span>
+                ))}
+              </div>
+              {matchingSkills.length > 0 && (
+                <div style={{ fontSize: '.72rem', color: 'var(--forest)', marginTop: '.5rem' }}>
+                  {t(`Tenés ${matchingSkills.length} de ${jobSkills.length} habilidades requeridas`, `You have ${matchingSkills.length} of ${jobSkills.length} required skills`)}
+                </div>
+              )}
+            </div>
+          )}
+
+          <div style={{ borderTop: '1px solid var(--line)', paddingTop: '1.1rem', display: 'flex', flexDirection: 'column', gap: '.6rem' }}>
+            {myApplied.has(selectedJob.id) ? (
+              <>
+                <div style={{ textAlign: 'center', fontSize: '.82rem', color: 'var(--forest)', background: 'var(--pale)', borderRadius: 8, padding: '.6rem', border: '1px solid var(--mist)' }}>
+                  ✓ {t('Ya te postulaste', 'You applied')} · {appliedAgo(myApplied.get(selectedJob.id)!, t)}
+                </div>
+                <button
+                  className="btn btn-sm"
+                  style={{ borderRadius: 8, padding: '.65rem', fontSize: '.82rem', border: '1.5px solid #e8b0b0', color: '#c0392b', background: '#fff9f9', width: '100%' }}
+                  disabled={withdrawing === selectedJob.id}
+                  onClick={() => withdrawApplication(selectedJob)}
+                >
+                  {withdrawing === selectedJob.id ? t('Retirando…', 'Withdrawing…') : t('Retirar mi postulación', 'Withdraw application')}
+                </button>
+              </>
+            ) : (
+              <button
+                className="btn btn-forest"
+                style={{ width: '100%', borderRadius: 9, padding: '.75rem', fontSize: '.88rem' }}
+                disabled={applying === selectedJob.id}
+                onClick={() => applyToJob(selectedJob)}
+              >
+                {applying === selectedJob.id ? t('Enviando…', 'Sending…') : t('Postularme →', 'Apply now →')}
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>
-  )
+    )
+  })()
 
   // ── APPLY CONFIRMATION MODAL ──
   const applyModal = appliedJob && (
@@ -3078,7 +3108,12 @@ function TalentView({ candidates, loadCandidates, t }: {
 
 function CandCard({ c, t }: { c: Candidate; t: (es: string, en: string) => string }) {
   const [showContact, setShowContact] = useState(false)
+  const [copied, setCopied] = useState(false)
   const tags = [c.experience, c.city, c.modality].filter(Boolean)
+  const waMsg = encodeURIComponent(t(
+    `¡Hola ${c.name.split(' ')[0]}! Vi tu perfil en Candidato® y me gustaría hablar sobre una oportunidad.`,
+    `Hi ${c.name.split(' ')[0]}! I found your profile on Candidato® and would like to chat about an opportunity.`
+  ))
   return (
     <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '.85rem', padding: '1.2rem 1.3rem' }}>
       {/* Header */}
@@ -3136,18 +3171,31 @@ function CandCard({ c, t }: { c: Candidate; t: (es: string, en: string) => strin
 
       {/* Contact reveal */}
       {showContact && (
-        <div style={{ background: 'var(--off)', borderRadius: '8px', padding: '.7rem .9rem', fontSize: '.8rem', lineHeight: 1.8 }}>
-          {c.email && (
-            <div><span style={{ color: 'var(--ink-45)', fontSize: '.72rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.04em' }}>Email</span><br />
-              <a href={`mailto:${c.email}`} style={{ color: 'var(--forest)', fontWeight: 600 }}>{c.email}</a>
-            </div>
-          )}
+        <div style={{ background: 'var(--pale)', border: '1px solid var(--mist)', borderRadius: '10px', padding: '.85rem 1rem', display: 'flex', flexDirection: 'column', gap: '.7rem' }}>
           {c.whatsapp && (
-            <div style={{ marginTop: '.4rem' }}><span style={{ color: 'var(--ink-45)', fontSize: '.72rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.04em' }}>WhatsApp</span><br />
-              <a href={`https://wa.me/${c.whatsapp.replace(/\D/g,'')}`} target="_blank" rel="noreferrer" style={{ color: 'var(--forest)', fontWeight: 600 }}>{c.whatsapp}</a>
+            <a
+              href={`https://wa.me/${c.whatsapp.replace(/\D/g,'')}?text=${waMsg}`}
+              target="_blank" rel="noreferrer"
+              style={{ display: 'flex', alignItems: 'center', gap: '.6rem', background: '#25D366', color: 'white', borderRadius: 8, padding: '.55rem .9rem', fontWeight: 600, fontSize: '.82rem', textDecoration: 'none' }}
+            >
+              <span style={{ fontSize: '1rem' }}>💬</span>
+              {t('Enviar mensaje por WhatsApp', 'Send WhatsApp message')}
+            </a>
+          )}
+          {c.email && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '.6rem' }}>
+              <a href={`mailto:${c.email}`} style={{ flex: 1, color: 'var(--forest)', fontWeight: 600, fontSize: '.82rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                📧 {c.email}
+              </a>
+              <button
+                style={{ background: 'none', border: '1px solid var(--mist)', borderRadius: 6, padding: '2px 8px', fontSize: '.7rem', cursor: 'pointer', color: 'var(--forest)', flexShrink: 0 }}
+                onClick={() => { navigator.clipboard?.writeText(c.email || ''); setCopied(true); setTimeout(() => setCopied(false), 2000) }}
+              >{copied ? '✓' : t('Copiar', 'Copy')}</button>
             </div>
           )}
-          {!c.email && !c.whatsapp && <span style={{ color: 'var(--ink-45)' }}>{t('Sin datos de contacto', 'No contact info')}</span>}
+          {!c.email && !c.whatsapp && (
+            <span style={{ fontSize: '.8rem', color: 'var(--ink-45)' }}>{t('Sin datos de contacto', 'No contact info')}</span>
+          )}
         </div>
       )}
     </div>
