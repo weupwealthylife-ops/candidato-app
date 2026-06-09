@@ -1009,8 +1009,8 @@ export default function AppPage() {
                             )}
                           </div>
                           <div className="fg fg-full">
-                            <label>{t('Nota', 'Note')} <span style={{color:'var(--ink-45)',fontWeight:400}}>{t('(opcional)', '(optional)')}</span></label>
-                            <textarea value={cnote} onChange={(e) => setCnote(e.target.value)} placeholder={t('¿Qué tipo de empresa buscás? ¿Algún detalle importante sobre tu búsqueda?', 'What type of company are you looking for?')} rows={3} />
+                            <label>{t('Mi empresa ideal', 'My ideal company')} <span style={{color:'var(--ink-45)',fontWeight:400}}>{t('(opcional)', '(optional)')}</span></label>
+                            <textarea value={cnote} onChange={(e) => setCnote(e.target.value)} placeholder={t('¿En qué tipo de empresa soñás trabajar? Cultura, tamaño, industria, valores…', 'Describe your dream employer — culture, size, industry, values…')} rows={3} />
                           </div>
                           <div className="fg fg-full">
                             <label>{t('CV / Hoja de vida', 'CV / Resume')} <span style={{color:'var(--ink-45)',fontWeight:400}}>{t('(opcional)', '(optional)')}</span></label>
@@ -1259,7 +1259,21 @@ export default function AppPage() {
     <>
       <div id="viewApp" className="view active">
         <nav className="topbar">
-          {/* Left zone — tabs */}
+          {/* Logo — left */}
+          <div className="topbar-logo">
+            <Image
+              src="/bird-logo.png"
+              alt="Candidato"
+              width={24}
+              height={24}
+              style={{ objectFit: 'contain' }}
+            />
+            <span>Candidato<sup style={{ fontSize: '.55em', fontWeight: 600 }}>®</sup></span>
+          </div>
+
+          <div className="topbar-divider" />
+
+          {/* Nav tabs */}
           <div className="topbar-tabs">
             {isC ? (
               <>
@@ -1285,35 +1299,13 @@ export default function AppPage() {
                   {t('Mis vacantes', 'My listings')}
                 </button>
                 <button className={`tab-btn${compView === 'post' ? ' active' : ''}`} onClick={() => setCompView('post')}>
-                  {t('Publicar vacante', 'Post listing')}
+                  {t('Publicar', 'Post')}
                 </button>
                 <button className={`tab-btn${compView === 'mycompany' ? ' active' : ''}`} onClick={() => setCompView('mycompany')}>
-                  {t('Mi empresa', 'My company')}
+                  {t('Mi empresa', 'Company')}
                 </button>
               </>
             )}
-          </div>
-
-          {/* Center zone — logo absolutely centered */}
-          <div className="topbar-logo-center">
-            <Image
-              src="/bird-logo.png"
-              alt="Candidato"
-              width={26}
-              height={26}
-              style={{ objectFit: 'contain' }}
-            />
-            <span
-              style={{
-                fontFamily: 'var(--head)',
-                fontWeight: 700,
-                fontSize: '.92rem',
-                color: 'var(--forest)',
-                letterSpacing: '-.02em',
-              }}
-            >
-              Candidato<sup style={{ fontSize: '.55em', fontWeight: 600 }}>®</sup>
-            </span>
           </div>
 
           {/* Right zone */}
@@ -2279,9 +2271,9 @@ function CandidateView({
                 </div>
               </div>
               <div>
-                <div className="card-label" style={{ marginBottom: '.6rem' }}>{t('Nota', 'Notes')}</div>
+                <div className="card-label" style={{ marginBottom: '.6rem' }}>{t('Mi empresa ideal', 'My ideal company')}</div>
                 {isEditing
-                  ? <textarea style={{ ...inp, resize: 'none', minHeight: 80, lineHeight: 1.55 }} value={editData.notes} onChange={e => setEdit('notes', e.target.value)} placeholder={t('¿Qué tipo de empresa buscás?', 'What kind of role are you seeking?')} />
+                  ? <textarea style={{ ...inp, resize: 'none', minHeight: 80, lineHeight: 1.55 }} value={editData.notes} onChange={e => setEdit('notes', e.target.value)} placeholder={t('¿En qué tipo de empresa soñás trabajar? Cultura, tamaño, industria, valores…', 'Describe your dream employer — culture, size, industry, values…')} />
                   : <span style={{ fontSize: '.82rem', color: notes ? 'var(--ink-70)' : 'var(--ink-45)', lineHeight: 1.6 }}>{notes || '—'}</span>}
               </div>
             </div>
@@ -2469,6 +2461,9 @@ function CompanyView({
     if (!userEmail) return
     createClient().from('companies').select('*').ilike('email', userEmail).maybeSingle()
       .then(({ data }) => { if (data) setCoProfile(data) })
+    // Ensure candidate pool is loaded for matching
+    if (candidates.length === 0) loadCandidates()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userEmail])
 
   // Simple skill/area-based candidate matching
@@ -2511,7 +2506,7 @@ function CompanyView({
         </div>
 
         {/* Stats row */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '1rem', marginBottom: '1.2rem' }}>
+        <div className="stats-row" style={{ marginBottom: '1.2rem' }}>
           <div className="card" style={{ padding: '1rem 1.1rem' }}>
             <div style={{ fontSize: '.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.07em', color: 'var(--ink-45)', marginBottom: '.35rem' }}>{t('Candidatos en el pool', 'Candidates in pool')}</div>
             <div style={{ fontFamily: 'var(--head)', fontSize: '1.8rem', fontWeight: 800, color: 'var(--ink)', lineHeight: 1 }}>{candidates.length || '0'}</div>

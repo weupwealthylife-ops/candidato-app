@@ -1007,16 +1007,16 @@ footer{
   position:fixed;top:0;left:0;right:0;height:60px;z-index:200;
   background:rgba(250,250,248,.96);backdrop-filter:blur(20px);
   border-bottom:1px solid var(--line);
-  display:flex;align-items:center;padding:0 max(4vw,24px);
+  display:flex;align-items:center;gap:1rem;padding:0 max(3vw,20px);
 }
-/* Logo pinned to absolute center */
-.topbar-logo-center{
-  position:absolute;left:50%;transform:translateX(-50%);
-  display:flex;align-items:center;gap:6px;
+/* Logo pinned to the left */
+.topbar-logo{
+  display:flex;align-items:center;gap:6px;flex-shrink:0;
   font-family:var(--head);font-size:.92rem;font-weight:700;color:var(--forest);
-  pointer-events:none;user-select:none;
+  user-select:none;letter-spacing:-.02em;
 }
-.topbar-tabs{display:flex;gap:3px}
+.topbar-divider{width:1px;height:20px;background:var(--line);flex-shrink:0}
+.topbar-tabs{display:flex;gap:3px;align-items:center;overflow:hidden}
 .tab-btn{display:inline-flex;align-items:center;gap:6px;padding:6px 13px;border-radius:7px;font-size:.79rem;font-weight:600;color:var(--ink-70);border:none;background:transparent;transition:all .18s}
 .tab-btn.active{background:var(--forest);color:var(--white)}
 .tab-btn:hover:not(.active){background:var(--off)}
