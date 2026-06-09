@@ -2486,6 +2486,7 @@ function CompanyView({
   t: (es: string, en: string) => string
 }) {
   const [coProfile, setCoProfile] = useState<CompanyProfile | null>(null)
+  const [contactModal, setContactModal] = useState<Candidate | null>(null)
 
   useEffect(() => {
     if (!userEmail) return
@@ -2608,11 +2609,9 @@ function CompanyView({
                       <span key={tag} className="jc-tag" style={{ fontSize: '.68rem', padding: '2px 7px' }}>{tag}</span>
                     ))}
                   </div>
-                  {c.email && (
-                    <a href={`mailto:${c.email}`} className="btn btn-forest btn-sm" style={{ width: '100%', justifyContent: 'center', fontSize: '.74rem', borderRadius: 7, marginTop: '.2rem' }}>
-                      {t('Contactar →', 'Contact →')}
-                    </a>
-                  )}
+                  <button className="btn btn-forest btn-sm" style={{ width: '100%', justifyContent: 'center', fontSize: '.74rem', borderRadius: 7, marginTop: '.2rem' }} onClick={() => setContactModal(c)}>
+                    {t('Contactar', 'Contact')}
+                  </button>
                 </div>
               ))}
             </div>
@@ -2653,6 +2652,7 @@ function CompanyView({
             </div>
           </div>
         )}
+        {contactModal && <ContactModal c={contactModal} onClose={() => setContactModal(null)} t={t} />}
       </>
     )
   }
@@ -2772,7 +2772,7 @@ function MyCompanyView({ userEmail, coProfile, onUpdate, t }: {
           {/* Left col — company info */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <div className="card">
-              <SectionTitle>🏢 {t('Información general', 'General info')}</SectionTitle>
+              <SectionTitle>{t('Información general', 'General info')}</SectionTitle>
               <div className="profile-row"><span className="profile-lbl">{t('Empresa', 'Company')}</span><span>{coProfile?.company_name || '—'}</span></div>
               <div className="profile-row"><span className="profile-lbl">Email</span><span>{userEmail}</span></div>
               <div className="profile-row"><span className="profile-lbl">{t('Industria', 'Industry')}</span><span>{(coProfile?.industry as string) || '—'}</span></div>
@@ -2787,7 +2787,7 @@ function MyCompanyView({ userEmail, coProfile, onUpdate, t }: {
             </div>
 
             <div className="card">
-              <SectionTitle>📖 {t('Sobre nosotros', 'About us')}</SectionTitle>
+              <SectionTitle>{t('Sobre nosotros', 'About us')}</SectionTitle>
               {(coProfile?.description as string) ? (
                 <p style={{ fontSize: '.83rem', color: 'var(--ink-70)', lineHeight: 1.7 }}>{coProfile?.description as string}</p>
               ) : <p style={{ fontSize: '.8rem', color: 'var(--ink-45)' }}>{t('Sin descripción aún.', 'No description yet.')}</p>}
@@ -2810,12 +2810,9 @@ function MyCompanyView({ userEmail, coProfile, onUpdate, t }: {
           {/* Right col — matching config */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <div className="card" style={{ border: '2px solid var(--mist)', background: 'linear-gradient(135deg,#f8fdfd,var(--white))' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem', marginBottom: '.85rem', paddingBottom: '.5rem', borderBottom: '1px solid var(--line)' }}>
-                <span style={{ fontSize: '1.1rem' }}>🎯</span>
-                <div>
-                  <div style={{ fontFamily: 'var(--head)', fontWeight: 700, fontSize: '.88rem', color: 'var(--forest)' }}>{t('Perfil de matching', 'Matching profile')}</div>
-                  <div style={{ fontSize: '.7rem', color: 'var(--ink-45)', marginTop: '1px' }}>{t('Estos datos alimentan el algoritmo de matching', 'These fields power the matching algorithm')}</div>
-                </div>
+              <div style={{ marginBottom: '.85rem', paddingBottom: '.5rem', borderBottom: '1px solid var(--line)' }}>
+                <div style={{ fontFamily: 'var(--head)', fontWeight: 700, fontSize: '.88rem', color: 'var(--forest)' }}>{t('Perfil de matching', 'Matching profile')}</div>
+                <div style={{ fontSize: '.7rem', color: 'var(--ink-45)', marginTop: '1px' }}>{t('Estos datos alimentan el algoritmo de matching', 'These fields power the matching algorithm')}</div>
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '.8rem' }}>
@@ -2868,7 +2865,7 @@ function MyCompanyView({ userEmail, coProfile, onUpdate, t }: {
           {/* Left — General info */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <div className="card">
-              <SectionTitle>🏢 {t('Información general', 'General info')}</SectionTitle>
+              <SectionTitle>{t('Información general', 'General info')}</SectionTitle>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '.7rem' }}>
                 <div><label style={lbl}>{t('Nombre de la empresa', 'Company name')}</label><input style={inp} value={form.company_name} onChange={e => f('company_name', e.target.value)} /></div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '.6rem' }}>
@@ -2904,7 +2901,7 @@ function MyCompanyView({ userEmail, coProfile, onUpdate, t }: {
             </div>
 
             <div className="card">
-              <SectionTitle>📖 {t('Sobre nosotros', 'About us')}</SectionTitle>
+              <SectionTitle>{t('Sobre nosotros', 'About us')}</SectionTitle>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '.7rem' }}>
                 <div><label style={lbl}>{t('Descripción', 'Description')}</label><textarea style={{ ...inp, resize: 'none', minHeight: 80, lineHeight: 1.6 }} value={form.description} onChange={e => f('description', e.target.value)} placeholder={t('¿Qué hace tu empresa?', 'What does your company do?')} /></div>
                 <div><label style={lbl}>{t('Misión', 'Mission')}</label><textarea style={{ ...inp, resize: 'none', minHeight: 65, lineHeight: 1.6 }} value={form.mission} onChange={e => f('mission', e.target.value)} placeholder={t('¿Cuál es tu misión?', 'What is your mission?')} /></div>
@@ -2917,7 +2914,6 @@ function MyCompanyView({ userEmail, coProfile, onUpdate, t }: {
           <div>
             <div className="card" style={{ border: '2px solid var(--forest)', background: 'linear-gradient(135deg,#f8fdfd,var(--white))' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem', marginBottom: '1rem', paddingBottom: '.6rem', borderBottom: '1px solid var(--line)' }}>
-                <span style={{ fontSize: '1.1rem' }}>🎯</span>
                 <div>
                   <div style={{ fontFamily: 'var(--head)', fontWeight: 700, fontSize: '.88rem', color: 'var(--forest)' }}>{t('Perfil de matching', 'Matching profile')}</div>
                   <div style={{ fontSize: '.7rem', color: 'var(--ink-45)', marginTop: '1px' }}>{t('Completá estos campos para activar el matching', 'Complete these fields to activate matching')}</div>
@@ -2927,7 +2923,7 @@ function MyCompanyView({ userEmail, coProfile, onUpdate, t }: {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '.85rem' }}>
                 {/* Areas */}
                 <div>
-                  <label style={matchLbl}>🏷 {t('Áreas que buscás contratar', 'Areas you\'re hiring for')}</label>
+                  <label style={matchLbl}>{t('Áreas que buscás contratar', 'Areas you\'re hiring for')}</label>
                   <div style={{ display: 'flex', gap: '.4rem', marginBottom: '.4rem' }}>
                     <select style={{ ...inp, flex: 1 }} value={areaInput} onChange={e => setAreaInput(e.target.value)}>
                       <option value="">{t('Seleccioná un área', 'Select an area')}</option>
@@ -2947,7 +2943,7 @@ function MyCompanyView({ userEmail, coProfile, onUpdate, t }: {
 
                 {/* Experience */}
                 <div>
-                  <label style={matchLbl}>📊 {t('Nivel de experiencia requerido', 'Required experience level')}</label>
+                  <label style={matchLbl}>{t('Nivel de experiencia requerido', 'Required experience level')}</label>
                   <select style={inp} value={form.looking_for_experience} onChange={e => f('looking_for_experience', e.target.value)}>
                     <option value="">{t('Cualquiera', 'Any')}</option>
                     <option>{t('Sin experiencia', 'No experience')}</option>
@@ -2960,7 +2956,7 @@ function MyCompanyView({ userEmail, coProfile, onUpdate, t }: {
 
                 {/* Modality */}
                 <div>
-                  <label style={matchLbl}>🏠 {t('Modalidad de trabajo', 'Work mode')}</label>
+                  <label style={matchLbl}>{t('Modalidad de trabajo', 'Work mode')}</label>
                   <select style={inp} value={form.looking_for_modality} onChange={e => f('looking_for_modality', e.target.value)}>
                     <option value="">{t('Cualquiera', 'Any')}</option>
                     <option>{t('Presencial', 'On-site')}</option>
@@ -3107,97 +3103,124 @@ function TalentView({ candidates, loadCandidates, t }: {
 }
 
 function CandCard({ c, t }: { c: Candidate; t: (es: string, en: string) => string }) {
-  const [showContact, setShowContact] = useState(false)
-  const [copied, setCopied] = useState(false)
+  const [showModal, setShowModal] = useState(false)
   const tags = [c.experience, c.city, c.modality].filter(Boolean)
+  return (
+    <>
+      <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '.85rem', padding: '1.2rem 1.3rem' }}>
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '.85rem' }}>
+          <div style={{ position: 'relative', flexShrink: 0 }}>
+            <div style={{ width: 46, height: 46, borderRadius: '50%', background: 'linear-gradient(135deg,var(--forest),var(--forest-lt))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--head)', fontSize: '.9rem', fontWeight: 700, color: 'white' }}>
+              {initials(c.name)}
+            </div>
+            {/* Green "available" dot */}
+            <span style={{ position: 'absolute', bottom: 1, right: 1, width: 11, height: 11, borderRadius: '50%', background: '#16a34a', border: '2px solid white' }} title={t('Disponible', 'Available')} />
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontFamily: 'var(--head)', fontWeight: 700, fontSize: '.9rem', color: 'var(--ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</div>
+            {c.area && <div style={{ fontSize: '.75rem', color: 'var(--forest)', fontWeight: 600, marginTop: '2px' }}>{c.area}</div>}
+          </div>
+          <span style={{ fontSize: '.7rem', color: 'var(--ink-45)', flexShrink: 0, marginTop: '2px' }}>{timeAgo(c.created_at)}</span>
+        </div>
+
+        {/* Tags */}
+        {tags.length > 0 && (
+          <div className="jc-tags" style={{ margin: 0 }}>
+            {tags.map(tag => <span key={tag} className="jc-tag">{tag}</span>)}
+            {c.salary_range && <span className="jc-tag" style={{ background: 'var(--pale)', color: 'var(--forest)', fontWeight: 600 }}>{c.salary_range}</span>}
+          </div>
+        )}
+
+        {/* Skills */}
+        {c.skills && c.skills.length > 0 && (
+          <div className="jc-tags" style={{ margin: 0 }}>
+            {c.skills.slice(0, 4).map(s => <span key={s} className="jc-tag jc-tag-skill">{s}</span>)}
+            {c.skills.length > 4 && <span className="jc-tag" style={{ color: 'var(--ink-45)' }}>+{c.skills.length - 4}</span>}
+          </div>
+        )}
+
+        {/* Actions */}
+        <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap', marginTop: 'auto', paddingTop: '.5rem', borderTop: '1px solid var(--line)' }}>
+          {c.linkedin && (
+            <a href={c.linkedin.startsWith('http') ? c.linkedin : `https://${c.linkedin}`} target="_blank" rel="noreferrer" className="btn btn-outline btn-sm">
+              LinkedIn →
+            </a>
+          )}
+          {c.cv_url && (
+            <a href={c.cv_url} target="_blank" rel="noreferrer" className="btn btn-outline btn-sm">
+              {t('Ver CV', 'View CV')}
+            </a>
+          )}
+          <button
+            className="btn btn-forest btn-sm"
+            style={{ marginLeft: 'auto' }}
+            onClick={() => setShowModal(true)}
+          >
+            {t('Contactar', 'Contact')}
+          </button>
+        </div>
+      </div>
+      {showModal && <ContactModal c={c} onClose={() => setShowModal(false)} t={t} />}
+    </>
+  )
+}
+
+function ContactModal({ c, onClose, t }: { c: Candidate; onClose: () => void; t: (es: string, en: string) => string }) {
+  const [copied, setCopied] = useState(false)
   const waMsg = encodeURIComponent(t(
     `¡Hola ${c.name.split(' ')[0]}! Vi tu perfil en Candidato® y me gustaría hablar sobre una oportunidad.`,
     `Hi ${c.name.split(' ')[0]}! I found your profile on Candidato® and would like to chat about an opportunity.`
   ))
   return (
-    <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '.85rem', padding: '1.2rem 1.3rem' }}>
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '.85rem' }}>
-        <div style={{ position: 'relative', flexShrink: 0 }}>
-          <div style={{ width: 46, height: 46, borderRadius: '50%', background: 'linear-gradient(135deg,var(--forest),var(--forest-lt))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--head)', fontSize: '.9rem', fontWeight: 700, color: 'white' }}>
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(14,30,32,.5)', zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem' }} onClick={onClose}>
+      <div style={{ background: 'white', borderRadius: 18, padding: '1.8rem', width: '100%', maxWidth: 400, boxShadow: '0 24px 64px rgba(0,0,0,.18)' }} onClick={e => e.stopPropagation()}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '.9rem', marginBottom: '1.4rem' }}>
+          <div style={{ width: 52, height: 52, borderRadius: '50%', background: 'linear-gradient(135deg,var(--forest),var(--forest-lt))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--head)', fontSize: '1rem', fontWeight: 700, color: 'white', flexShrink: 0 }}>
             {initials(c.name)}
           </div>
-          {/* Green "available" dot */}
-          <span style={{ position: 'absolute', bottom: 1, right: 1, width: 11, height: 11, borderRadius: '50%', background: '#16a34a', border: '2px solid white' }} title={t('Disponible', 'Available')} />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontFamily: 'var(--head)', fontWeight: 700, fontSize: '1rem', color: 'var(--ink)' }}>{c.name}</div>
+            {c.area && <div style={{ fontSize: '.76rem', color: 'var(--forest)', fontWeight: 600, marginTop: '1px' }}>{c.area}</div>}
+          </div>
+          <button style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.1rem', color: 'var(--ink-45)', padding: '4px', lineHeight: 1, borderRadius: 6 }} onClick={onClose}>&#x2715;</button>
         </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontFamily: 'var(--head)', fontWeight: 700, fontSize: '.9rem', color: 'var(--ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</div>
-          {c.area && <div style={{ fontSize: '.75rem', color: 'var(--forest)', fontWeight: 600, marginTop: '2px' }}>{c.area}</div>}
-        </div>
-        <span style={{ fontSize: '.7rem', color: 'var(--ink-45)', flexShrink: 0, marginTop: '2px' }}>{timeAgo(c.created_at)}</span>
-      </div>
-
-      {/* Tags */}
-      {tags.length > 0 && (
-        <div className="jc-tags" style={{ margin: 0 }}>
-          {tags.map(tag => <span key={tag} className="jc-tag">{tag}</span>)}
-          {c.salary_range && <span className="jc-tag" style={{ background: 'var(--pale)', color: 'var(--forest)', fontWeight: 600 }}>{c.salary_range}</span>}
-        </div>
-      )}
-
-      {/* Skills */}
-      {c.skills && c.skills.length > 0 && (
-        <div className="jc-tags" style={{ margin: 0 }}>
-          {c.skills.slice(0, 4).map(s => <span key={s} className="jc-tag jc-tag-skill">{s}</span>)}
-          {c.skills.length > 4 && <span className="jc-tag" style={{ color: 'var(--ink-45)' }}>+{c.skills.length - 4}</span>}
-        </div>
-      )}
-
-      {/* Actions */}
-      <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap', marginTop: 'auto', paddingTop: '.5rem', borderTop: '1px solid var(--line)' }}>
-        {c.linkedin && (
-          <a href={c.linkedin.startsWith('http') ? c.linkedin : `https://${c.linkedin}`} target="_blank" rel="noreferrer" className="btn btn-outline btn-sm">
-            LinkedIn →
-          </a>
-        )}
-        {c.cv_url && (
-          <a href={c.cv_url} target="_blank" rel="noreferrer" className="btn btn-outline btn-sm">
-            {t('Ver CV', 'View CV')}
-          </a>
-        )}
-        <button
-          className="btn btn-forest btn-sm"
-          style={{ marginLeft: 'auto' }}
-          onClick={() => setShowContact(v => !v)}
-        >
-          {showContact ? t('Ocultar', 'Hide') : t('Contactar', 'Contact')}
-        </button>
-      </div>
-
-      {/* Contact reveal */}
-      {showContact && (
-        <div style={{ background: 'var(--pale)', border: '1px solid var(--mist)', borderRadius: '10px', padding: '.85rem 1rem', display: 'flex', flexDirection: 'column', gap: '.7rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '.55rem' }}>
           {c.whatsapp && (
-            <a
-              href={`https://wa.me/${c.whatsapp.replace(/\D/g,'')}?text=${waMsg}`}
-              target="_blank" rel="noreferrer"
-              style={{ display: 'flex', alignItems: 'center', gap: '.6rem', background: '#25D366', color: 'white', borderRadius: 8, padding: '.55rem .9rem', fontWeight: 600, fontSize: '.82rem', textDecoration: 'none' }}
-            >
-              <span style={{ fontSize: '1rem' }}>💬</span>
-              {t('Enviar mensaje por WhatsApp', 'Send WhatsApp message')}
+            <a href={`https://wa.me/${c.whatsapp.replace(/\D/g,'')}?text=${waMsg}`} target="_blank" rel="noreferrer"
+               style={{ display: 'flex', alignItems: 'center', gap: '.75rem', background: '#25D366', color: 'white', borderRadius: 11, padding: '.8rem 1rem', textDecoration: 'none', fontWeight: 600, fontSize: '.85rem' }}>
+              <span style={{ fontSize: '1.05rem' }}>&#x1F4AC;</span>
+              WhatsApp
             </a>
           )}
           {c.email && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '.6rem' }}>
-              <a href={`mailto:${c.email}`} style={{ flex: 1, color: 'var(--forest)', fontWeight: 600, fontSize: '.82rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                📧 {c.email}
-              </a>
-              <button
-                style={{ background: 'none', border: '1px solid var(--mist)', borderRadius: 6, padding: '2px 8px', fontSize: '.7rem', cursor: 'pointer', color: 'var(--forest)', flexShrink: 0 }}
-                onClick={() => { navigator.clipboard?.writeText(c.email || ''); setCopied(true); setTimeout(() => setCopied(false), 2000) }}
-              >{copied ? '✓' : t('Copiar', 'Copy')}</button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '.65rem', background: 'var(--off)', borderRadius: 11, padding: '.8rem 1rem' }}>
+              <span style={{ fontSize: '1rem', flexShrink: 0 }}>&#x2709;</span>
+              <a href={`mailto:${c.email}`} style={{ flex: 1, color: 'var(--forest)', fontWeight: 600, fontSize: '.83rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.email}</a>
+              <button style={{ background: 'none', border: '1px solid var(--line)', borderRadius: 6, padding: '2px 9px', fontSize: '.7rem', cursor: 'pointer', color: 'var(--ink-45)', flexShrink: 0 }} onClick={() => { navigator.clipboard?.writeText(c.email || ''); setCopied(true); setTimeout(() => setCopied(false), 2000) }}>
+                {copied ? '✓' : t('Copiar', 'Copy')}
+              </button>
             </div>
           )}
-          {!c.email && !c.whatsapp && (
-            <span style={{ fontSize: '.8rem', color: 'var(--ink-45)' }}>{t('Sin datos de contacto', 'No contact info')}</span>
+          {c.linkedin && (
+            <a href={c.linkedin.startsWith('http') ? c.linkedin : `https://${c.linkedin}`} target="_blank" rel="noreferrer"
+               style={{ display: 'flex', alignItems: 'center', gap: '.75rem', background: '#0A66C2', color: 'white', borderRadius: 11, padding: '.8rem 1rem', textDecoration: 'none', fontWeight: 600, fontSize: '.85rem' }}>
+              <span style={{ fontWeight: 900, fontSize: '.9rem' }}>in</span>
+              LinkedIn
+            </a>
+          )}
+          {c.cv_url && (
+            <a href={c.cv_url} target="_blank" rel="noreferrer"
+               style={{ display: 'flex', alignItems: 'center', gap: '.75rem', background: 'var(--off)', border: '1.5px solid var(--line)', color: 'var(--ink)', borderRadius: 11, padding: '.8rem 1rem', textDecoration: 'none', fontWeight: 600, fontSize: '.85rem' }}>
+              <span style={{ fontSize: '1rem' }}>&#x1F4C4;</span>
+              {t('Descargar CV', 'Download CV')}
+            </a>
+          )}
+          {!c.email && !c.whatsapp && !c.linkedin && !c.cv_url && (
+            <div style={{ textAlign: 'center', padding: '1rem', color: 'var(--ink-45)', fontSize: '.83rem' }}>{t('Sin datos de contacto', 'No contact info')}</div>
           )}
         </div>
-      )}
+      </div>
     </div>
   )
 }
