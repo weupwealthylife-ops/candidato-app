@@ -2422,7 +2422,6 @@ function JobRow({ job, applied, appliedAt, onApply, onWithdraw, onSelect, t }: {
       style={{ cursor: onSelect ? 'pointer' : undefined, alignItems: 'flex-start' }}
       onClick={() => onSelect?.(job)}
     >
-      {isNew && <span className="new-badge">{tr('Nuevo', 'New')}</span>}
       <div className="jc-ava" style={{ marginTop: 2 }}>{initials(coName)}</div>
       <div className="jc-body">
         <div className="jc-title">{job.title}</div>
@@ -2440,6 +2439,7 @@ function JobRow({ job, applied, appliedAt, onApply, onWithdraw, onSelect, t }: {
         )}
       </div>
       <div className="jc-right" onClick={e => e.stopPropagation()} style={{ marginTop: 2 }}>
+        {isNew && <span className="new-badge">{tr('Nuevo', 'New')}</span>}
         <span className="jc-time">{timeAgo(job.created_at)}</span>
         {applied ? (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '.2rem', marginTop: '.35rem' }}>

@@ -1081,7 +1081,7 @@ footer{
 .match-pill.top{background:var(--coral-lt);color:var(--coral)}
 .match-pill.mid{background:rgba(27,59,62,.08);color:var(--forest)}
 .jc-time{font-size:.65rem;color:var(--ink-45)}
-.new-badge{position:absolute;top:10px;right:10px;background:var(--coral);color:white;font-size:.54rem;font-weight:700;padding:2px 7px;border-radius:50px;text-transform:uppercase;letter-spacing:.06em}
+.new-badge{background:var(--coral);color:white;font-size:.54rem;font-weight:700;padding:2px 7px;border-radius:50px;text-transform:uppercase;letter-spacing:.06em;display:inline-block;align-self:flex-end}
 
 /* ── SEARCH ── */
 .search-wrap{background:var(--white);border:1.5px solid var(--line);border-radius:var(--radius);display:flex;align-items:center;gap:.6rem;padding:.65rem .9rem;margin-bottom:.75rem;transition:border-color .2s}
