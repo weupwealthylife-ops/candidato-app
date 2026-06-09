@@ -2621,7 +2621,6 @@ function CompanyView({
         {/* Profile completion nudge */}
         {!hasProfile && (
           <div style={{ background: 'linear-gradient(135deg,var(--pale),#f0faf0)', border: '1.5px solid var(--mist)', borderRadius: 12, padding: '1.3rem 1.4rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <div style={{ fontSize: '1.8rem' }}>🎯</div>
             <div style={{ flex: 1 }}>
               <div style={{ fontFamily: 'var(--head)', fontWeight: 700, fontSize: '.88rem', color: 'var(--ink)', marginBottom: '.2rem' }}>
                 {t('Activá el matching inteligente', 'Activate smart matching')}
@@ -2967,7 +2966,7 @@ function MyCompanyView({ userEmail, coProfile, onUpdate, t }: {
 
                 {/* Skills */}
                 <div>
-                  <label style={matchLbl}>⚡ {t('Skills clave que buscás', 'Key skills you\'re looking for')}</label>
+                  <label style={matchLbl}>{t('Skills clave que buscás', 'Key skills you\'re looking for')}</label>
                   <div style={{ display: 'flex', gap: '.4rem', marginBottom: '.4rem' }}>
                     <input style={{ ...inp, flex: 1 }} value={skillInput} onChange={e => setSkillInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); if (skillInput.trim() && !lookingSkills.includes(skillInput.trim())) { setLookingSkills([...lookingSkills, skillInput.trim()]); setSkillInput('') } } }} placeholder="React, Excel, SQL…" />
                     <button className="btn btn-forest btn-sm" style={{ flexShrink: 0 }} onClick={() => { const v = skillInput.trim(); if (v && !lookingSkills.includes(v)) { setLookingSkills([...lookingSkills, v]); setSkillInput('') } }}>+</button>
@@ -3344,7 +3343,7 @@ function MyJobsView({ userEmail, onPost, t }: {
         <div className="page-head">
           <button className="btn btn-outline btn-sm" onClick={() => setViewingJobId(null)}>← {t('Mis vacantes', 'My listings')}</button>
           <div className="page-title" style={{ marginTop: '.5rem' }}>{job?.title}</div>
-          <div className="page-sub">{t(`${applications.length} postulante${applications.length !== 1 ? 's' : ''}`, `${applications.length} applicant${applications.length !== 1 ? 's' : ''}`)}</div>
+          <div className="page-sub">{t(`${applications.length} postulante${applications.length !== 1 ? 's' : ''} · seleccioná un estado para gestionar`, `${applications.length} applicant${applications.length !== 1 ? 's' : ''} · update status to manage pipeline`)}</div>
         </div>
         {appsLoading && <div className="loading-state">{t('Cargando postulantes…', 'Loading applicants…')}</div>}
         {!appsLoading && applications.length === 0 && (
@@ -3388,9 +3387,19 @@ function MyJobsView({ userEmail, onPost, t }: {
                     {c.skills.slice(0, 5).map(s => <span key={s} className="jc-tag jc-tag-skill">{s}</span>)}
                   </div>
                 )}
-                <div style={{ background: 'var(--off)', borderRadius: '8px', padding: '.65rem .9rem', fontSize: '.8rem', lineHeight: 1.9, marginBottom: '.75rem' }}>
-                  {c.email && <div><span style={{ color: 'var(--ink-45)', fontSize: '.72rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.04em' }}>Email</span><br /><a href={`mailto:${c.email}`} style={{ color: 'var(--forest)', fontWeight: 600 }}>{c.email}</a></div>}
-                  {c.whatsapp && <div style={{ marginTop: '.3rem' }}><span style={{ color: 'var(--ink-45)', fontSize: '.72rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.04em' }}>WhatsApp</span><br /><a href={`https://wa.me/${c.whatsapp.replace(/\D/g,'')}`} target="_blank" rel="noreferrer" style={{ color: 'var(--forest)', fontWeight: 600 }}>{c.whatsapp}</a></div>}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '.4rem', marginBottom: '.75rem' }}>
+                  {c.email && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '.6rem', background: 'var(--off)', borderRadius: '8px', padding: '.55rem .9rem' }}>
+                      <span style={{ color: 'var(--ink-45)', fontSize: '.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', flexShrink: 0, minWidth: 64 }}>Email</span>
+                      <a href={`mailto:${c.email}`} style={{ color: 'var(--forest)', fontWeight: 600, fontSize: '.8rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.email}</a>
+                    </div>
+                  )}
+                  {c.whatsapp && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '.6rem', background: 'var(--off)', borderRadius: '8px', padding: '.55rem .9rem' }}>
+                      <span style={{ color: 'var(--ink-45)', fontSize: '.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', flexShrink: 0, minWidth: 64 }}>WhatsApp</span>
+                      <a href={`https://wa.me/${c.whatsapp.replace(/\D/g,'')}`} target="_blank" rel="noreferrer" style={{ color: 'var(--forest)', fontWeight: 600, fontSize: '.8rem' }}>{c.whatsapp}</a>
+                    </div>
+                  )}
                 </div>
                 <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap' }}>
                   {c.linkedin && <a href={c.linkedin.startsWith('http') ? c.linkedin : `https://${c.linkedin}`} target="_blank" rel="noreferrer" className="btn btn-outline btn-sm">LinkedIn →</a>}
