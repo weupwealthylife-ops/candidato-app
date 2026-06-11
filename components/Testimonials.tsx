@@ -30,15 +30,6 @@ const TESTIMONIALS = [
     initial: 'MF',
     bg: '#264D51',
   },
-  {
-    quote_es: 'Subí mi perfil en 5 minutos y al otro día ya tenía un mensaje de una empresa que me interesaba. Increíble.',
-    quote_en: 'I uploaded my profile in 5 minutes and the next day already had a message from a company I was interested in. Incredible.',
-    name: 'Camilo R.',
-    role_es: 'Desarrollador Full Stack · Medellín',
-    role_en: 'Full Stack Developer · Medellín',
-    initial: 'CR',
-    bg: '#3A6B6E',
-  },
 ]
 
 export default function Testimonials() {
@@ -50,7 +41,7 @@ export default function Testimonials() {
           <span className="sec-eye">{t('Testimonios', 'Testimonials')}</span>
           <h2 className="sec-h2">{t('Lo que dicen quienes ya lo vivieron.', 'What those who\'ve been through it say.')}</h2>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(280px,1fr))', gap: '1.2rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '1.2rem' }}>
           {TESTIMONIALS.map((t2, i) => (
             <div key={i} style={{ background: 'var(--white)', borderRadius: 14, padding: '1.4rem 1.5rem', border: '1px solid var(--line)', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div style={{ fontSize: '1.4rem', color: 'var(--forest)', lineHeight: 1 }}>&ldquo;</div>
