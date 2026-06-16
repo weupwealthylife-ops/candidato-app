@@ -42,6 +42,7 @@ interface Candidate {
   linkedin?: string
   cv_url?: string
   created_at?: string
+  open_to_work?: boolean
 }
 
 interface Application {
@@ -100,6 +101,33 @@ function timeAgo(ts?: string) {
   const m = Math.floor(d / 30)
   if (m < 12) return `Hace ${m} mes${m > 1 ? 'es' : ''}`
   return `Hace más de un año`
+}
+
+// Fixed-vocabulary DB values (area/experience/modality) translated for display in EN.
+// Free text (job titles, descriptions, notes) is left as entered.
+const VALUE_TRANSLATIONS: Record<string, string> = {
+  'Tecnología / IT': 'Technology / IT',
+  'Diseño UX/UI': 'UX/UI Design',
+  'Marketing y Comunicaciones': 'Marketing & Communications',
+  'Ventas y Comercial': 'Sales & Commercial',
+  'Finanzas y Contabilidad': 'Finance & Accounting',
+  'Recursos Humanos': 'Human Resources',
+  'Operaciones': 'Operations',
+  'Producto / Product': 'Product',
+  'Legal': 'Legal',
+  'Sin experiencia': 'No experience',
+  '1–2 años': '1–2 years',
+  '3–5 años': '3–5 years',
+  '5–10 años': '5–10 years',
+  '10+ años': '10+ years',
+  'Presencial': 'On-site',
+  'Remoto': 'Remote',
+  'Híbrido': 'Hybrid',
+}
+
+function tv(value: string | undefined | null, t: (es: string, en: string) => string): string {
+  if (!value) return ''
+  return t(value, VALUE_TRANSLATIONS[value] || value)
 }
 
 function appliedAgo(ts: string, t: (es: string, en: string) => string) {
@@ -1567,6 +1595,7 @@ function CandidateView({
   const [selectedJob, setSelectedJob] = useState<Job | null>(null)
   const [profileLoadFailed, setProfileLoadFailed] = useState(false)
   const [photoUploading, setPhotoUploading] = useState(false)
+  const [openToWorkSaving, setOpenToWorkSaving] = useState(false)
   // Settings toggles — must be at top level (no conditional hooks)
   const [notifMatches, setNotifMatches] = useState(true)
   const [notifUpdates, setNotifUpdates] = useState(true)
@@ -1664,14 +1693,14 @@ function CandidateView({
           </div>
           <div>
             <div style={{ fontFamily: 'var(--head)', fontWeight: 700, fontSize: '1.05rem', color: 'var(--ink)', lineHeight: 1.25 }}>{selectedJob.title}</div>
-            <div style={{ fontSize: '.83rem', color: 'var(--ink-70)', marginTop: '.15rem' }}>{selectedJob.companies?.company_name || '—'}{selectedJob.area ? ` · ${selectedJob.area}` : ''}</div>
+            <div style={{ fontSize: '.83rem', color: 'var(--ink-70)', marginTop: '.15rem' }}>{selectedJob.companies?.company_name || '—'}{selectedJob.area ? ` · ${tv(selectedJob.area, t)}` : ''}</div>
           </div>
         </div>
 
         {/* Tags row */}
-        {[selectedJob.modality, selectedJob.city, selectedJob.salary_range].filter(Boolean).length > 0 && (
+        {[selectedJob.modality ? tv(selectedJob.modality, t) : '', selectedJob.city, selectedJob.salary_range].filter(Boolean).length > 0 && (
           <div className="jc-tags" style={{ marginBottom: '1rem' }}>
-            {[selectedJob.modality, selectedJob.city, selectedJob.salary_range].filter(Boolean).map(tag => (
+            {[selectedJob.modality ? tv(selectedJob.modality, t) : '', selectedJob.city, selectedJob.salary_range].filter(Boolean).map(tag => (
               <span key={tag} className="jc-tag">{tag}</span>
             ))}
           </div>
@@ -2104,6 +2133,18 @@ function CandidateView({
       setEditSkInput('')
     }
 
+    const openToWork = (p?.open_to_work as boolean | undefined) ?? true
+    const toggleOpenToWork = async () => {
+      if (!user?.email || openToWorkSaving) return
+      setOpenToWorkSaving(true)
+      try {
+        const sb = createClient()
+        const { data: updated } = await sb.from('candidates').update({ open_to_work: !openToWork }).ilike('email', user.email).select().maybeSingle()
+        if (updated) onProfileUpdate(updated)
+      } catch (e) { console.error(e) }
+      setOpenToWorkSaving(false)
+    }
+
     const sel: React.CSSProperties = { width: '100%', background: 'var(--off)', border: '1.5px solid transparent', borderRadius: '8px', padding: '8px 10px', color: 'var(--ink)', fontFamily: 'var(--body)', fontSize: '.83rem', outline: 'none' }
     const inp: React.CSSProperties = { ...sel }
 
@@ -2133,9 +2174,27 @@ function CandidateView({
               )}
             </div>
             <div style={{ flex: 1 }}>
-              <div style={{ fontFamily: 'var(--head)', fontSize: '1rem', fontWeight: 700, color: 'var(--ink)', letterSpacing: '-.02em' }}>{user?.name || '—'}</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '.55rem', flexWrap: 'wrap' }}>
+                <div style={{ fontFamily: 'var(--head)', fontSize: '1rem', fontWeight: 700, color: 'var(--ink)', letterSpacing: '-.02em' }}>{user?.name || '—'}</div>
+                <button
+                  onClick={toggleOpenToWork}
+                  disabled={openToWorkSaving}
+                  title={t('Click para cambiar tu estado', 'Click to change your status')}
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: '.35rem',
+                    fontSize: '.68rem', fontWeight: 700, padding: '3px 9px', borderRadius: 50,
+                    border: `1px solid ${openToWork ? 'var(--mist)' : 'var(--line)'}`,
+                    background: openToWork ? 'var(--pale)' : 'var(--off)',
+                    color: openToWork ? 'var(--forest)' : 'var(--ink-45)',
+                    cursor: openToWorkSaving ? 'wait' : 'pointer',
+                  }}
+                >
+                  <span style={{ width: 7, height: 7, borderRadius: '50%', background: openToWork ? '#16a34a' : 'var(--ink-45)' }} />
+                  {openToWork ? t('Abierto/a a oportunidades', 'Open to opportunities') : t('No buscando activamente', 'Not actively looking')}
+                </button>
+              </div>
               <div style={{ fontSize: '.76rem', color: 'var(--ink-45)', marginTop: '2px' }}>
-                {[area, city].filter(Boolean).join(' · ') || user?.email}
+                {[tv(area, t), city].filter(Boolean).join(' · ') || user?.email}
               </div>
             </div>
             {!isEditing
@@ -2184,7 +2243,7 @@ function CandidateView({
                       <option value="">{t('Seleccioná', 'Select')}</option>
                       {['Tecnología / IT','Diseño UX/UI','Marketing y Comunicaciones','Ventas y Comercial','Finanzas y Contabilidad','Recursos Humanos','Operaciones','Producto / Product','Legal'].map(o => <option key={o}>{o}</option>)}
                     </select>
-                  : <span style={{ fontSize: '.82rem' }}>{area || <span style={{ color: 'var(--ink-45)' }}>—</span>}</span>}
+                  : <span style={{ fontSize: '.82rem' }}>{area ? tv(area, t) : <span style={{ color: 'var(--ink-45)' }}>—</span>}</span>}
               </div>
               <div className="profile-row">
                 <span className="profile-lbl">{t('Experiencia', 'Exp.')}</span>
@@ -2193,7 +2252,7 @@ function CandidateView({
                       <option value="">{t('Seleccioná', 'Select')}</option>
                       {[t('Sin experiencia','No experience'),t('1–2 años','1–2 years'),t('3–5 años','3–5 years'),t('5–10 años','5–10 years'),t('10+ años','10+ years')].map(o => <option key={o}>{o}</option>)}
                     </select>
-                  : <span style={{ fontSize: '.82rem' }}>{experience || <span style={{ color: 'var(--ink-45)' }}>—</span>}</span>}
+                  : <span style={{ fontSize: '.82rem' }}>{experience ? tv(experience, t) : <span style={{ color: 'var(--ink-45)' }}>—</span>}</span>}
               </div>
               <div className="profile-row">
                 <span className="profile-lbl">{t('Modalidad', 'Mode')}</span>
@@ -2202,7 +2261,7 @@ function CandidateView({
                       <option value="">{t('Seleccioná', 'Select')}</option>
                       {[t('Presencial','On-site'),t('Remoto','Remote'),t('Híbrido','Hybrid')].map(o => <option key={o}>{o}</option>)}
                     </select>
-                  : <span style={{ fontSize: '.82rem' }}>{modality || <span style={{ color: 'var(--ink-45)' }}>—</span>}</span>}
+                  : <span style={{ fontSize: '.82rem' }}>{modality ? tv(modality, t) : <span style={{ color: 'var(--ink-45)' }}>—</span>}</span>}
               </div>
               <div className="profile-row">
                 <span className="profile-lbl">{t('Ciudad', 'City')}</span>
@@ -2355,7 +2414,7 @@ function JobRow({ job, applied, appliedAt, onApply, onWithdraw, onSelect, t }: {
 }) {
   const tr = t || ((es: string) => es)
   const coName = job.companies?.company_name || '—'
-  const tags = [job.modality, job.city, job.salary_range].filter(Boolean)
+  const tags = [job.modality ? tv(job.modality, tr) : '', job.city, job.salary_range].filter(Boolean)
   return (
     <div
       className="job-card"
@@ -2365,7 +2424,7 @@ function JobRow({ job, applied, appliedAt, onApply, onWithdraw, onSelect, t }: {
       <div className="jc-ava">{initials(coName)}</div>
       <div className="jc-body">
         <div className="jc-title">{job.title}</div>
-        <div className="jc-meta">{coName}{job.area ? ` · ${job.area}` : ''}</div>
+        <div className="jc-meta">{coName}{job.area ? ` · ${tv(job.area, tr)}` : ''}</div>
         {tags.length > 0 && (
           <div className="jc-tags">
             {tags.map(tag => <span key={tag} className="jc-tag">{tag}</span>)}
@@ -2526,7 +2585,7 @@ function CompanyView({
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontFamily: 'var(--head)', fontWeight: 700, fontSize: '.83rem', color: 'var(--ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</div>
-                      {c.area && <div style={{ fontSize: '.72rem', color: 'var(--forest)', fontWeight: 600, marginTop: '1px' }}>{c.area}</div>}
+                      {c.area && <div style={{ fontSize: '.72rem', color: 'var(--forest)', fontWeight: 600, marginTop: '1px' }}>{tv(c.area, t)}</div>}
                     </div>
                     {/* Match score badge */}
                     <span style={{ background: 'var(--pale)', color: 'var(--forest)', border: '1px solid var(--mist)', borderRadius: 50, padding: '2px 8px', fontSize: '.67rem', fontWeight: 700, flexShrink: 0 }}>
@@ -2534,7 +2593,7 @@ function CompanyView({
                     </span>
                   </div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '.3rem', marginBottom: '.6rem' }}>
-                    {[c.experience, c.city, c.modality].filter(Boolean).map(tag => (
+                    {[tv(c.experience, t), c.city, tv(c.modality, t)].filter(Boolean).map(tag => (
                       <span key={tag} className="jc-tag" style={{ fontSize: '.68rem', padding: '2px 7px' }}>{tag}</span>
                     ))}
                   </div>
@@ -3038,7 +3097,7 @@ function TalentView({ candidates, loadCandidates, t }: {
 
 function CandCard({ c, t }: { c: Candidate; t: (es: string, en: string) => string }) {
   const [showContact, setShowContact] = useState(false)
-  const tags = [c.experience, c.city, c.modality].filter(Boolean)
+  const tags = [tv(c.experience, t), c.city, tv(c.modality, t)].filter(Boolean)
   return (
     <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '.85rem', padding: '1.2rem 1.3rem' }}>
       {/* Header */}
@@ -3052,10 +3111,17 @@ function CandCard({ c, t }: { c: Candidate; t: (es: string, en: string) => strin
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontFamily: 'var(--head)', fontWeight: 700, fontSize: '.9rem', color: 'var(--ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</div>
-          {c.area && <div style={{ fontSize: '.75rem', color: 'var(--forest)', fontWeight: 600, marginTop: '2px' }}>{c.area}</div>}
+          {c.area && <div style={{ fontSize: '.75rem', color: 'var(--forest)', fontWeight: 600, marginTop: '2px' }}>{tv(c.area, t)}</div>}
         </div>
         <span style={{ fontSize: '.7rem', color: 'var(--ink-45)', flexShrink: 0, marginTop: '2px' }}>{timeAgo(c.created_at)}</span>
       </div>
+
+      {(c.open_to_work ?? true) && (
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '.35rem', alignSelf: 'flex-start', fontSize: '.66rem', fontWeight: 700, padding: '2px 8px', borderRadius: 50, border: '1px solid var(--mist)', background: 'var(--pale)', color: 'var(--forest)' }}>
+          <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#16a34a' }} />
+          {t('Abierto/a a oportunidades', 'Open to opportunities')}
+        </span>
+      )}
 
       {/* Tags */}
       {tags.length > 0 && (
@@ -3254,7 +3320,7 @@ function MyJobsView({ userEmail, onPost, t }: {
                   </div>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontFamily: 'var(--head)', fontWeight: 700, fontSize: '.88rem' }}>{c.name}</div>
-                    <div style={{ fontSize: '.74rem', color: 'var(--forest)', fontWeight: 600 }}>{c.area || ''}</div>
+                    <div style={{ fontSize: '.74rem', color: 'var(--forest)', fontWeight: 600 }}>{tv(c.area, t)}</div>
                   </div>
                   <select
                     value={app.status}
@@ -3267,9 +3333,9 @@ function MyJobsView({ userEmail, onPost, t }: {
                     <option value="rejected">{t('Descartado', 'Rejected')}</option>
                   </select>
                 </div>
-                {[c.experience, c.city, c.modality].filter(Boolean).length > 0 && (
+                {[tv(c.experience, t), c.city, tv(c.modality, t)].filter(Boolean).length > 0 && (
                   <div className="jc-tags" style={{ margin: '0 0 .65rem' }}>
-                    {[c.experience, c.city, c.modality].filter(Boolean).map(tag => <span key={tag} className="jc-tag">{tag}</span>)}
+                    {[tv(c.experience, t), c.city, tv(c.modality, t)].filter(Boolean).map(tag => <span key={tag} className="jc-tag">{tag}</span>)}
                   </div>
                 )}
                 {c.skills && c.skills.length > 0 && (
