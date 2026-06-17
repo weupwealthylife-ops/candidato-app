@@ -26,6 +26,7 @@ interface Job {
   active?: boolean
   created_at?: string
   closes_at?: string
+  views?: number
   companies?: { company_name: string }
 }
 
@@ -1596,6 +1597,8 @@ function CandidateView({
   const [withdrawing, setWithdrawing] = useState<string | null>(null)
   const [appliedJob, setAppliedJob] = useState<Job | null>(null)
   const [selectedJob, setSelectedJob] = useState<Job | null>(null)
+  const [mySavedJobs, setMySavedJobs] = useState<Map<string, string>>(new Map())
+  const [showSavedOnly, setShowSavedOnly] = useState(false)
   const [profileLoadFailed, setProfileLoadFailed] = useState(false)
   const [photoUploading, setPhotoUploading] = useState(false)
   const [openToWorkSaving, setOpenToWorkSaving] = useState(false)
@@ -1643,6 +1646,34 @@ function CandidateView({
         }
       })
   }, [candProfile])
+
+  useEffect(() => {
+    const candidateId = candProfile?.id as string | undefined
+    if (!candidateId) return
+    createClient().from('saved_jobs').select('job_id, created_at').eq('candidate_id', candidateId)
+      .then(({ data }) => {
+        if (data) setMySavedJobs(new Map(data.map((s: { job_id: string; created_at: string }) => [s.job_id, s.created_at] as [string, string])))
+      })
+  }, [candProfile])
+
+  useEffect(() => {
+    if (!selectedJob?.id) return
+    createClient().rpc('increment_job_views', { job_id: selectedJob.id }).then(() => {})
+  }, [selectedJob?.id])
+
+  async function saveJob(job: Job) {
+    const candidateId = candProfile?.id as string | undefined
+    if (!candidateId) return
+    const { error } = await createClient().from('saved_jobs').insert({ job_id: job.id, candidate_id: candidateId })
+    if (!error) setMySavedJobs(prev => new Map([...prev, [job.id, new Date().toISOString()]]))
+  }
+
+  async function unsaveJob(job: Job) {
+    const candidateId = candProfile?.id as string | undefined
+    if (!candidateId) return
+    const { error } = await createClient().from('saved_jobs').delete().eq('job_id', job.id).eq('candidate_id', candidateId)
+    if (!error) setMySavedJobs(prev => { const m = new Map(prev); m.delete(job.id); return m })
+  }
 
   async function applyToJob(job: Job) {
     const candidateId = candProfile?.id as string | undefined
@@ -1870,10 +1901,15 @@ function CandidateView({
             <div className="stat-num">{jobs.length || '0'}</div>
             <div className="stat-label">{t('activas ahora', 'active now')}</div>
           </div>
-          <div className="stat-card">
+          <div className="stat-card" style={{ cursor: 'pointer' }} onClick={() => { setView('jobs'); setShowSavedOnly(false) }}>
             <div className="stat-tag">{t('Nuevas esta semana', 'New this week')}</div>
             <div className="stat-num coral">{newThisWeek}</div>
             <div className="stat-label">{t('publicadas recientemente', 'recently posted')}</div>
+          </div>
+          <div className="stat-card" style={{ cursor: mySavedJobs.size > 0 ? 'pointer' : 'default' }} onClick={mySavedJobs.size > 0 ? () => { setView('jobs'); setShowSavedOnly(true) } : undefined}>
+            <div className="stat-tag">{t('Guardadas', 'Saved')}</div>
+            <div className="stat-num" style={{ color: '#e6a817' }}>{mySavedJobs.size || '0'}</div>
+            <div className="stat-label">{t('para revisar después', 'to review later')}</div>
           </div>
           <div className="stat-card">
             <div className="stat-tag">{t('Postuladas (7 días)', 'Applied (7 days)')}</div>
@@ -1970,7 +2006,7 @@ function CandidateView({
             </div>
             <div className="jobs-list" style={{ padding: '0 .7rem .7rem' }}>
               {jobs.slice(0, 8).map((j) => (
-                <JobRow key={j.id} job={j} applied={myApplied.has(j.id)} appliedAt={myApplied.get(j.id)} onApply={applyToJob} onWithdraw={withdrawApplication} onSelect={setSelectedJob} t={t} />
+                <JobRow key={j.id} job={j} applied={myApplied.has(j.id)} appliedAt={myApplied.get(j.id)} saved={mySavedJobs.has(j.id)} onApply={applyToJob} onWithdraw={withdrawApplication} onSave={saveJob} onUnsave={unsaveJob} onSelect={setSelectedJob} t={t} />
               ))}
             </div>
           </div>
@@ -2052,22 +2088,38 @@ function CandidateView({
           </div>
         </div>
 
+        {/* Saved filter toggle */}
+        {mySavedJobs.size > 0 && (
+          <div style={{ display: 'flex', gap: '.5rem', marginBottom: '.75rem' }}>
+            <button
+              className={`btn btn-sm ${!showSavedOnly ? 'btn-forest' : 'btn-outline'}`}
+              onClick={() => setShowSavedOnly(false)}
+            >{t('Todas', 'All')}</button>
+            <button
+              className={`btn btn-sm ${showSavedOnly ? 'btn-forest' : 'btn-outline'}`}
+              onClick={() => setShowSavedOnly(true)}
+            >★ {t(`Guardadas (${mySavedJobs.size})`, `Saved (${mySavedJobs.size})`)}</button>
+          </div>
+        )}
+
         {dataLoading && <div className="loading-state">{t('Cargando vacantes…', 'Loading listings…')}</div>}
 
-        {!dataLoading && jobs.length === 0 && (
-          <div className="empty-state">
-            <div className="empty-title">{t('Sin resultados', 'No results')}</div>
-            <div className="empty-sub">{t('Intentá con otros filtros.', 'Try different filters.')}</div>
-          </div>
-        )}
-
-        {!dataLoading && jobs.length > 0 && (
-          <div className="jobs-list">
-            {jobs.map((j) => (
-              <JobRow key={j.id} job={j} applied={myApplied.has(j.id)} appliedAt={myApplied.get(j.id)} onApply={applyToJob} onWithdraw={withdrawApplication} onSelect={setSelectedJob} t={t} />
-            ))}
-          </div>
-        )}
+        {!dataLoading && (() => {
+          const displayJobs = showSavedOnly ? jobs.filter(j => mySavedJobs.has(j.id)) : jobs
+          if (displayJobs.length === 0) return (
+            <div className="empty-state">
+              <div className="empty-title">{showSavedOnly ? t('Sin guardadas', 'No saved jobs') : t('Sin resultados', 'No results')}</div>
+              <div className="empty-sub">{showSavedOnly ? t('Guardá vacantes con ★ para verlas aquí.', 'Bookmark jobs with ★ to see them here.') : t('Intentá con otros filtros.', 'Try different filters.')}</div>
+            </div>
+          )
+          return (
+            <div className="jobs-list">
+              {displayJobs.map((j) => (
+                <JobRow key={j.id} job={j} applied={myApplied.has(j.id)} appliedAt={myApplied.get(j.id)} saved={mySavedJobs.has(j.id)} onApply={applyToJob} onWithdraw={withdrawApplication} onSave={saveJob} onUnsave={unsaveJob} onSelect={setSelectedJob} t={t} />
+              ))}
+            </div>
+          )
+        })()}
         {jobDetailModal}
         {applyModal}
       </>
@@ -2456,12 +2508,15 @@ function CandidateView({
   )
 }
 
-function JobRow({ job, applied, appliedAt, onApply, onWithdraw, onSelect, t }: {
+function JobRow({ job, applied, appliedAt, saved, onApply, onWithdraw, onSave, onUnsave, onSelect, t }: {
   job: Job
   applied?: boolean
   appliedAt?: string
+  saved?: boolean
   onApply?: (job: Job) => void
   onWithdraw?: (job: Job) => void
+  onSave?: (job: Job) => void
+  onUnsave?: (job: Job) => void
   onSelect?: (job: Job) => void
   t?: (es: string, en: string) => string
 }) {
@@ -2491,6 +2546,15 @@ function JobRow({ job, applied, appliedAt, onApply, onWithdraw, onSelect, t }: {
         )}
       </div>
       <div className="jc-right" onClick={e => e.stopPropagation()}>
+        {(onSave || onUnsave) && (
+          <button
+            title={saved ? tr('Quitar guardado', 'Remove bookmark') : tr('Guardar para después', 'Save for later')}
+            onClick={e => { e.stopPropagation(); saved ? onUnsave?.(job) : onSave?.(job) }}
+            style={{ background: 'none', border: 'none', padding: '2px 4px', cursor: 'pointer', fontSize: '1rem', lineHeight: 1, color: saved ? '#e6a817' : 'var(--ink-45)', marginBottom: '.1rem' }}
+          >
+            {saved ? '★' : '☆'}
+          </button>
+        )}
         <span className="jc-time">{timeAgo(job.created_at)}</span>
         {applied ? (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '.2rem', marginTop: '.35rem' }}>
@@ -3302,6 +3366,7 @@ function MyJobsView({ userEmail, coName, onPost, t }: {
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
   // applicant counts per job_id
   const [appCounts, setAppCounts] = useState<Record<string, number>>({})
+  const [firstApplyAt, setFirstApplyAt] = useState<Record<string, string>>({})
   // which job's applicants are being viewed (null = show job list)
   const [viewingJobId, setViewingJobId] = useState<string | null>(null)
   const [applications, setApplications] = useState<Application[]>([])
@@ -3318,14 +3383,19 @@ function MyJobsView({ userEmail, coName, onPost, t }: {
       const { data } = await sb.from('jobs').select('*').eq('company_id', co.id).order('created_at', { ascending: false })
       const jobs = data || []
       setMyJobs(jobs)
-      // load application counts
+      // load application counts + first apply timestamps
       if (jobs.length > 0) {
         const ids = jobs.map((j: Job) => j.id)
-        const { data: apps } = await sb.from('applications').select('job_id').in('job_id', ids)
+        const { data: apps } = await sb.from('applications').select('job_id, applied_at').in('job_id', ids)
         if (apps) {
           const counts: Record<string, number> = {}
-          apps.forEach((a: { job_id: string }) => { counts[a.job_id] = (counts[a.job_id] || 0) + 1 })
+          const firstApply: Record<string, string> = {}
+          apps.forEach((a: { job_id: string; applied_at: string }) => {
+            counts[a.job_id] = (counts[a.job_id] || 0) + 1
+            if (!firstApply[a.job_id] || a.applied_at < firstApply[a.job_id]) firstApply[a.job_id] = a.applied_at
+          })
           setAppCounts(counts)
+          setFirstApplyAt(firstApply)
         }
       }
     } catch (e) { console.warn(e) }
@@ -3555,6 +3625,13 @@ function MyJobsView({ userEmail, coName, onPost, t }: {
                   {j.salary_range && <span className="jc-tag" style={{ background: 'var(--pale)', color: 'var(--forest)' }}>{j.salary_range}</span>}
                 </div>
                 {j.description && <p style={{ fontSize: '.8rem', color: 'var(--ink-70)', lineHeight: 1.6, margin: '0 0 .8rem' }}>{j.description.slice(0, 160)}{j.description.length > 160 ? '…' : ''}</p>}
+                {/* Analytics row */}
+                <div style={{ display: 'flex', gap: '1rem', marginBottom: '.8rem', fontSize: '.74rem', color: 'var(--ink-45)' }}>
+                  <span title={t('Vistas por candidatos', 'Views by candidates')}>👁 {j.views || 0} {t('vistas', 'views')}</span>
+                  <span title={t('Postulaciones recibidas', 'Applications received')}>📋 {appCounts[j.id] || 0} {t('postulaciones', 'applications')}</span>
+                  {(j.views || 0) > 0 && <span title={t('Tasa de conversión', 'Conversion rate')}>⚡ {Math.round(((appCounts[j.id] || 0) / (j.views || 1)) * 100)}% {t('conversión', 'conversion')}</span>}
+                  {firstApplyAt[j.id] && <span title={t('Primera postulación', 'First application')}>🕐 {t('1ra en', '1st in')} {Math.round((Date.now() - new Date(j.created_at || 0).getTime()) > 0 ? (new Date(firstApplyAt[j.id]).getTime() - new Date(j.created_at || 0).getTime()) / 3600000 : 0)}h</span>}
+                </div>
                 <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap', paddingTop: '.75rem', borderTop: '1px solid var(--line)', alignItems: 'center' }}>
                   <button className="btn btn-outline btn-sm" onClick={() => startEdit(j)}>{t('Editar', 'Edit')}</button>
                   {confirmDeleteId === j.id ? (
