@@ -25,6 +25,7 @@ interface Job {
   skills?: string[]
   active?: boolean
   created_at?: string
+  closes_at?: string
   companies?: { company_name: string }
 }
 
@@ -282,7 +283,8 @@ export default function AppPage() {
     setDataLoading(true)
     try {
       const sb = createClient()
-      let q = sb.from('jobs').select('*, companies(company_name)').eq('active', true)
+      const nowIso = new Date().toISOString()
+      let q = sb.from('jobs').select('*, companies(company_name)').eq('active', true).or(`closes_at.is.null,closes_at.gte.${nowIso}`)
       if (query) q = q.ilike('title', `%${query}%`)
       if (area) q = q.eq('area', area)
       if (city) q = q.eq('city', city)
@@ -1601,6 +1603,16 @@ function CandidateView({
   const [notifUpdates, setNotifUpdates] = useState(true)
   const [profileVisible, setProfileVisible] = useState(true)
 
+  useEffect(() => {
+    if (candProfile?.notify_matches !== undefined)
+      setNotifMatches(candProfile.notify_matches as boolean)
+  }, [candProfile])
+
+  async function saveNotifMatches(val: boolean) {
+    if (!user?.email) return
+    await createClient().from('candidates').update({ notify_matches: val }).ilike('email', user.email)
+  }
+
   // Show a retry banner if profile still null after 5 seconds
   useEffect(() => {
     if (candProfile) { setProfileLoadFailed(false); return }
@@ -1643,6 +1655,8 @@ function CandidateView({
         setMyApplied(prev => new Map([...prev, [job.id, now]]))
         setAppliedJob(job)
         setSelectedJob(null)
+        if (user?.email && user?.name)
+          fetch('/api/notify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: 'application_submitted', to: user.email, name: user.name.split(' ')[0], extra: { jobTitle: job.title, companyName: job.companies?.company_name || '' } }) }).catch(() => {})
       }
     } catch (e) { console.warn(e) }
     setApplying(null)
@@ -2381,7 +2395,7 @@ function CandidateView({
             <span className="profile-lbl" style={{ display: 'block' }}>{t('Matches por email', 'Email matches')}</span>
             <span style={{ fontSize: '.72rem', color: 'var(--ink-45)' }}>{t('Recibir notificaciones cuando haya nuevos matches', 'Get notified when new matches are found')}</span>
           </div>
-          <Toggle on={notifMatches} onToggle={() => setNotifMatches(v => !v)} />
+          <Toggle on={notifMatches} onToggle={() => { const v = !notifMatches; setNotifMatches(v); saveNotifMatches(v) }} />
         </div>
         <div className="profile-row" style={{ justifyContent: 'space-between' }}>
           <div>
@@ -2415,6 +2429,7 @@ function JobRow({ job, applied, appliedAt, onApply, onWithdraw, onSelect, t }: {
   const tr = t || ((es: string) => es)
   const coName = job.companies?.company_name || '—'
   const tags = [job.modality ? tv(job.modality, tr) : '', job.city, job.salary_range].filter(Boolean)
+  const daysLeft = job.closes_at ? Math.ceil((new Date(job.closes_at).getTime() - Date.now()) / 86400000) : null
   return (
     <div
       className="job-card"
@@ -2428,6 +2443,11 @@ function JobRow({ job, applied, appliedAt, onApply, onWithdraw, onSelect, t }: {
         {tags.length > 0 && (
           <div className="jc-tags">
             {tags.map(tag => <span key={tag} className="jc-tag">{tag}</span>)}
+            {daysLeft !== null && daysLeft <= 7 && (
+              <span className="jc-tag" style={{ color: daysLeft <= 2 ? '#c0392b' : '#b85c00', borderColor: daysLeft <= 2 ? '#f5c0b0' : '#f5dcb0', background: daysLeft <= 2 ? '#fff5f3' : '#fffbf0' }}>
+                {daysLeft <= 0 ? tr('Vence hoy', 'Closes today') : tr(`Cierra en ${daysLeft}d`, `Closes in ${daysLeft}d`)}
+              </span>
+            )}
           </div>
         )}
       </div>
@@ -2638,7 +2658,7 @@ function CompanyView({
               </button>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(300px,1fr))', gap: '.85rem' }}>
-              {candidates.slice(0, 4).map(c => <CandCard key={c.id} c={c} t={t} />)}
+              {candidates.slice(0, 4).map(c => <CandCard key={c.id} c={c} coName={(coProfile?.company_name as string) || ''} t={t} />)}
             </div>
           </div>
         )}
@@ -2743,6 +2763,12 @@ function MyCompanyView({ userEmail, coProfile, onUpdate, t }: {
     <div style={{ fontFamily: 'var(--head)', fontWeight: 700, fontSize: '.88rem', color: 'var(--ink)', marginBottom: '.85rem', paddingBottom: '.5rem', borderBottom: '1px solid var(--line)' }}>{children}</div>
   )
 
+  const coCompleteness = (() => {
+    if (!coProfile) return 0
+    const fields = [coProfile.company_name, coProfile.industry, coProfile.size, coProfile.city, coProfile.description, coProfile.mission, coProfile.looking_for_areas?.length, coProfile.looking_for_modality]
+    return Math.round((fields.filter(Boolean).length / fields.length) * 100)
+  })()
+
   return (
     <>
       <div className="page-head">
@@ -2754,6 +2780,27 @@ function MyCompanyView({ userEmail, coProfile, onUpdate, t }: {
           </div>
         )}
       </div>
+
+      {!editing && coCompleteness < 80 && (
+        <div style={{ background: '#fffbf0', border: '1.5px solid #f5dcb0', borderRadius: 10, padding: '.75rem 1.1rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontWeight: 700, fontSize: '.83rem', color: '#7a5c00', marginBottom: '.2rem' }}>
+              {t(`Perfil ${coCompleteness}% completo`, `Profile ${coCompleteness}% complete`)}
+            </div>
+            <div style={{ fontSize: '.75rem', color: '#9a7a30', lineHeight: 1.5 }}>
+              {t('Un perfil completo mejora la calidad de los matches con candidatos.', 'A complete profile improves the quality of candidate matches.')}
+            </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '.6rem', flexShrink: 0 }}>
+            <div style={{ width: 80, height: 6, borderRadius: 4, background: '#f5e0a0', overflow: 'hidden' }}>
+              <div style={{ width: `${coCompleteness}%`, height: '100%', background: '#e6ac00', borderRadius: 4 }} />
+            </div>
+            <button className="btn btn-sm" style={{ background: '#e6ac00', color: '#fff', border: 'none' }} onClick={() => setEditing(true)}>
+              {t('Completar →', 'Complete →')}
+            </button>
+          </div>
+        </div>
+      )}
 
       {!editing ? (
         // ── VIEW MODE ──
@@ -3095,8 +3142,9 @@ function TalentView({ candidates, loadCandidates, t }: {
   )
 }
 
-function CandCard({ c, t }: { c: Candidate; t: (es: string, en: string) => string }) {
+function CandCard({ c, coName, t }: { c: Candidate; coName?: string; t: (es: string, en: string) => string }) {
   const [showContact, setShowContact] = useState(false)
+  const [notified, setNotified] = useState(false)
   const tags = [tv(c.experience, t), c.city, tv(c.modality, t)].filter(Boolean)
   return (
     <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '.85rem', padding: '1.2rem 1.3rem' }}>
@@ -3154,7 +3202,14 @@ function CandCard({ c, t }: { c: Candidate; t: (es: string, en: string) => strin
         <button
           className="btn btn-forest btn-sm"
           style={{ marginLeft: 'auto' }}
-          onClick={() => setShowContact(v => !v)}
+          onClick={() => {
+            const next = !showContact
+            setShowContact(next)
+            if (next && !notified && c.email && c.name) {
+              setNotified(true)
+              fetch('/api/notify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: 'company_contacted', to: c.email, name: c.name.split(' ')[0], extra: { companyName: coName || 'Una empresa' } }) }).catch(() => {})
+            }
+          }}
         >
           {showContact ? t('Ocultar', 'Hide') : t('Contactar', 'Contact')}
         </button>
@@ -3484,6 +3539,7 @@ function PostJobView({ userEmail, onSuccess, t }: {
   const [desc, setDesc] = useState('')
   const [skills, setSkills] = useState<string[]>([])
   const [skillInput, setSkillInput] = useState('')
+  const [closesAt, setClosesAt] = useState('')
   const [saving, setSaving] = useState(false)
   const [done, setDone] = useState(false)
 
@@ -3509,6 +3565,7 @@ function PostJobView({ userEmail, onSuccess, t }: {
         description: desc.trim(),
         skills,
         active: true,
+        closes_at: closesAt ? new Date(closesAt).toISOString() : null,
       }
       const { error } = await sb.from('jobs').insert([jobPayload])
       if (error) console.warn('[Supabase] jobs insert:', error.message)
@@ -3573,6 +3630,10 @@ function PostJobView({ userEmail, onSuccess, t }: {
               <option value="" disabled>{t('Rango', 'Range')}</option>
               <option>Hasta $2M</option><option>$2M–$4M</option><option>$4M–$7M</option><option>$7M–$12M</option><option>$12M+</option>
             </select>
+          </div>
+          <div className="fg">
+            <label>{t('Fecha de cierre', 'Closing date')} <span style={{color:'var(--ink-45)',fontWeight:400,textTransform:'none',letterSpacing:0}}>{t('(opcional)', '(optional)')}</span></label>
+            <input type="date" value={closesAt} onChange={e => setClosesAt(e.target.value)} min={new Date().toISOString().split('T')[0]} />
           </div>
           <div className="fg fg-full">
             <label>{t('Habilidades requeridas', 'Required skills')} <span style={{color:'var(--ink-45)',fontWeight:400,textTransform:'none',letterSpacing:0}}>{t('(opcional)', '(optional)')}</span></label>
