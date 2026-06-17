@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 // Supported notification types
-type NotifyType = 'application_submitted' | 'company_contacted' | 'match_found'
+type NotifyType = 'application_submitted' | 'company_contacted' | 'match_found' | 'application_status_changed'
 
 interface NotifyPayload {
   type: NotifyType
@@ -62,6 +62,36 @@ function buildHtml(type: NotifyType, name: string, extra: Record<string, string>
         <p style="color:#264D51;font-size:.82rem;line-height:1.6;margin:0">Revisá tu WhatsApp o email — te contactarán directamente para coordinar una charla.</p>
       </div>
       <a href="https://candidato.com.co/app" style="display:inline-block;background:#1B3B3E;color:white;border-radius:8px;padding:10px 22px;font-size:.85rem;font-weight:600;text-decoration:none">Ver mi perfil →</a>
+    `
+    return { subject, html: base.replace('CONTENT', content) }
+  }
+
+  if (type === 'application_status_changed') {
+    const isContacted = extra.status === 'contacted'
+    const subject = isContacted
+      ? `📩 Avance en tu postulación — ${extra.jobTitle || 'una vacante'}`
+      : `Actualización de tu postulación — ${extra.jobTitle || 'una vacante'}`
+    const content = isContacted ? `
+      <h2 style="color:#0E1E20;font-size:1.15rem;margin:0 0 12px">¡Buenas noticias, ${name}! 🚀</h2>
+      <p style="color:#4a6a6a;font-size:.88rem;line-height:1.65;margin:0 0 16px">
+        <strong style="color:#1B3B3E">${extra.companyName || 'Una empresa'}</strong> revisó tu postulación a
+        <strong> ${extra.jobTitle || 'la vacante'}</strong> y quiere avanzar con vos.
+      </p>
+      <div style="background:#E4F0F1;border-radius:8px;padding:14px 18px;margin-bottom:16px">
+        <p style="color:#1B3B3E;font-size:.83rem;font-weight:600;margin:0 0 4px">¿Qué sigue?</p>
+        <p style="color:#264D51;font-size:.82rem;line-height:1.6;margin:0">Revisá tu WhatsApp o email — te contactarán directamente para coordinar una charla.</p>
+      </div>
+      <a href="https://candidato.com.co/app" style="display:inline-block;background:#1B3B3E;color:white;border-radius:8px;padding:10px 22px;font-size:.85rem;font-weight:600;text-decoration:none">Ver mis postulaciones →</a>
+    ` : `
+      <h2 style="color:#0E1E20;font-size:1.15rem;margin:0 0 12px">Actualización en tu postulación, ${name}</h2>
+      <p style="color:#4a6a6a;font-size:.88rem;line-height:1.65;margin:0 0 16px">
+        Tu postulación a <strong style="color:#1B3B3E">${extra.jobTitle || 'la vacante'}</strong>
+        ${extra.companyName ? ` en <strong>${extra.companyName}</strong>` : ''} fue marcada como <strong>descartada</strong> en esta oportunidad.
+      </p>
+      <div style="background:#f9f0f0;border-radius:8px;padding:14px 18px;margin-bottom:16px">
+        <p style="color:#7a3030;font-size:.82rem;line-height:1.6;margin:0">No te desanimés — cada proceso suma experiencia. Seguí explorando otras oportunidades en la plataforma.</p>
+      </div>
+      <a href="https://candidato.com.co/app" style="display:inline-block;background:#1B3B3E;color:white;border-radius:8px;padding:10px 22px;font-size:.85rem;font-weight:600;text-decoration:none">Buscar más vacantes →</a>
     `
     return { subject, html: base.replace('CONTENT', content) }
   }

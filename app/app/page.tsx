@@ -296,15 +296,16 @@ export default function AppPage() {
     setDataLoading(false)
   }
 
-  async function loadCandidates(query = '', area = '', city = '', modality = '', salary = '') {
+  async function loadCandidates(query = '', area = '', city = '', modality = '', salary = '', experience = '') {
     try {
       const sb = createClient()
-      let q = sb.from('candidates').select('id,name,email,whatsapp,area,experience,city,modality,salary_range,skills,linkedin,cv_url,created_at')
+      let q = sb.from('candidates').select('id,name,email,whatsapp,area,experience,city,modality,salary_range,skills,linkedin,cv_url,created_at,open_to_work')
       if (query) q = q.ilike('name', `%${query}%`)
       if (area) q = q.eq('area', area)
       if (city) q = q.eq('city', city)
       if (modality) q = q.eq('modality', modality)
       if (salary) q = q.eq('salary_range', salary)
+      if (experience) q = q.eq('experience', experience)
       const { data } = await q.order('created_at', { ascending: false }).limit(100)
       setCandidates(data || [])
     } catch (e) { console.warn('[Supabase] loadCandidates:', e) }
@@ -1886,6 +1887,44 @@ function CandidateView({
           </div>
         </div>
 
+        {/* Profile checklist — shown until 100% complete */}
+        {profilePct < 100 && (() => {
+          const p = candProfile
+          const items: Array<{ label: string; labelEn: string; done: boolean }> = [
+            { label: 'WhatsApp / Teléfono', labelEn: 'WhatsApp / Phone', done: !!p?.whatsapp },
+            { label: 'Área profesional', labelEn: 'Professional area', done: !!p?.area },
+            { label: 'Ciudad', labelEn: 'City', done: !!p?.city },
+            { label: 'Modalidad de trabajo', labelEn: 'Work mode', done: !!p?.modality },
+            { label: 'Años de experiencia', labelEn: 'Years of experience', done: !!p?.experience },
+            { label: 'LinkedIn', labelEn: 'LinkedIn', done: !!p?.linkedin },
+            { label: 'Habilidades', labelEn: 'Skills', done: !!((p?.skills as string[] | undefined)?.length) },
+          ]
+          const missing = items.filter(i => !i.done)
+          return (
+            <div className="card" style={{ marginBottom: '1rem', borderLeft: '3px solid var(--forest)', padding: '1rem 1.2rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '.75rem' }}>
+                <div>
+                  <div style={{ fontFamily: 'var(--head)', fontWeight: 700, fontSize: '.88rem', color: 'var(--ink)' }}>{t('Completá tu perfil', 'Complete your profile')}</div>
+                  <div style={{ fontSize: '.73rem', color: 'var(--ink-45)', marginTop: '2px' }}>{t(`${missing.length} campo${missing.length !== 1 ? 's' : ''} pendiente${missing.length !== 1 ? 's' : ''}`, `${missing.length} field${missing.length !== 1 ? 's' : ''} remaining`)}</div>
+                </div>
+                <button className="btn btn-forest btn-sm" onClick={() => setView('profile')}>{t('Completar →', 'Complete →')}</button>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '.3rem' }}>
+                {items.map(item => (
+                  <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: '.5rem', fontSize: '.78rem' }}>
+                    <span style={{ width: 16, height: 16, borderRadius: '50%', background: item.done ? 'var(--forest)' : 'var(--line)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '.6rem', color: 'white', fontWeight: 700 }}>
+                      {item.done ? '✓' : ''}
+                    </span>
+                    <span style={{ color: item.done ? 'var(--ink-45)' : 'var(--ink)', textDecoration: item.done ? 'line-through' : 'none' }}>
+                      {t(item.label, item.labelEn)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )
+        })()}
+
         {/* Recent applications */}
         {recentApplied.length > 0 && (
           <div className="card" style={{ padding: '0', marginBottom: '1rem' }}>
@@ -2673,7 +2712,7 @@ function CompanyView({
     return <TalentView candidates={candidates} loadCandidates={loadCandidates} t={t} />
 
   if (view === 'myjobs')
-    return <MyJobsView userEmail={userEmail} onPost={() => setView('post')} t={t} />
+    return <MyJobsView userEmail={userEmail} coName={(coProfile?.company_name as string) || ''} onPost={() => setView('post')} t={t} />
 
   if (view === 'post')
     return <PostJobView userEmail={userEmail} onSuccess={() => setView('myjobs')} t={t} />
@@ -3038,7 +3077,7 @@ function MyCompanyView({ userEmail, coProfile, onUpdate, t }: {
 
 function TalentView({ candidates, loadCandidates, t }: {
   candidates: Candidate[]
-  loadCandidates: (q?: string, area?: string, city?: string, modality?: string, salary?: string) => void
+  loadCandidates: (q?: string, area?: string, city?: string, modality?: string, salary?: string, experience?: string) => void
   t: (es: string, en: string) => string
 }) {
   const [query, setQuery] = useState('')
@@ -3046,18 +3085,19 @@ function TalentView({ candidates, loadCandidates, t }: {
   const [filterCity, setFilterCity] = useState('')
   const [filterMod, setFilterMod] = useState('')
   const [filterSal, setFilterSal] = useState('')
+  const [filterExp, setFilterExp] = useState('')
   const [searchErr, setSearchErr] = useState('')
 
   const doSearch = () => {
-    if (!query.trim() && !filterArea && !filterCity && !filterMod && !filterSal) {
+    if (!query.trim() && !filterArea && !filterCity && !filterMod && !filterSal && !filterExp) {
       setSearchErr(t('Ingresá un nombre o seleccioná al menos un filtro para buscar.', 'Enter a name or select at least one filter to search.'))
       return
     }
     setSearchErr('')
-    loadCandidates(query, filterArea, filterCity, filterMod, filterSal)
+    loadCandidates(query, filterArea, filterCity, filterMod, filterSal, filterExp)
   }
-  const clearAll = () => { setQuery(''); setFilterArea(''); setFilterCity(''); setFilterMod(''); setFilterSal(''); setSearchErr(''); loadCandidates() }
-  const hasAny = query || filterArea || filterCity || filterMod || filterSal
+  const clearAll = () => { setQuery(''); setFilterArea(''); setFilterCity(''); setFilterMod(''); setFilterSal(''); setFilterExp(''); setSearchErr(''); loadCandidates() }
+  const hasAny = query || filterArea || filterCity || filterMod || filterSal || filterExp
 
   return (
     <>
@@ -3111,13 +3151,21 @@ function TalentView({ candidates, loadCandidates, t }: {
             <option>Cali</option><option>Bogotá</option><option>Medellín</option>
             <option>Barranquilla</option><option>Cartagena</option><option>Bucaramanga</option>
           </select>
-          <select className="filter-select" value={filterMod} onChange={e => { setFilterMod(e.target.value); setSearchErr(''); loadCandidates(query, filterArea, filterCity, e.target.value, filterSal) }}>
+          <select className="filter-select" value={filterMod} onChange={e => { setFilterMod(e.target.value); setSearchErr(''); loadCandidates(query, filterArea, filterCity, e.target.value, filterSal, filterExp) }}>
             <option value="">{t('Modalidad', 'Mode')}</option>
             <option>{t('Presencial', 'On-site')}</option>
             <option>{t('Remoto', 'Remote')}</option>
             <option>{t('Híbrido', 'Hybrid')}</option>
           </select>
-          <select className="filter-select" value={filterSal} onChange={e => { setFilterSal(e.target.value); setSearchErr(''); loadCandidates(query, filterArea, filterCity, filterMod, e.target.value) }}>
+          <select className="filter-select" value={filterExp} onChange={e => { setFilterExp(e.target.value); setSearchErr(''); loadCandidates(query, filterArea, filterCity, filterMod, filterSal, e.target.value) }}>
+            <option value="">{t('Experiencia', 'Experience')}</option>
+            <option>{t('Sin experiencia', 'No experience')}</option>
+            <option>{t('1–2 años', '1–2 years')}</option>
+            <option>{t('3–5 años', '3–5 years')}</option>
+            <option>{t('5–10 años', '5–10 years')}</option>
+            <option>{t('10+ años', '10+ years')}</option>
+          </select>
+          <select className="filter-select" value={filterSal} onChange={e => { setFilterSal(e.target.value); setSearchErr(''); loadCandidates(query, filterArea, filterCity, filterMod, e.target.value, filterExp) }}>
             <option value="">{t('Pretensión salarial', 'Expected salary')}</option>
             <option>Hasta $2M</option>
             <option>$2M – $4M</option>
@@ -3235,8 +3283,9 @@ function CandCard({ c, coName, t }: { c: Candidate; coName?: string; t: (es: str
   )
 }
 
-function MyJobsView({ userEmail, onPost, t }: {
+function MyJobsView({ userEmail, coName, onPost, t }: {
   userEmail: string
+  coName?: string
   onPost: () => void
   t: (es: string, en: string) => string
 }) {
@@ -3302,6 +3351,14 @@ function MyJobsView({ userEmail, onPost, t }: {
     try {
       await createClient().from('applications').update({ status }).eq('id', appId)
       setApplications(prev => prev.map(a => a.id === appId ? { ...a, status } : a))
+      if (status === 'contacted' || status === 'rejected') {
+        const app = applications.find(a => a.id === appId)
+        const candidateEmail = app?.candidates?.email
+        const candidateName = app?.candidates?.name
+        const jobTitle = myJobs.find(j => j.id === app?.job_id)?.title || ''
+        if (candidateEmail && candidateName)
+          fetch('/api/notify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: 'application_status_changed', to: candidateEmail, name: candidateName.split(' ')[0], extra: { status, jobTitle, companyName: coName || '' } }) }).catch(() => {})
+      }
     } catch (e) { console.warn(e) }
   }
 
