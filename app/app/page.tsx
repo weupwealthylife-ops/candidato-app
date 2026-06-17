@@ -342,7 +342,9 @@ export default function AppPage() {
   const nextCStep = (n: number) => {
     if (n > 1 && cStep === 1) {
       if (!cfn.trim())
-        return showToast('Campo requerido', 'Ingresá tu nombre', '⚠️')
+        return showToast('Campo requerido', t('Ingresá tu nombre', 'Enter your first name'), '⚠️')
+      if (!cln.trim())
+        return showToast('Campo requerido', t('Ingresá tu apellido', 'Enter your last name'), '⚠️')
     }
     if (n > 2 && cStep === 2) {
       if (!car)
@@ -1489,6 +1491,7 @@ export default function AppPage() {
                 setView={setCandView}
                 t={t}
                 onRetryProfile={() => currentUser && loadProfile(currentUser.email)}
+                showToast={showToast}
               />
             ) : (
               <CompanyView
@@ -1570,7 +1573,7 @@ export default function AppPage() {
 }
 
 function CandidateView({
-  view, firstName, skills, user, candProfile, onProfileUpdate, jobs, dataLoading, loadJobs, setView, t, onRetryProfile,
+  view, firstName, skills, user, candProfile, onProfileUpdate, jobs, dataLoading, loadJobs, setView, t, onRetryProfile, showToast,
 }: {
   view: CandView
   firstName: string
@@ -1583,6 +1586,7 @@ function CandidateView({
   loadJobs: (q?: string, area?: string, city?: string, mod?: string, sal?: string) => void
   setView: (v: CandView) => void
   onRetryProfile: () => void
+  showToast: (title: string, sub: string, ico?: string) => void
   t: (es: string, en: string) => string
 }) {
   const [query, setQuery] = useState('')
@@ -1665,14 +1669,16 @@ function CandidateView({
     const candidateId = candProfile?.id as string | undefined
     if (!candidateId) return
     const { error } = await createClient().from('saved_jobs').insert({ job_id: job.id, candidate_id: candidateId })
-    if (!error) setMySavedJobs(prev => new Map([...prev, [job.id, new Date().toISOString()]]))
+    if (error) showToast(t('Error', 'Error'), t('No se pudo guardar la vacante', 'Could not save the listing'), '⚠️')
+    else setMySavedJobs(prev => new Map([...prev, [job.id, new Date().toISOString()]]))
   }
 
   async function unsaveJob(job: Job) {
     const candidateId = candProfile?.id as string | undefined
     if (!candidateId) return
     const { error } = await createClient().from('saved_jobs').delete().eq('job_id', job.id).eq('candidate_id', candidateId)
-    if (!error) setMySavedJobs(prev => { const m = new Map(prev); m.delete(job.id); return m })
+    if (error) showToast(t('Error', 'Error'), t('No se pudo quitar la vacante guardada', 'Could not remove saved listing'), '⚠️')
+    else setMySavedJobs(prev => { const m = new Map(prev); m.delete(job.id); return m })
   }
 
   async function applyToJob(job: Job) {
@@ -2184,14 +2190,16 @@ function CandidateView({
         const sb = createClient()
         const ext = file.name.split('.').pop()
         const path = `cvs/${Date.now()}-${(user?.email || '').replace(/[@.]/g, '_')}.${ext}`
-        const { data: upData } = await sb.storage.from('candidatos').upload(path, file, { upsert: true })
-        if (upData?.path) {
+        const { data: upData, error: upErr } = await sb.storage.from('candidatos').upload(path, file, { upsert: true })
+        if (upErr || !upData?.path) {
+          showToast(t('Error al subir CV', 'CV upload failed'), t('Intentá de nuevo o usá un archivo más pequeño', 'Try again or use a smaller file'), '⚠️')
+        } else {
           const { data: urlData } = sb.storage.from('candidatos').getPublicUrl(upData.path)
           const newUrl = urlData?.publicUrl || ''
           const { data: updated } = await sb.from('candidates').update({ cv_url: newUrl }).ilike('email', user?.email || '').select().maybeSingle()
           if (updated) onProfileUpdate(updated)
         }
-      } catch (e) { console.error(e) }
+      } catch (e) { console.error(e); showToast(t('Error al subir CV', 'CV upload failed'), t('Revisá tu conexión e intentá de nuevo', 'Check your connection and try again'), '⚠️') }
       setCvUploading(false)
     }
 
@@ -3418,16 +3426,14 @@ function MyJobsView({ userEmail, coName, onPost, t }: {
   }
 
   async function updateAppStatus(appId: string, status: string) {
+    // Capture before async/state-update to avoid stale closure
+    const app = applications.find(a => a.id === appId)
     try {
       await createClient().from('applications').update({ status }).eq('id', appId)
       setApplications(prev => prev.map(a => a.id === appId ? { ...a, status } : a))
-      if (status === 'contacted' || status === 'rejected') {
-        const app = applications.find(a => a.id === appId)
-        const candidateEmail = app?.candidates?.email
-        const candidateName = app?.candidates?.name
-        const jobTitle = myJobs.find(j => j.id === app?.job_id)?.title || ''
-        if (candidateEmail && candidateName)
-          fetch('/api/notify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: 'application_status_changed', to: candidateEmail, name: candidateName.split(' ')[0], extra: { status, jobTitle, companyName: coName || '' } }) }).catch(() => {})
+      if ((status === 'contacted' || status === 'rejected') && app?.candidates?.email && app?.candidates?.name) {
+        const jobTitle = myJobs.find(j => j.id === app.job_id)?.title || ''
+        fetch('/api/notify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: 'application_status_changed', to: app.candidates.email, name: app.candidates.name.split(' ')[0], extra: { status, jobTitle, companyName: coName || '' } }) }).catch(() => {})
       }
     } catch (e) { console.warn(e) }
   }
