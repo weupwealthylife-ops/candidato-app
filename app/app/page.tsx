@@ -65,6 +65,7 @@ interface Application {
     skills?: string[]
     linkedin?: string
     cv_url?: string
+    notify_matches?: boolean
   }
 }
 
@@ -1879,7 +1880,7 @@ function CandidateView({
 
     // Profile completeness (0–100)
     const p = candProfile
-    const profileFields = [p?.whatsapp, p?.area, p?.city, p?.modality, p?.experience, p?.linkedin, (p?.skills as string[] | undefined)?.length ? true : false]
+    const profileFields = [p?.whatsapp, p?.area, p?.city, p?.modality, p?.experience, p?.linkedin, (p?.skills as string[] | undefined)?.length ? true : false, !!p?.cv_url]
     const profilePct = Math.round((profileFields.filter(Boolean).length / profileFields.length) * 100)
 
     // Recent applications (last 3)
@@ -2531,7 +2532,7 @@ function JobRow({ job, applied, appliedAt, saved, onApply, onWithdraw, onSave, o
   const tr = t || ((es: string) => es)
   const coName = job.companies?.company_name || '—'
   const tags = [job.modality ? tv(job.modality, tr) : '', job.city, job.salary_range].filter(Boolean)
-  const daysLeft = job.closes_at ? Math.ceil((new Date(job.closes_at).getTime() - Date.now()) / 86400000) : null
+  const daysLeft = job.closes_at ? Math.ceil((new Date(job.closes_at.split('T')[0] + 'T00:00:00').getTime() - new Date(new Date().toISOString().split('T')[0] + 'T00:00:00').getTime()) / 86400000) : null
   return (
     <div
       className="job-card"
@@ -3417,7 +3418,7 @@ function MyJobsView({ userEmail, coName, onPost, t }: {
       const sb = createClient()
       const { data } = await sb
         .from('applications')
-        .select('*, candidates(id,name,email,whatsapp,area,experience,city,modality,skills,linkedin,cv_url)')
+        .select('*, candidates(id,name,email,whatsapp,area,experience,city,modality,skills,linkedin,cv_url,notify_matches)')
         .eq('job_id', jobId)
         .order('applied_at', { ascending: false })
       setApplications(data || [])
@@ -3431,7 +3432,7 @@ function MyJobsView({ userEmail, coName, onPost, t }: {
     try {
       await createClient().from('applications').update({ status }).eq('id', appId)
       setApplications(prev => prev.map(a => a.id === appId ? { ...a, status } : a))
-      if ((status === 'contacted' || status === 'rejected') && app?.candidates?.email && app?.candidates?.name) {
+      if ((status === 'contacted' || status === 'rejected') && app?.candidates?.email && app?.candidates?.name && app?.candidates?.notify_matches !== false) {
         const jobTitle = myJobs.find(j => j.id === app.job_id)?.title || ''
         fetch('/api/notify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: 'application_status_changed', to: app.candidates.email, name: app.candidates.name.split(' ')[0], extra: { status, jobTitle, companyName: coName || '' } }) }).catch(() => {})
       }

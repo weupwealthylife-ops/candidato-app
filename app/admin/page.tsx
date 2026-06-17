@@ -3,8 +3,6 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
-const ADMIN_EMAILS = (process.env.NEXT_PUBLIC_ADMIN_EMAILS || 'enrique280196@gmail.com,carlos280196@hotmail.com').split(',').map(e => e.trim().toLowerCase())
-
 interface Row { [key: string]: unknown }
 
 function StatCard({ label, value, sub }: { label: string; value: string | number; sub?: string }) {
@@ -46,8 +44,6 @@ function DataTable({ rows, cols }: { rows: Row[]; cols: string[] }) {
 }
 
 export default function AdminPage() {
-  const [email, setEmail] = useState('')
-  const [authed, setAuthed] = useState(false)
   const [candidates, setCandidates] = useState<Row[]>([])
   const [companies, setCompanies] = useState<Row[]>([])
   const [jobs, setJobs] = useState<Row[]>([])
@@ -76,38 +72,11 @@ export default function AdminPage() {
     setLoading(false)
   }
 
-  function login() {
-    if (ADMIN_EMAILS.includes(email.trim().toLowerCase())) {
-      setAuthed(true)
-      load()
-    } else {
-      alert('Acceso no autorizado')
-    }
-  }
+  useEffect(() => { load() }, [])
 
-  if (!authed) {
-    return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--off)' }}>
-        <div style={{ background: 'white', border: '1px solid var(--line)', borderRadius: 14, padding: '2rem 2.2rem', width: 320 }}>
-          <div style={{ fontFamily: 'var(--head)', fontSize: '1.1rem', fontWeight: 700, color: 'var(--forest)', marginBottom: '.5rem' }}>Candidato® Admin</div>
-          <div style={{ fontSize: '.8rem', color: 'var(--ink-45)', marginBottom: '1.2rem' }}>Sólo acceso autorizado</div>
-          <input
-            type="email"
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && login()}
-            placeholder="tu@email.com"
-            style={{ width: '100%', border: '1.5px solid var(--line)', borderRadius: 8, padding: '9px 11px', fontSize: '.83rem', outline: 'none', boxSizing: 'border-box', marginBottom: '.75rem' }}
-          />
-          <button
-            onClick={login}
-            style={{ width: '100%', background: 'var(--forest)', color: 'white', border: 'none', borderRadius: 8, padding: '10px', fontWeight: 600, cursor: 'pointer', fontSize: '.85rem' }}
-          >
-            Ingresar →
-          </button>
-        </div>
-      </div>
-    )
+  async function logout() {
+    await fetch('/api/admin-auth', { method: 'DELETE' })
+    window.location.href = '/admin/login'
   }
 
   const candWithCV = candidates.filter(c => c.cv_url).length
@@ -127,7 +96,7 @@ export default function AdminPage() {
       {/* Top bar */}
       <div style={{ background: 'var(--forest)', padding: '0 2rem', height: 52, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <span style={{ color: 'white', fontFamily: 'var(--head)', fontWeight: 700, fontSize: '.95rem' }}>Candidato® Admin</span>
-        <button onClick={() => setAuthed(false)} style={{ background: 'rgba(255,255,255,.15)', border: 'none', color: 'white', borderRadius: 6, padding: '4px 12px', cursor: 'pointer', fontSize: '.78rem' }}>
+        <button onClick={logout} style={{ background: 'rgba(255,255,255,.15)', border: 'none', color: 'white', borderRadius: 6, padding: '4px 12px', cursor: 'pointer', fontSize: '.78rem' }}>
           Salir
         </button>
       </div>
