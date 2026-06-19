@@ -6,6 +6,7 @@ import Hero from '@/components/Hero'
 import TrustBar from '@/components/TrustBar'
 import Process from '@/components/Process'
 import Metrics from '@/components/Metrics'
+import ForCompanies from '@/components/ForCompanies'
 import Testimonials from '@/components/Testimonials'
 import Curator from '@/components/Curator'
 import Register from '@/components/Register'
@@ -21,6 +22,7 @@ export default function HomePage() {
       <TrustBar />
       <Process />
       <Metrics />
+      <ForCompanies />
       <Testimonials />
       <Curator />
       <Register />

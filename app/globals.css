@@ -95,7 +95,29 @@ button:focus-visible,input:focus-visible,select:focus-visible,.btn:focus-visible
 }
 .hero-h1 span.accent{color:var(--forest)}
 .hero-sub{font-family:var(--body);font-size:.97rem;color:var(--ink-70);line-height:1.78;max-width:410px;margin-bottom:2.6rem;font-weight:400}
-.hero-actions{display:flex;align-items:center;gap:1rem;flex-wrap:wrap;margin-bottom:2.2rem}
+/* Hero badge row */
+.hero-badge-row{display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1.8rem}
+.hero-badge{font-size:.72rem;font-weight:600;color:var(--ink-45);background:var(--off);border:1px solid var(--line);border-radius:50px;padding:4px 12px;letter-spacing:.01em}
+
+/* Dual CTA */
+.hero-dual-cta{align-items:flex-start}
+.hero-cta-group{display:flex;flex-direction:column;gap:.4rem}
+.hero-cta-label{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-45)}
+.hero-cta-divider{font-size:.8rem;color:var(--ink-45);align-self:center;padding:.5rem 0}
+
+.hero-actions{display:flex;align-items:flex-start;gap:1rem;flex-wrap:wrap;margin-bottom:2.2rem}
+
+/* Hamburger button */
+.nav-hamburger{display:none;flex-direction:column;justify-content:center;gap:5px;width:36px;height:36px;background:none;border:none;cursor:pointer;padding:4px;border-radius:7px;transition:background .15s}
+.nav-hamburger:hover{background:var(--off)}
+.nav-hamburger span{display:block;width:20px;height:2px;background:var(--forest);border-radius:2px;transition:all .25s;transform-origin:center}
+.nav-hamburger span.open:nth-child(1){transform:translateY(7px) rotate(45deg)}
+.nav-hamburger span.open:nth-child(2){opacity:0;transform:scaleX(0)}
+.nav-hamburger span.open:nth-child(3){transform:translateY(-7px) rotate(-45deg)}
+
+/* Mobile drawer */
+.nav-mobile-drawer{position:fixed;inset:0;z-index:500;background:rgba(14,30,32,.5);backdrop-filter:blur(4px)}
+.nav-mobile-inner{position:absolute;top:0;right:0;width:min(320px,90vw);height:100vh;background:white;padding:1.5rem 1.3rem;overflow-y:auto;box-shadow:-8px 0 32px rgba(0,0,0,.15)}
 .hero-stats{
   display:flex;gap:0;padding-top:2.4rem;border-top:1px solid var(--line);
 }
@@ -955,10 +977,16 @@ footer{
 }
 @media(max-width:900px){
   .nav .nav-links{display:none}
+  .nav-hamburger{display:flex}
   .hero{grid-template-columns:1fr;min-height:auto}
   .hero-l{padding:110px max(5vw,24px) 60px;text-align:center;align-items:center}
   .hero-sub{margin-left:auto;margin-right:auto}
+  .hero-badge-row{justify-content:center}
   .hero-actions{justify-content:center}
+  .hero-dual-cta{flex-direction:column;align-items:center;width:100%}
+  .hero-cta-group{align-items:center;width:100%;max-width:300px}
+  .hero-cta-group .btn{width:100%;justify-content:center}
+  .hero-cta-divider{padding:.2rem 0}
   .hero-stats{justify-content:center}
   .hero-r{display:none}
   .register-split{grid-template-columns:1fr;gap:3rem}
@@ -1457,6 +1485,30 @@ footer{
   /* Modal on mobile */
   .modal{border-radius:16px 16px 0 0;position:fixed;bottom:0;left:0;right:0;max-width:100%;padding:1.8rem 1.4rem 2.4rem}
   .modal-overlay{align-items:flex-end;padding:0}
+
+  /* App apply / job detail modal */
+  .apply-modal{border-radius:16px 16px 0 0;position:fixed;bottom:0;left:0;right:0;max-width:100%;width:100%;padding:1.6rem 1.2rem 2rem;max-height:92vh}
+
+  /* Tab bar wrapping */
+  .tab-row{gap:.25rem;flex-wrap:wrap}
+  .tab-btn{font-size:.72rem;padding:5px 10px}
+
+  /* Suggestion card */
+  .sugg-row{flex-wrap:wrap;gap:.5rem}
+  .sugg-actions{width:100%;display:flex;gap:.4rem}
+  .sugg-actions button{flex:1}
+
+  /* Stats */
+  .main{padding:1rem 1rem 80px}
+  .stat-card{padding:.85rem .95rem}
+  .stat-num{font-size:1.6rem}
+
+  /* Cards */
+  .card{padding:1rem}
+
+  /* Company section for companies */
+  .for-co-grid{grid-template-columns:1fr!important}
+  .for-co-card{padding:1.8rem 1.4rem!important}
 }
 
 @media(max-width:380px){
@@ -1464,6 +1516,7 @@ footer{
   .btn-xl{padding:12px 22px;font-size:.85rem}
   .sec-h2{font-size:1.7rem}
   .stats-row{grid-template-columns:1fr}
+  .apply-modal{padding:1.2rem 1rem 1.8rem}
 }
 
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}

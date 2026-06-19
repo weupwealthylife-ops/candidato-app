@@ -1625,6 +1625,14 @@ function CandidateView({
   const [profileVisible, setProfileVisible] = useState(true)
   const [suggestions, setSuggestions] = useState<Suggestion[]>([])
   const [respondingSugg, setRespondingSugg] = useState<string | null>(null)
+  const [selectedJobScore, setSelectedJobScore] = useState<number | null>(null)
+
+  useEffect(() => {
+    if (!selectedJob || !candProfile?.id) { setSelectedJobScore(null); return }
+    createClient()
+      .rpc('score_candidate_job', { p_candidate_id: candProfile.id as string, p_job_id: selectedJob.id })
+      .then(({ data }) => setSelectedJobScore(typeof data === 'number' ? data : null))
+  }, [selectedJob?.id, candProfile?.id])
 
   useEffect(() => {
     if (!candProfile?.id) return
@@ -1817,10 +1825,17 @@ function CandidateView({
           <div className="jc-ava" style={{ width: 48, height: 48, fontSize: '1rem', flexShrink: 0 }}>
             {initials(selectedJob.companies?.company_name || '—')}
           </div>
-          <div>
+          <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontFamily: 'var(--head)', fontWeight: 700, fontSize: '1.05rem', color: 'var(--ink)', lineHeight: 1.25 }}>{selectedJob.title}</div>
             <div style={{ fontSize: '.83rem', color: 'var(--ink-70)', marginTop: '.15rem' }}>{selectedJob.companies?.company_name || '—'}{selectedJob.area ? ` · ${tv(selectedJob.area, t)}` : ''}</div>
           </div>
+          {selectedJobScore !== null && (
+            <div style={{ flexShrink: 0, textAlign: 'center' }}>
+              <div style={{ fontSize: '1.1rem', fontWeight: 800, fontFamily: 'var(--head)', color: selectedJobScore >= 70 ? 'var(--forest)' : selectedJobScore >= 50 ? '#b85c00' : 'var(--ink-45)', lineHeight: 1 }}>{selectedJobScore}%</div>
+              <div style={{ fontSize: '.6rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.04em', color: 'var(--ink-45)', marginTop: '2px' }}>fit</div>
+              {selectedJobScore >= 70 && <div style={{ fontSize: '.62rem', color: 'var(--forest)', fontWeight: 700 }}>✦ {t('Match', 'Match')}</div>}
+            </div>
+          )}
         </div>
 
         {/* Tags row */}

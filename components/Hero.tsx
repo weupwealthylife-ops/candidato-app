@@ -12,25 +12,37 @@ export default function Hero() {
           {t('Matching inteligente · Colombia', 'Intelligent matching · Colombia')}
         </span>
         <h1 className="hero-h1">
-          <span>{t('La conexión', 'The connection')}</span>
+          <span>{t('El Tinder', 'The Tinder')}</span>
           <br />
-          <span className="accent">{t('que estaba', 'that was always')}</span>
+          <span className="accent">{t('para el trabajo', 'for jobs')}</span>
           <br />
-          <span>{t('destinada.', 'meant to be.')}</span>
+          <span>{t('de tu vida.', 'of your life.')}</span>
         </h1>
         <p className="hero-sub">
           {t(
-            'Candidato conecta el perfil correcto con la vacante correcta. Solo las oportunidades que realmente importan — directo a tu email.',
-            'Candidato connects the right profile with the right role. Only the opportunities that truly matter — straight to your inbox.',
+            'El algoritmo analiza tu perfil, cruza con cientos de vacantes y te notifica solo cuando hay un match real. Sin spam. Sin CVs irrelevantes.',
+            'The algorithm analyses your profile, cross-references hundreds of listings, and only notifies you when there\'s a real match. No spam. No irrelevant CVs.',
           )}
         </p>
-        <div className="hero-actions">
-          <a href="/app" className="btn btn-forest btn-xl">
-            {t('Crear mi perfil gratis', 'Create my free profile')}
-          </a>
-          <a href="#process" className="btn btn-outline btn-xl">
-            {t('Cómo funciona', 'How it works')}
-          </a>
+        <div className="hero-badge-row">
+          <span className="hero-badge">{t('⚡ Match en 2h', '⚡ Match in 2h')}</span>
+          <span className="hero-badge">{t('🎯 Solo fits reales', '🎯 Only real fits')}</span>
+          <span className="hero-badge">{t('🇨🇴 Hecho en Colombia', '🇨🇴 Made in Colombia')}</span>
+        </div>
+        <div className="hero-actions hero-dual-cta">
+          <div className="hero-cta-group">
+            <div className="hero-cta-label">{t('Soy candidato', "I'm a candidate")}</div>
+            <a href="/app" className="btn btn-forest btn-xl">
+              {t('Crear mi perfil gratis →', 'Create my free profile →')}
+            </a>
+          </div>
+          <div className="hero-cta-divider">{t('o', 'or')}</div>
+          <div className="hero-cta-group">
+            <div className="hero-cta-label">{t('Soy empresa', "I'm a company")}</div>
+            <a href="#for-companies" className="btn btn-outline btn-xl">
+              {t('Publicar vacante →', 'Post a listing →')}
+            </a>
+          </div>
         </div>
         <div className="hero-stats" id="heroStats">
           <div className="stat-item in">
