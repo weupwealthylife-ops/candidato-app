@@ -1990,7 +1990,7 @@ function CandidateView({
         </div>
 
         {/* Stat chips */}
-        <div className="stats-row" style={{ gridTemplateColumns: 'repeat(4,1fr)', marginBottom: '1.4rem' }}>
+        <div className="stats-row" style={{ marginBottom: '1.4rem' }}>
           <div className="stat-card">
             <div className="stat-tag">{t('Total vacantes', 'Total listings')}</div>
             <div className="stat-num">{jobs.length || '0'}</div>
@@ -2029,6 +2029,7 @@ function CandidateView({
             { label: 'Años de experiencia', labelEn: 'Years of experience', done: !!p?.experience },
             { label: 'LinkedIn', labelEn: 'LinkedIn', done: !!p?.linkedin },
             { label: 'Habilidades', labelEn: 'Skills', done: !!((p?.skills as string[] | undefined)?.length) },
+            { label: 'CV / Hoja de vida', labelEn: 'CV / Resume', done: !!p?.cv_url },
           ]
           const missing = items.filter(i => !i.done)
           return (

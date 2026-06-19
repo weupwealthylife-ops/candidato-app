@@ -1080,7 +1080,7 @@ footer{
 .card{background:var(--white);border:1px solid var(--line);border-radius:var(--radius);padding:1.2rem}
 
 /* ── STATS ── */
-.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.4rem}
+.stats-row{display:grid;grid-template-columns:repeat(5,1fr);gap:1rem;margin-bottom:1.4rem}
 .stat-card{background:var(--white);border:1px solid var(--line);border-radius:var(--radius);padding:.95rem 1.1rem}
 .stat-card.highlight{background:var(--forest);border-color:var(--forest)}
 .stat-tag{font-size:.59rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-45);margin-bottom:.35rem}
