@@ -23,11 +23,22 @@ interface Job {
   salary_range?: string
   description?: string
   skills?: string[]
+  required_experience?: string
   active?: boolean
   created_at?: string
   closes_at?: string
   views?: number
+  push_sent_at?: string
   companies?: { company_name: string }
+}
+
+interface Suggestion {
+  id: string
+  job_id: string
+  match_score: number
+  status: string
+  created_at: string
+  jobs?: { id: string; title: string; area?: string; city?: string; modality?: string; companies?: { company_name: string } }
 }
 
 interface Candidate {
@@ -53,6 +64,7 @@ interface Application {
   candidate_id: string
   status: string
   applied_at: string
+  match_score?: number
   candidates?: {
     id: string
     name: string
@@ -1611,6 +1623,60 @@ function CandidateView({
   const [notifMatches, setNotifMatches] = useState(true)
   const [notifUpdates, setNotifUpdates] = useState(true)
   const [profileVisible, setProfileVisible] = useState(true)
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([])
+  const [respondingSugg, setRespondingSugg] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!candProfile?.id) return
+    createClient()
+      .from('suggestions')
+      .select('id,job_id,match_score,status,created_at,jobs(id,title,area,city,modality,companies(company_name))')
+      .eq('candidate_id', candProfile.id as string)
+      .eq('status', 'pending')
+      .order('match_score', { ascending: false })
+      .then(({ data }) => setSuggestions((data as unknown as Suggestion[]) || []))
+  }, [candProfile?.id])
+
+  async function respondToSuggestion(suggId: string, jobId: string, accept: boolean) {
+    if (respondingSugg) return
+    setRespondingSugg(suggId)
+    const sb = createClient()
+    const status = accept ? 'accepted' : 'dismissed'
+    await sb.from('suggestions').update({ status }).eq('id', suggId)
+    setSuggestions(prev => prev.filter(s => s.id !== suggId))
+    if (accept && candProfile?.id) {
+      await sb.from('matches').upsert({ candidate_id: candProfile.id as string, job_id: jobId, path: 2 }, { onConflict: 'candidate_id,job_id', ignoreDuplicates: true })
+      showToast(t('¡Match confirmado!', 'Match confirmed!'), t('La empresa recibirá tu perfil pronto.', 'The company will receive your profile soon.'), '🎉')
+      // Notify the company
+      const { data: job } = await sb.from('jobs').select('title,companies(company_name,email)').eq('id', jobId).single()
+      if (job) {
+        const coEmail = (job.companies as { email?: string })?.email
+        const coName = (job.companies as { company_name?: string })?.company_name || ''
+        if (coEmail) {
+          const sugg = suggestions.find(s => s.id === suggId)
+          fetch('/api/notify', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: 'match_confirmed', to: coEmail, name: coName,
+              extra: {
+                jobTitle: job.title,
+                candidateName: candProfile?.name as string || '',
+                candidateArea: candProfile?.area as string || '',
+                candidateExp: candProfile?.experience as string || '',
+                candidateCity: candProfile?.city as string || '',
+                candidateWhatsapp: candProfile?.whatsapp as string || '',
+                candidateEmail: user?.email || '',
+                candidateLinkedin: candProfile?.linkedin as string || '',
+                cvUrl: candProfile?.cv_url as string || '',
+                matchScore: String(sugg?.match_score || ''),
+              }
+            })
+          }).catch(() => {})
+        }
+      }
+    }
+    setRespondingSugg(null)
+  }
 
   useEffect(() => {
     if (candProfile?.notify_matches !== undefined)
@@ -1694,6 +1760,13 @@ function CandidateView({
         setMyApplied(prev => new Map([...prev, [job.id, now]]))
         setAppliedJob(job)
         setSelectedJob(null)
+        // Score the application asynchronously
+        sb.rpc('score_candidate_job', { p_candidate_id: candidateId, p_job_id: job.id })
+          .then(({ data: score }) => {
+            if (typeof score === 'number') {
+              sb.from('applications').update({ match_score: score }).eq('job_id', job.id).eq('candidate_id', candidateId).then(() => {})
+            }
+          })
         if (user?.email && user?.name)
           fetch('/api/notify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: 'application_submitted', to: user.email, name: user.name.split(' ')[0], extra: { jobTitle: job.title, companyName: job.companies?.company_name || '' } }) }).catch(() => {})
       }
@@ -1967,6 +2040,51 @@ function CandidateView({
             </div>
           )
         })()}
+
+        {/* Suggestions (Path 2 — proactive matches) */}
+        {suggestions.length > 0 && (
+          <div className="card" style={{ padding: '0', marginBottom: '1rem', borderLeft: '3px solid var(--coral)' }}>
+            <div style={{ padding: '1rem 1.1rem .6rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>
+                <div className="card-section-title" style={{ color: 'var(--coral)' }}>✦ {t('Sugerencias para vos', 'Suggested for you')}</div>
+                <div style={{ fontSize: '.73rem', color: 'var(--ink-45)', marginTop: '1px' }}>{t('El algoritmo encontró estas vacantes compatibles con tu perfil', 'The algorithm found these listings matching your profile')}</div>
+              </div>
+              <span style={{ fontSize: '.72rem', background: 'var(--coral)', color: 'white', borderRadius: 5, padding: '2px 8px', fontWeight: 700 }}>{suggestions.length}</span>
+            </div>
+            <div style={{ padding: '0 .7rem .7rem', display: 'flex', flexDirection: 'column', gap: '.5rem' }}>
+              {suggestions.map(s => {
+                const j = s.jobs
+                if (!j) return null
+                return (
+                  <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: '.75rem', padding: '.65rem .5rem', borderRadius: 8, background: 'var(--off)' }}>
+                    <div className="jc-ava" style={{ width: 36, height: 36, fontSize: '.7rem', flexShrink: 0 }}>
+                      {initials((j.companies as { company_name?: string })?.company_name || '—')}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontWeight: 600, fontSize: '.82rem', color: 'var(--ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{j.title}</div>
+                      <div style={{ fontSize: '.72rem', color: 'var(--ink-45)', marginTop: '1px' }}>
+                        {(j.companies as { company_name?: string })?.company_name || '—'}{j.city ? ` · ${j.city}` : ''}
+                      </div>
+                    </div>
+                    <span style={{ fontSize: '.72rem', background: '#E4F0F1', color: 'var(--forest)', borderRadius: 5, padding: '2px 7px', fontWeight: 700, flexShrink: 0 }}>{s.match_score}% fit</span>
+                    <div style={{ display: 'flex', gap: '.35rem', flexShrink: 0 }}>
+                      <button
+                        disabled={respondingSugg === s.id}
+                        onClick={() => respondToSuggestion(s.id, s.job_id, true)}
+                        style={{ background: 'var(--forest)', color: 'white', border: 'none', borderRadius: 6, padding: '5px 12px', fontWeight: 600, fontSize: '.75rem', cursor: 'pointer', opacity: respondingSugg === s.id ? .6 : 1 }}
+                      >{t('Me interesa', "I'm in")}</button>
+                      <button
+                        disabled={respondingSugg === s.id}
+                        onClick={() => respondToSuggestion(s.id, s.job_id, false)}
+                        style={{ background: 'transparent', color: 'var(--ink-45)', border: '1px solid var(--line)', borderRadius: 6, padding: '5px 10px', fontWeight: 600, fontSize: '.75rem', cursor: 'pointer' }}
+                      >✕</button>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Recent applications */}
         {recentApplied.length > 0 && (
@@ -3380,6 +3498,8 @@ function MyJobsView({ userEmail, coName, onPost, t }: {
   const [viewingJobId, setViewingJobId] = useState<string | null>(null)
   const [applications, setApplications] = useState<Application[]>([])
   const [appsLoading, setAppsLoading] = useState(false)
+  const [pushingJobId, setPushingJobId] = useState<string | null>(null)
+  const [pushResult, setPushResult] = useState<Record<string, number>>({})
 
   useEffect(() => { loadMyJobs() }, [])
 
@@ -3420,7 +3540,7 @@ function MyJobsView({ userEmail, coName, onPost, t }: {
         .from('applications')
         .select('*, candidates(id,name,email,whatsapp,area,experience,city,modality,skills,linkedin,cv_url,notify_matches)')
         .eq('job_id', jobId)
-        .order('applied_at', { ascending: false })
+        .order('match_score', { ascending: false, nullsFirst: false })
       setApplications(data || [])
     } catch (e) { console.warn(e) }
     setAppsLoading(false)
@@ -3430,11 +3550,38 @@ function MyJobsView({ userEmail, coName, onPost, t }: {
     // Capture before async/state-update to avoid stale closure
     const app = applications.find(a => a.id === appId)
     try {
-      await createClient().from('applications').update({ status }).eq('id', appId)
+      const sb = createClient()
+      await sb.from('applications').update({ status }).eq('id', appId)
       setApplications(prev => prev.map(a => a.id === appId ? { ...a, status } : a))
+      const jobTitle = myJobs.find(j => j.id === app?.job_id)?.title || ''
+      // Notify candidate of status change
       if ((status === 'contacted' || status === 'rejected') && app?.candidates?.email && app?.candidates?.name && app?.candidates?.notify_matches !== false) {
-        const jobTitle = myJobs.find(j => j.id === app.job_id)?.title || ''
         fetch('/api/notify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: 'application_status_changed', to: app.candidates.email, name: app.candidates.name.split(' ')[0], extra: { status, jobTitle, companyName: coName || '' } }) }).catch(() => {})
+      }
+      // On "contacted": record the match + email the company with candidate card
+      if (status === 'contacted' && app?.candidate_id && app?.job_id) {
+        await sb.from('matches').upsert({ candidate_id: app.candidate_id, job_id: app.job_id, path: 1 }, { onConflict: 'candidate_id,job_id', ignoreDuplicates: true })
+        const { data: coData } = await sb.from('companies').select('email').ilike('email', userEmail).maybeSingle()
+        if (coData?.email && app.candidates) {
+          fetch('/api/notify', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: 'match_confirmed', to: coData.email, name: coName || '',
+              extra: {
+                jobTitle,
+                candidateName: app.candidates.name || '',
+                candidateArea: app.candidates.area || '',
+                candidateExp: app.candidates.experience || '',
+                candidateCity: app.candidates.city || '',
+                candidateWhatsapp: app.candidates.whatsapp || '',
+                candidateEmail: app.candidates.email || '',
+                candidateLinkedin: app.candidates.linkedin || '',
+                cvUrl: app.candidates.cv_url || '',
+                matchScore: String(app.match_score || ''),
+              }
+            })
+          }).catch(() => {})
+        }
       }
     } catch (e) { console.warn(e) }
   }
@@ -3476,6 +3623,22 @@ function MyJobsView({ userEmail, coName, onPost, t }: {
     } catch (e) { console.warn(e) }
   }
 
+  async function pushMatches(jobId: string) {
+    if (pushingJobId) return
+    setPushingJobId(jobId)
+    try {
+      const res = await fetch('/api/match-push', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ job_id: jobId }),
+      })
+      const data = await res.json()
+      setPushResult(prev => ({ ...prev, [jobId]: data.count ?? 0 }))
+      setMyJobs(prev => prev.map(j => j.id === jobId ? { ...j, push_sent_at: new Date().toISOString() } : j))
+    } catch (e) { console.warn(e) }
+    setPushingJobId(null)
+  }
+
   const inp: React.CSSProperties = { width: '100%', background: 'var(--off)', border: '1.5px solid transparent', borderRadius: '8px', padding: '8px 10px', color: 'var(--ink)', fontFamily: 'var(--body)', fontSize: '.83rem', outline: 'none' }
 
   const statusColor: Record<string, string> = { pending: 'var(--ink-45)', reviewed: 'var(--forest)', contacted: '#2A7E4E', rejected: 'var(--coral)' }
@@ -3508,7 +3671,14 @@ function MyJobsView({ userEmail, coName, onPost, t }: {
                     {initials(c.name)}
                   </div>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontFamily: 'var(--head)', fontWeight: 700, fontSize: '.88rem' }}>{c.name}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem', flexWrap: 'wrap' }}>
+                      <div style={{ fontFamily: 'var(--head)', fontWeight: 700, fontSize: '.88rem' }}>{c.name}</div>
+                      {app.match_score != null && (
+                        <span style={{ fontSize: '.68rem', fontWeight: 700, borderRadius: 5, padding: '2px 7px', background: app.match_score >= 70 ? '#E4F0F1' : 'var(--off)', color: app.match_score >= 70 ? 'var(--forest)' : 'var(--ink-45)' }}>
+                          {app.match_score >= 70 ? '✦ ' : ''}{app.match_score}% fit
+                        </span>
+                      )}
+                    </div>
                     <div style={{ fontSize: '.74rem', color: 'var(--forest)', fontWeight: 600 }}>{tv(c.area, t)}</div>
                   </div>
                   <select
@@ -3650,13 +3820,33 @@ function MyJobsView({ userEmail, coName, onPost, t }: {
                   ) : (
                     <button className="btn btn-sm" style={{ background: 'none', border: '1.5px solid var(--line)', color: 'var(--coral)', borderRadius: 7, padding: '4px 12px', fontSize: '.78rem', cursor: 'pointer' }} onClick={() => setConfirmDeleteId(j.id)}>{t('Eliminar', 'Delete')}</button>
                   )}
-                  <button
-                    className="btn btn-forest btn-sm"
-                    style={{ marginLeft: 'auto' }}
-                    onClick={() => viewApplicants(j.id)}
-                  >
-                    {t('Postulantes', 'Applicants')} {appCounts[j.id] ? `(${appCounts[j.id]})` : '(0)'}
-                  </button>
+                  <div style={{ marginLeft: 'auto', display: 'flex', gap: '.4rem', alignItems: 'center' }}>
+                    {pushResult[j.id] !== undefined && (
+                      <span style={{ fontSize: '.72rem', color: 'var(--forest)', fontWeight: 600 }}>
+                        ✦ {pushResult[j.id]} {t('matches enviados', 'matches sent')}
+                      </span>
+                    )}
+                    {pushResult[j.id] === undefined && j.push_sent_at && (
+                      <span style={{ fontSize: '.71rem', color: 'var(--ink-45)' }}>
+                        ✓ {t('Push enviado', 'Push sent')}
+                      </span>
+                    )}
+                    <button
+                      className="btn btn-sm"
+                      style={{ background: 'var(--coral)', border: 'none', color: 'white', borderRadius: 7, padding: '5px 12px', fontSize: '.77rem', fontWeight: 600, cursor: pushingJobId === j.id ? 'not-allowed' : 'pointer', opacity: pushingJobId === j.id ? .7 : 1 }}
+                      disabled={pushingJobId === j.id}
+                      onClick={() => pushMatches(j.id)}
+                      title={t('Encontrar y notificar candidatos compatibles', 'Find and notify compatible candidates')}
+                    >
+                      {pushingJobId === j.id ? t('Buscando…', 'Searching…') : '✦ ' + t('Buscar matches', 'Find matches')}
+                    </button>
+                    <button
+                      className="btn btn-forest btn-sm"
+                      onClick={() => viewApplicants(j.id)}
+                    >
+                      {t('Postulantes', 'Applicants')} {appCounts[j.id] ? `(${appCounts[j.id]})` : '(0)'}
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
@@ -3677,6 +3867,7 @@ function PostJobView({ userEmail, onSuccess, t }: {
   const [city, setCity] = useState('')
   const [area, setArea] = useState('')
   const [sal, setSal] = useState('')
+  const [reqExp, setReqExp] = useState('')
   const [desc, setDesc] = useState('')
   const [skills, setSkills] = useState<string[]>([])
   const [skillInput, setSkillInput] = useState('')
@@ -3705,6 +3896,7 @@ function PostJobView({ userEmail, onSuccess, t }: {
         salary_range: sal,
         description: desc.trim(),
         skills,
+        required_experience: reqExp || null,
         active: true,
         closes_at: closesAt ? new Date(closesAt).toISOString() : null,
       }
@@ -3765,11 +3957,21 @@ function PostJobView({ userEmail, onSuccess, t }: {
               <option>{t('Otra', 'Other')}</option>
             </select>
           </div>
-          <div className="fg fg-full">
+          <div className="fg">
             <label>{t('Salario mensual', 'Monthly salary')} <span style={{color:'var(--ink-45)',fontWeight:400,textTransform:'none',letterSpacing:0}}>{t('(opcional)', '(optional)')}</span></label>
             <select value={sal} onChange={e => setSal(e.target.value)}>
               <option value="" disabled>{t('Rango', 'Range')}</option>
               <option>Hasta $2M</option><option>$2M–$4M</option><option>$4M–$7M</option><option>$7M–$12M</option><option>$12M+</option>
+            </select>
+          </div>
+          <div className="fg">
+            <label>{t('Experiencia requerida', 'Required experience')} <span style={{color:'var(--ink-45)',fontWeight:400,textTransform:'none',letterSpacing:0}}>{t('(opcional)', '(optional)')}</span></label>
+            <select value={reqExp} onChange={e => setReqExp(e.target.value)}>
+              <option value="">{t('Cualquier nivel', 'Any level')}</option>
+              <option>{t('Sin experiencia', 'No experience')}</option>
+              <option>1-2 años</option>
+              <option>3-5 años</option>
+              <option>6+ años</option>
             </select>
           </div>
           <div className="fg">

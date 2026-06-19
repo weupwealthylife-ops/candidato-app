@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 // Supported notification types
-type NotifyType = 'application_submitted' | 'company_contacted' | 'match_found' | 'application_status_changed'
+type NotifyType = 'application_submitted' | 'company_contacted' | 'match_found' | 'application_status_changed' | 'match_confirmed'
 
 interface NotifyPayload {
   type: NotifyType
@@ -96,12 +96,52 @@ function buildHtml(type: NotifyType, name: string, extra: Record<string, string>
     return { subject, html: base.replace('CONTENT', content) }
   }
 
-  // match_found
-  const subject = `✨ Nuevos matches para vos — ${extra.matchCount || 'varios'} oportunidades`
-  const content = `
+  if (type === 'match_confirmed') {
+    const subject = `🤝 Match confirmado — ${extra.candidateName || 'Un candidato'} para ${extra.jobTitle || 'tu vacante'}`
+    const content = `
+      <h2 style="color:#0E1E20;font-size:1.15rem;margin:0 0 12px">¡Match confirmado! 🎉</h2>
+      <p style="color:#4a6a6a;font-size:.88rem;line-height:1.65;margin:0 0 16px">
+        <strong style="color:#1B3B3E">${extra.candidateName || 'Un candidato'}</strong> es un match fuerte para tu vacante
+        <strong> ${extra.jobTitle || ''}</strong>${extra.matchScore ? ` <span style="background:#E4F0F1;color:#1B3B3E;border-radius:4px;padding:1px 7px;font-size:.8rem;font-weight:700">${extra.matchScore}% fit</span>` : ''}.
+      </p>
+      <div style="background:#E4F0F1;border-radius:8px;padding:14px 18px;margin-bottom:16px;font-size:.83rem;line-height:1.8">
+        ${extra.candidateArea ? `<div><span style="color:#9aacac;font-weight:600">Área:</span> <strong style="color:#1B3B3E">${extra.candidateArea}</strong></div>` : ''}
+        ${extra.candidateExp ? `<div><span style="color:#9aacac;font-weight:600">Experiencia:</span> <strong style="color:#1B3B3E">${extra.candidateExp}</strong></div>` : ''}
+        ${extra.candidateCity ? `<div><span style="color:#9aacac;font-weight:600">Ciudad:</span> <strong style="color:#1B3B3E">${extra.candidateCity}</strong></div>` : ''}
+        ${extra.candidateWhatsapp ? `<div><span style="color:#9aacac;font-weight:600">WhatsApp:</span> <a href="https://wa.me/${extra.candidateWhatsapp.replace(/\D/g,'')}" style="color:#1B3B3E;font-weight:600">${extra.candidateWhatsapp}</a></div>` : ''}
+        ${extra.candidateEmail ? `<div><span style="color:#9aacac;font-weight:600">Email:</span> <a href="mailto:${extra.candidateEmail}" style="color:#1B3B3E;font-weight:600">${extra.candidateEmail}</a></div>` : ''}
+        ${extra.candidateLinkedin ? `<div><span style="color:#9aacac;font-weight:600">LinkedIn:</span> <a href="${extra.candidateLinkedin}" style="color:#1B3B3E;font-weight:600">Ver perfil →</a></div>` : ''}
+      </div>
+      ${extra.cvUrl ? `<a href="${extra.cvUrl}" style="display:inline-block;background:#EA6440;color:white;border-radius:8px;padding:10px 22px;font-size:.85rem;font-weight:600;text-decoration:none;margin-bottom:12px">Descargar CV →</a><br/>` : ''}
+      <a href="https://candidato.com.co/app" style="display:inline-block;background:#1B3B3E;color:white;border-radius:8px;padding:10px 22px;font-size:.85rem;font-weight:600;text-decoration:none">Ver todos mis matches →</a>
+      <p style="color:#9aacac;font-size:.73rem;margin-top:14px">Coordina la entrevista directamente — toda la información de contacto está arriba.</p>
+    `
+    return { subject, html: base.replace('CONTENT', content) }
+  }
+
+  // match_found — sent to candidate when proactively suggested for a job
+  const matchScore = extra.matchCount // reused field: matchCount carries the score % in push context
+  const subject = extra.jobTitle
+    ? `✦ Match encontrado — ${extra.companyName || 'Una empresa'} busca tu perfil`
+    : `✨ Nuevos matches para vos`
+  const content = extra.jobTitle ? `
+    <h2 style="color:#0E1E20;font-size:1.15rem;margin:0 0 12px">¡Sos un match, ${name}! ✦</h2>
+    <p style="color:#4a6a6a;font-size:.88rem;line-height:1.65;margin:0 0 16px">
+      El algoritmo de Candidato® identificó que tu perfil encaja con la vacante
+      <strong style="color:#1B3B3E"> ${extra.jobTitle}</strong>
+      ${extra.companyName ? ` en <strong>${extra.companyName}</strong>` : ''}.
+      ${matchScore ? `<span style="background:#E4F0F1;color:#1B3B3E;border-radius:4px;padding:1px 7px;font-size:.8rem;font-weight:700;margin-left:4px">${matchScore}% fit</span>` : ''}
+    </p>
+    <div style="background:#E4F0F1;border-radius:8px;padding:14px 18px;margin-bottom:16px">
+      <p style="color:#1B3B3E;font-size:.83rem;font-weight:600;margin:0 0 4px">¿Qué tenés que hacer?</p>
+      <p style="color:#264D51;font-size:.82rem;line-height:1.6;margin:0">Entrá al app y confirmá tu interés. Si aceptás, la empresa recibirá tu perfil completo y se pondrá en contacto.</p>
+    </div>
+    <a href="https://candidato.com.co/app" style="display:inline-block;background:#EA6440;color:white;border-radius:8px;padding:12px 24px;font-size:.88rem;font-weight:700;text-decoration:none">Ver mi sugerencia →</a>
+    <p style="color:#9aacac;font-size:.75rem;margin-top:16px">Solo recibís este email cuando hay un match real con tu perfil.</p>
+  ` : `
     <h2 style="color:#0E1E20;font-size:1.15rem;margin:0 0 12px">Tus matches de esta semana, ${name} ✦</h2>
     <p style="color:#4a6a6a;font-size:.88rem;line-height:1.65;margin:0 0 16px">
-      Encontramos <strong style="color:#1B3B3E">${extra.matchCount || 'nuevas'} oportunidades</strong> que encajan con tu perfil. Entrate al app para ver los detalles y postularte.
+      Encontramos <strong style="color:#1B3B3E">${matchScore || 'nuevas'} oportunidades</strong> que encajan con tu perfil. Entrate al app para ver los detalles y postularte.
     </p>
     <a href="https://candidato.com.co/app" style="display:inline-block;background:#EA6440;color:white;border-radius:8px;padding:12px 24px;font-size:.88rem;font-weight:700;text-decoration:none">Ver mis matches →</a>
     <p style="color:#9aacac;font-size:.75rem;margin-top:16px">Solo recibirás este email cuando haya matches reales para vos.</p>
