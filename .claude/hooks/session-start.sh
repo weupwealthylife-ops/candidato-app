@@ -8,6 +8,10 @@ fi
 
 cd "$CLAUDE_PROJECT_DIR"
 
+# Set git author so commits are verified
+git config user.email noreply@anthropic.com
+git config user.name Claude
+
 # Install dependencies
 npm install
 
