@@ -16,7 +16,7 @@ const RESEND_API = 'https://api.resend.com/emails'
 function buildHtml(type: NotifyType, name: string, extra: Record<string, string> = {}): { subject: string; html: string } {
   const base = `
     <div style="font-family:'Helvetica Neue',Arial,sans-serif;max-width:520px;margin:0 auto;background:#fff;border:1px solid #e8eded;border-radius:12px;overflow:hidden">
-      <div style="background:#1B3B3E;padding:20px 28px">
+      <div style="background:#2A5558;padding:20px 28px">
         <img src="https://candidato.com.co/bird-logo.png" width="32" height="32" alt="" style="display:inline-block;vertical-align:middle;margin-right:10px;border-radius:6px">
         <span style="color:white;font-weight:700;font-size:1.05rem;letter-spacing:-.01em;vertical-align:middle">Candidato®</span>
       </div>
@@ -56,7 +56,8 @@ function buildHtml(type: NotifyType, name: string, extra: Record<string, string>
       <div style="background:#f0f7f7;border-radius:10px;padding:16px 20px;margin-bottom:22px">
         <p style="color:#1B3B3E;font-size:.78rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;margin:0 0 12px">Lo que busca la empresa</p>
         <table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;font-size:.83rem;line-height:1.8">
-          ${extra.lookingForAreas ? `<tr><td style="color:#9aacac;font-weight:600;width:120px;vertical-align:top;padding-right:8px">Áreas</td><td style="color:#1B3B3E;font-weight:600">${extra.lookingForAreas}</td></tr>` : ''}
+          ${extra.jobTitle ? `<tr><td style="color:#9aacac;font-weight:600;width:120px;vertical-align:top;padding-right:8px">Vacante</td><td style="color:#1B3B3E;font-weight:700">${extra.jobTitle}</td></tr>` : ''}
+          ${extra.lookingForAreas ? `<tr><td style="color:#9aacac;font-weight:600;vertical-align:top;padding-right:8px">Áreas</td><td style="color:#1B3B3E;font-weight:600">${extra.lookingForAreas}</td></tr>` : ''}
           ${extra.lookingForExperience ? `<tr><td style="color:#9aacac;font-weight:600;vertical-align:top;padding-right:8px">Experiencia</td><td style="color:#1B3B3E;font-weight:600">${extra.lookingForExperience}</td></tr>` : ''}
           ${extra.lookingForModality ? `<tr><td style="color:#9aacac;font-weight:600;vertical-align:top;padding-right:8px">Modalidad</td><td style="color:#1B3B3E;font-weight:600">${extra.lookingForModality}</td></tr>` : ''}
         </table>
@@ -66,7 +67,7 @@ function buildHtml(type: NotifyType, name: string, extra: Record<string, string>
       <p style="color:#6b8f8f;font-size:.78rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;margin:0 0 10px">Interés de empresa</p>
       <h2 style="color:#0E1E20;font-size:1.2rem;font-weight:800;margin:0 0 8px;line-height:1.3">Hola ${name}, una empresa quiere conocerte</h2>
       <p style="color:#4a6a6a;font-size:.88rem;line-height:1.7;margin:0 0 20px">
-        El equipo de <strong style="color:#1B3B3E">${extra.companyName || 'una empresa'}</strong> revisó tu perfil y te marcó como candidato de interés. Tu área de <strong style="color:#1B3B3E">${extra.candidateArea || 'trabajo'}</strong> encaja con lo que buscan.
+        El equipo de <strong style="color:#1B3B3E">${extra.companyName || 'una empresa'}</strong> revisó tu perfil${extra.jobTitle ? ` para la vacante <strong style="color:#1B3B3E">${extra.jobTitle}</strong>` : ''} y te marcó como candidato de interés. Tu área de <strong style="color:#1B3B3E">${extra.candidateArea || 'trabajo'}</strong> encaja con lo que buscan.
       </p>
 
       <table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;margin-bottom:22px">

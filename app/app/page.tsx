@@ -2775,10 +2775,11 @@ function JobRow({ job, applied, appliedAt, saved, onApply, onWithdraw, onSave, o
   )
 }
 
-function RecommendedCandCard({ c, coName, coIndustry, lookingForAreas, lookingForExperience, lookingForModality, t }: {
+function RecommendedCandCard({ c, coName, coIndustry, jobTitle, lookingForAreas, lookingForExperience, lookingForModality, t }: {
   c: Candidate & { score: number }
   coName: string
   coIndustry: string
+  jobTitle: string
   lookingForAreas: string
   lookingForExperience: string
   lookingForModality: string
@@ -2803,6 +2804,7 @@ function RecommendedCandCard({ c, coName, coIndustry, lookingForAreas, lookingFo
             companyName: coName,
             companyIndustry: coIndustry,
             candidateArea: c.area || '',
+            jobTitle,
             lookingForAreas,
             lookingForExperience,
             lookingForModality,
@@ -2873,11 +2875,14 @@ function CompanyView({
   t: (es: string, en: string) => string
 }) {
   const [coProfile, setCoProfile] = useState<CompanyProfile | null>(null)
+  const [coJobs, setCoJobs] = useState<{ id: string; title: string }[]>([])
 
   useEffect(() => {
     if (!userEmail) return
     createClient().from('companies').select('*').ilike('email', userEmail).maybeSingle()
       .then(({ data }) => { if (data) setCoProfile(data) })
+    createClient().from('jobs').select('id,title').ilike('company_email', userEmail).order('created_at', { ascending: false })
+      .then(({ data }) => { if (data) setCoJobs(data) })
   }, [userEmail])
 
   // Simple skill/area-based candidate matching
@@ -2969,7 +2974,7 @@ function CompanyView({
               </button>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(300px,1fr))', gap: '.85rem' }}>
-              {matches.map(c => <RecommendedCandCard key={c.id} c={c} coName={(coProfile?.company_name as string) || coName} coIndustry={(coProfile?.industry as string) || ''} lookingForAreas={((coProfile?.looking_for_areas as string[]) || []).join(', ')} lookingForExperience={(coProfile?.looking_for_experience as string) || ''} lookingForModality={(coProfile?.looking_for_modality as string) || ''} t={t} />)}
+              {matches.map(c => <RecommendedCandCard key={c.id} c={c} coName={(coProfile?.company_name as string) || coName} coIndustry={(coProfile?.industry as string) || ''} jobTitle={coJobs[0]?.title || ''} lookingForAreas={((coProfile?.looking_for_areas as string[]) || []).join(', ')} lookingForExperience={(coProfile?.looking_for_experience as string) || ''} lookingForModality={(coProfile?.looking_for_modality as string) || ''} t={t} />)}
             </div>
           </div>
         )}
