@@ -2775,10 +2775,13 @@ function JobRow({ job, applied, appliedAt, saved, onApply, onWithdraw, onSave, o
   )
 }
 
-function RecommendedCandCard({ c, coName, coIndustry, t }: {
+function RecommendedCandCard({ c, coName, coIndustry, lookingForAreas, lookingForExperience, lookingForModality, t }: {
   c: Candidate & { score: number }
   coName: string
   coIndustry: string
+  lookingForAreas: string
+  lookingForExperience: string
+  lookingForModality: string
   t: (es: string, en: string) => string
 }) {
   const [open, setOpen] = useState(false)
@@ -2800,6 +2803,9 @@ function RecommendedCandCard({ c, coName, coIndustry, t }: {
             companyName: coName,
             companyIndustry: coIndustry,
             candidateArea: c.area || '',
+            lookingForAreas,
+            lookingForExperience,
+            lookingForModality,
           },
         }),
       })
@@ -2963,7 +2969,7 @@ function CompanyView({
               </button>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(300px,1fr))', gap: '.85rem' }}>
-              {matches.map(c => <RecommendedCandCard key={c.id} c={c} coName={(coProfile?.company_name as string) || coName} coIndustry={(coProfile?.industry as string) || ''} t={t} />)}
+              {matches.map(c => <RecommendedCandCard key={c.id} c={c} coName={(coProfile?.company_name as string) || coName} coIndustry={(coProfile?.industry as string) || ''} lookingForAreas={((coProfile?.looking_for_areas as string[]) || []).join(', ')} lookingForExperience={(coProfile?.looking_for_experience as string) || ''} lookingForModality={(coProfile?.looking_for_modality as string) || ''} t={t} />)}
             </div>
           </div>
         )}
