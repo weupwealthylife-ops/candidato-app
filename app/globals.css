@@ -1036,6 +1036,8 @@ footer{
   background:rgba(250,250,248,.96);backdrop-filter:blur(20px);
   border-bottom:1px solid var(--line);
   display:flex;align-items:center;gap:1rem;padding:0 max(3vw,20px);
+  /* needed for absolute-centered logo */
+  isolation:isolate;
 }
 /* Logo pinned to the left */
 .topbar-logo{
@@ -1044,6 +1046,12 @@ footer{
   user-select:none;letter-spacing:-.02em;
 }
 .topbar-divider{width:1px;height:20px;background:var(--line);flex-shrink:0}
+.topbar-logo-center{
+  position:absolute;left:50%;transform:translateX(-50%);
+  display:flex;align-items:center;gap:6px;
+  font-family:var(--head);font-size:.92rem;font-weight:700;color:var(--forest);
+  letter-spacing:-.02em;pointer-events:none;user-select:none;
+}
 .topbar-tabs{display:flex;gap:3px;align-items:center;overflow:hidden}
 .tab-btn{display:inline-flex;align-items:center;gap:6px;padding:6px 13px;border-radius:7px;font-size:.79rem;font-weight:600;color:var(--ink-70);border:none;background:transparent;transition:all .18s}
 .tab-btn.active{background:var(--forest);color:var(--white)}
