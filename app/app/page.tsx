@@ -2732,8 +2732,40 @@ function JobRow({ job, applied, appliedAt, saved, onApply, onWithdraw, onSave, o
   )
 }
 
-function RecommendedCandCard({ c, t }: { c: Candidate & { score: number }; t: (es: string, en: string) => string }) {
+function RecommendedCandCard({ c, coName, coIndustry, t }: {
+  c: Candidate & { score: number }
+  coName: string
+  coIndustry: string
+  t: (es: string, en: string) => string
+}) {
   const [open, setOpen] = useState(false)
+  const [notified, setNotified] = useState(false)
+  const [sending, setSending] = useState(false)
+
+  async function handleContact() {
+    if (notified) { setOpen(o => !o); return }
+    setSending(true)
+    try {
+      await fetch('/api/notify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'company_contacted',
+          to: c.email,
+          name: c.name?.split(' ')[0] || c.name,
+          extra: {
+            companyName: coName,
+            companyIndustry: coIndustry,
+            candidateArea: c.area || '',
+          },
+        }),
+      })
+    } catch { /* non-blocking */ }
+    setNotified(true)
+    setOpen(true)
+    setSending(false)
+  }
+
   return (
     <div style={{ background: 'var(--off)', borderRadius: 10, padding: '.9rem 1rem', border: '1.5px solid var(--line)' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '.7rem', marginBottom: '.6rem' }}>
@@ -2751,20 +2783,29 @@ function RecommendedCandCard({ c, t }: { c: Candidate & { score: number }; t: (e
           {c.score >= 5 ? '🔥' : c.score >= 3 ? '⭐' : '✓'} {t('Match', 'Match')}
         </span>
       </div>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '.3rem', marginBottom: '.6rem' }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '.3rem', marginBottom: '.75rem' }}>
         {[c.experience, c.city, c.modality].filter(Boolean).map(tag => (
           <span key={tag} className="jc-tag" style={{ fontSize: '.68rem', padding: '2px 7px' }}>{tag}</span>
         ))}
       </div>
-      <button className="btn btn-forest btn-sm" style={{ width: '100%', justifyContent: 'center', fontSize: '.74rem', borderRadius: 7, marginTop: '.2rem' }} onClick={() => setOpen(o => !o)}>
-        {open ? t('Ocultar contacto', 'Hide contact') : t('Contactar →', 'Contact →')}
+      <button
+        className={`btn btn-sm${notified ? '' : ' btn-forest'}`}
+        disabled={sending}
+        style={{ width: '100%', justifyContent: 'center', fontSize: '.74rem', borderRadius: 7,
+          ...(notified ? { background: 'var(--pale)', color: 'var(--forest)', border: '1.5px solid var(--mist)' } : {}) }}
+        onClick={handleContact}
+      >
+        {sending ? t('Enviando…', 'Sending…') : notified ? t('✓ Notificado — Ver contacto', '✓ Notified — View contact') : t('Notificar interés →', 'Notify interest →')}
       </button>
-      {open && (
-        <div style={{ background: 'var(--white)', borderRadius: 8, padding: '.7rem .9rem', fontSize: '.8rem', lineHeight: 1.9, marginTop: '.5rem', border: '1px solid var(--line)' }}>
+      {notified && open && (
+        <div style={{ background: 'var(--white)', borderRadius: 8, padding: '.75rem 1rem', fontSize: '.81rem', lineHeight: 2, marginTop: '.6rem', border: '1px solid var(--line)' }}>
           {c.email && <div>📧 <a href={`mailto:${c.email}`} style={{ color: 'var(--forest)', fontWeight: 600 }}>{c.email}</a></div>}
           {c.whatsapp && <div>📱 <a href={`https://wa.me/${c.whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noreferrer" style={{ color: 'var(--forest)', fontWeight: 600 }}>{c.whatsapp}</a></div>}
           {c.linkedin && <div>🔗 <a href={c.linkedin} target="_blank" rel="noreferrer" style={{ color: 'var(--forest)', fontWeight: 600 }}>LinkedIn</a></div>}
           {c.cv_url && <div>📄 <a href={c.cv_url} target="_blank" rel="noreferrer" style={{ color: 'var(--forest)', fontWeight: 600 }}>{t('Ver CV', 'View CV')}</a></div>}
+          <button onClick={() => setOpen(false)} style={{ background: 'none', border: 'none', fontSize: '.72rem', color: 'var(--ink-45)', cursor: 'pointer', marginTop: '.2rem', padding: 0 }}>
+            {t('Ocultar', 'Hide')}
+          </button>
         </div>
       )}
     </div>
@@ -2879,7 +2920,7 @@ function CompanyView({
               </button>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(300px,1fr))', gap: '.85rem' }}>
-              {matches.map(c => <RecommendedCandCard key={c.id} c={c} t={t} />)}
+              {matches.map(c => <RecommendedCandCard key={c.id} c={c} coName={(coProfile?.company_name as string) || coName} coIndustry={(coProfile?.industry as string) || ''} t={t} />)}
             </div>
           </div>
         )}

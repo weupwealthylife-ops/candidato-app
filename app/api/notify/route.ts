@@ -51,17 +51,36 @@ function buildHtml(type: NotifyType, name: string, extra: Record<string, string>
   }
 
   if (type === 'company_contacted') {
-    const subject = `📩 Una empresa quiere contactarte — ${extra.companyName || 'Candidato'}`
+    const subject = `${extra.companyName || 'Una empresa'} está interesada en tu perfil — Candidato®`
     const content = `
-      <h2 style="color:#0E1E20;font-size:1.15rem;margin:0 0 12px">¡Buenas noticias, ${name}! 🚀</h2>
-      <p style="color:#4a6a6a;font-size:.88rem;line-height:1.65;margin:0 0 16px">
-        <strong style="color:#1B3B3E">${extra.companyName || 'Una empresa'}</strong> revisó tu perfil en Candidato® y quiere ponerse en contacto con vos.
+      <p style="color:#6b8f8f;font-size:.78rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;margin:0 0 10px">Interés de empresa</p>
+      <h2 style="color:#0E1E20;font-size:1.25rem;font-weight:800;margin:0 0 6px;line-height:1.3">Hola ${name}, tienes una oportunidad esperándote</h2>
+      <p style="color:#4a6a6a;font-size:.88rem;line-height:1.7;margin:0 0 22px">
+        El equipo de <strong style="color:#1B3B3E">${extra.companyName || 'una empresa'}</strong> revisó tu perfil en Candidato® y marcó tu perfil como candidato de interés. Quieren conocerte.
       </p>
-      <div style="background:#E4F0F1;border-radius:8px;padding:14px 18px;margin-bottom:16px">
-        <p style="color:#1B3B3E;font-size:.83rem;font-weight:600;margin:0 0 4px">Próximo paso</p>
-        <p style="color:#264D51;font-size:.82rem;line-height:1.6;margin:0">Revisá tu WhatsApp o email — te contactarán directamente para coordinar una charla.</p>
+
+      <div style="border:1.5px solid #d0e4e4;border-radius:10px;padding:18px 20px;margin-bottom:22px">
+        <div style="display:flex;align-items:flex-start;gap:14px">
+          <div style="width:42px;height:42px;border-radius:50%;background:#1B3B3E;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:1.1rem">🏢</div>
+          <div>
+            <div style="font-weight:700;color:#0E1E20;font-size:.95rem;margin-bottom:2px">${extra.companyName || 'Empresa interesada'}</div>
+            ${extra.companyIndustry ? `<div style="color:#6b8f8f;font-size:.8rem">${extra.companyIndustry}</div>` : ''}
+            <div style="color:#6b8f8f;font-size:.78rem;margin-top:4px">Revisó tu perfil de <strong style="color:#1B3B3E">${extra.candidateArea || 'profesional'}</strong></div>
+          </div>
+        </div>
       </div>
-      <a href="https://candidato.com.co/app" style="display:inline-block;background:#1B3B3E;color:white;border-radius:8px;padding:10px 22px;font-size:.85rem;font-weight:600;text-decoration:none">Ver mi perfil →</a>
+
+      <div style="background:#f5fafa;border-left:3px solid #1B3B3E;border-radius:0 8px 8px 0;padding:14px 18px;margin-bottom:22px">
+        <p style="color:#1B3B3E;font-size:.83rem;font-weight:700;margin:0 0 5px">¿Qué sigue?</p>
+        <p style="color:#264D51;font-size:.82rem;line-height:1.65;margin:0">El equipo de <strong>${extra.companyName || 'la empresa'}</strong> se pondrá en contacto contigo directamente por email o WhatsApp. Mantén tu información de contacto actualizada.</p>
+      </div>
+
+      <a href="https://candidato.com.co/app" style="display:inline-block;background:#1B3B3E;color:white;border-radius:8px;padding:12px 26px;font-size:.88rem;font-weight:700;text-decoration:none;margin-bottom:20px">Ver mi perfil en Candidato® →</a>
+
+      <p style="color:#9aacac;font-size:.75rem;line-height:1.6;margin:0;padding-top:16px;border-top:1px solid #f0f4f4">
+        Recibiste este email porque tu perfil en Candidato® está activo y marcado como disponible.<br/>
+        Si no quieres recibir más notificaciones, actualizá tus preferencias desde la app.
+      </p>
     `
     return { subject, html: base.replace('CONTENT', content) }
   }
