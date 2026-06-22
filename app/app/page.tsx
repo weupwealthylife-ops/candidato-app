@@ -1198,12 +1198,12 @@ export default function AppPage() {
                             <label>{t('Área', 'Area')}</label>
                             <select value={jobarea} onChange={(e) => setJobarea(e.target.value)}>
                               <option value="" disabled>{t('Área', 'Area')}</option>
-                              <option>{t('Tecnología', 'Technology')}</option>
-                              <option>{t('Diseño', 'Design')}</option>
-                              <option>Marketing</option>
-                              <option>{t('Ventas', 'Sales')}</option>
-                              <option>{t('Finanzas', 'Finance')}</option>
-                              <option>{t('RRHH', 'HR')}</option>
+                              <option>{t('Tecnología / IT', 'Technology / IT')}</option>
+                              <option>{t('Diseño UX/UI', 'UX/UI Design')}</option>
+                              <option>Marketing y Comunicaciones</option>
+                              <option>{t('Ventas y Comercial', 'Sales')}</option>
+                              <option>{t('Finanzas y Contabilidad', 'Finance & Accounting')}</option>
+                              <option>{t('Recursos Humanos', 'Human Resources')}</option>
                               <option>{t('Operaciones', 'Operations')}</option>
                               <option>{t('Otra', 'Other')}</option>
                             </select>
@@ -1699,11 +1699,25 @@ function CandidateView({
   useEffect(() => {
     if (candProfile?.notify_matches !== undefined)
       setNotifMatches(candProfile.notify_matches as boolean)
+    if ((candProfile as Record<string,unknown>)?.notify_updates !== undefined)
+      setNotifUpdates((candProfile as Record<string,unknown>).notify_updates as boolean)
+    if ((candProfile as Record<string,unknown>)?.profile_visible !== undefined)
+      setProfileVisible((candProfile as Record<string,unknown>).profile_visible as boolean)
   }, [candProfile])
 
   async function saveNotifMatches(val: boolean) {
     if (!user?.email) return
     await createClient().from('candidates').update({ notify_matches: val }).ilike('email', user.email)
+  }
+
+  async function saveNotifUpdates(val: boolean) {
+    if (!user?.email) return
+    await createClient().from('candidates').update({ notify_updates: val }).ilike('email', user.email)
+  }
+
+  async function saveProfileVisible(val: boolean) {
+    if (!user?.email) return
+    await createClient().from('candidates').update({ profile_visible: val }).ilike('email', user.email)
   }
 
   // Show a retry banner if profile still null after 5 seconds
@@ -2679,7 +2693,7 @@ function CandidateView({
             <span className="profile-lbl" style={{ display: 'block' }}>{t('Actualizaciones de plataforma', 'Platform updates')}</span>
             <span style={{ fontSize: '.72rem', color: 'var(--ink-45)' }}>{t('Novedades y mejoras de Candidato®', 'News and improvements from Candidato®')}</span>
           </div>
-          <Toggle on={notifUpdates} onToggle={() => setNotifUpdates(v => !v)} />
+          <Toggle on={notifUpdates} onToggle={() => { const v = !notifUpdates; setNotifUpdates(v); saveNotifUpdates(v) }} />
         </div>
         <div className="settings-section-title" style={{ marginTop: '1.4rem' }}>{t('Privacidad', 'Privacy')}</div>
         <div className="profile-row" style={{ justifyContent: 'space-between' }}>
@@ -2687,7 +2701,7 @@ function CandidateView({
             <span className="profile-lbl" style={{ display: 'block' }}>{t('Perfil visible para empresas', 'Profile visible to companies')}</span>
             <span style={{ fontSize: '.72rem', color: 'var(--ink-45)' }}>{t('Las empresas pueden encontrarte en búsquedas', 'Companies can discover you in searches')}</span>
           </div>
-          <Toggle on={profileVisible} onToggle={() => setProfileVisible(v => !v)} />
+          <Toggle on={profileVisible} onToggle={() => { const v = !profileVisible; setProfileVisible(v); saveProfileVisible(v) }} />
         </div>
       </div>
     </>
@@ -2880,9 +2894,13 @@ function CompanyView({
   useEffect(() => {
     if (!userEmail) return
     createClient().from('companies').select('*').ilike('email', userEmail).maybeSingle()
-      .then(({ data }) => { if (data) setCoProfile(data) })
-    createClient().from('jobs').select('id,title').ilike('company_email', userEmail).order('created_at', { ascending: false })
-      .then(({ data }) => { if (data) setCoJobs(data) })
+      .then(({ data }) => {
+        if (data) {
+          setCoProfile(data)
+          createClient().from('jobs').select('id,title').eq('company_id', data.id).order('created_at', { ascending: false })
+            .then(({ data: jobs }) => { if (jobs) setCoJobs(jobs) })
+        }
+      })
   }, [userEmail])
 
   // Simple skill/area-based candidate matching
@@ -3884,10 +3902,10 @@ function MyJobsView({ userEmail, coName, onPost, t }: {
                     <option value="">{t('Área', 'Area')}</option>
                     <option>{t('Tecnología / IT', 'Technology / IT')}</option>
                     <option>{t('Diseño UX/UI', 'UX/UI Design')}</option>
-                    <option>Marketing</option>
+                    <option>Marketing y Comunicaciones</option>
                     <option>{t('Ventas y Comercial', 'Sales')}</option>
-                    <option>{t('Finanzas', 'Finance')}</option>
-                    <option>{t('Recursos Humanos', 'HR')}</option>
+                    <option>{t('Finanzas y Contabilidad', 'Finance & Accounting')}</option>
+                    <option>{t('Recursos Humanos', 'Human Resources')}</option>
                     <option>{t('Operaciones', 'Operations')}</option>
                   </select>
                   <select style={{ ...inp, flex: 1 }} value={editSal} onChange={e => setEditSal(e.target.value)}>
@@ -4070,10 +4088,10 @@ function PostJobView({ userEmail, onSuccess, t }: {
               <option value="" disabled>{t('Área', 'Area')}</option>
               <option>{t('Tecnología / IT', 'Technology / IT')}</option>
               <option>{t('Diseño UX/UI', 'UX/UI Design')}</option>
-              <option>Marketing</option>
+              <option>Marketing y Comunicaciones</option>
               <option>{t('Ventas y Comercial', 'Sales')}</option>
-              <option>{t('Finanzas', 'Finance')}</option>
-              <option>{t('Recursos Humanos', 'HR')}</option>
+              <option>{t('Finanzas y Contabilidad', 'Finance & Accounting')}</option>
+              <option>{t('Recursos Humanos', 'Human Resources')}</option>
               <option>{t('Operaciones', 'Operations')}</option>
               <option>{t('Otra', 'Other')}</option>
             </select>
