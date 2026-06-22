@@ -1624,6 +1624,7 @@ function CandidateView({
   const [notifUpdates, setNotifUpdates] = useState(true)
   const [profileVisible, setProfileVisible] = useState(true)
   const [suggestions, setSuggestions] = useState<Suggestion[]>([])
+  const [acceptedMatches, setAcceptedMatches] = useState<Suggestion[]>([])
   const [respondingSugg, setRespondingSugg] = useState<string | null>(null)
   const [selectedJobScore, setSelectedJobScore] = useState<number | null>(null)
 
@@ -1643,6 +1644,13 @@ function CandidateView({
       .eq('status', 'pending')
       .order('match_score', { ascending: false })
       .then(({ data }) => setSuggestions((data as unknown as Suggestion[]) || []))
+    createClient()
+      .from('suggestions')
+      .select('id,job_id,match_score,status,created_at,jobs(id,title,area,city,modality,companies(company_name))')
+      .eq('candidate_id', candProfile.id as string)
+      .eq('status', 'accepted')
+      .order('created_at', { ascending: false })
+      .then(({ data }) => setAcceptedMatches((data as unknown as Suggestion[]) || []))
   }, [candProfile?.id])
 
   async function respondToSuggestion(suggId: string, jobId: string, accept: boolean) {
@@ -1651,7 +1659,9 @@ function CandidateView({
     const sb = createClient()
     const status = accept ? 'accepted' : 'dismissed'
     await sb.from('suggestions').update({ status }).eq('id', suggId)
+    const accepted = suggestions.find(s => s.id === suggId)
     setSuggestions(prev => prev.filter(s => s.id !== suggId))
+    if (accept && accepted) setAcceptedMatches(prev => [{ ...accepted, status: 'accepted' }, ...prev])
     if (accept && candProfile?.id) {
       await sb.from('matches').upsert({ candidate_id: candProfile.id as string, job_id: jobId, path: 2 }, { onConflict: 'candidate_id,job_id', ignoreDuplicates: true })
       showToast(t('¡Match confirmado!', 'Match confirmed!'), t('La empresa recibirá tu perfil pronto.', 'The company will receive your profile soon.'), '🎉')
@@ -2123,6 +2133,39 @@ function CandidateView({
                   <span style={{ fontSize: '.68rem', background: 'var(--pale)', color: 'var(--forest)', borderRadius: 5, padding: '2px 7px', fontWeight: 600, flexShrink: 0 }}>✓ {t('Enviada', 'Sent')}</span>
                 </div>
               ))}
+            </div>
+          </div>
+        )}
+
+        {/* Match history */}
+        {acceptedMatches.length > 0 && (
+          <div className="card" style={{ padding: '0', marginBottom: '1rem', borderLeft: '3px solid #16a34a' }}>
+            <div style={{ padding: '1rem 1.1rem .6rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>
+                <div className="card-section-title" style={{ color: '#16a34a' }}>🤝 {t('Mis matches confirmados', 'My confirmed matches')}</div>
+                <div style={{ fontSize: '.73rem', color: 'var(--ink-45)', marginTop: '1px' }}>{t('Vacantes donde aceptaste el match — la empresa tiene tu contacto', 'Listings where you accepted — the company has your contact')}</div>
+              </div>
+              <span style={{ fontSize: '.72rem', background: '#16a34a', color: 'white', borderRadius: 5, padding: '2px 8px', fontWeight: 700 }}>{acceptedMatches.length}</span>
+            </div>
+            <div style={{ padding: '0 .7rem .7rem' }}>
+              {acceptedMatches.map(s => {
+                const job = s.jobs as { title?: string; area?: string; city?: string; modality?: string; companies?: { company_name?: string } } | undefined
+                return (
+                  <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: '.75rem', padding: '.55rem .4rem', borderBottom: '1px solid var(--line)' }}>
+                    <div className="jc-ava" style={{ width: 34, height: 34, fontSize: '.72rem', flexShrink: 0, background: 'linear-gradient(135deg,#16a34a,#22c55e)' }}>
+                      {initials(job?.companies?.company_name || '—')}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontWeight: 600, fontSize: '.82rem', color: 'var(--ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{job?.title || '—'}</div>
+                      <div style={{ fontSize: '.73rem', color: 'var(--ink-45)', marginTop: '1px' }}>{job?.companies?.company_name || '—'}{job?.city ? ` · ${job.city}` : ''}</div>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px' }}>
+                      <span style={{ fontSize: '.68rem', background: '#dcfce7', color: '#16a34a', borderRadius: 5, padding: '2px 7px', fontWeight: 700 }}>✓ Match</span>
+                      <span style={{ fontSize: '.65rem', color: 'var(--ink-45)' }}>{s.match_score}% fit</span>
+                    </div>
+                  </div>
+                )
+              })}
             </div>
           </div>
         )}
