@@ -2732,6 +2732,45 @@ function JobRow({ job, applied, appliedAt, saved, onApply, onWithdraw, onSave, o
   )
 }
 
+function RecommendedCandCard({ c, t }: { c: Candidate & { score: number }; t: (es: string, en: string) => string }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <div style={{ background: 'var(--off)', borderRadius: 10, padding: '.9rem 1rem', border: '1.5px solid var(--line)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '.7rem', marginBottom: '.6rem' }}>
+        <div style={{ position: 'relative', flexShrink: 0 }}>
+          <div style={{ width: 38, height: 38, borderRadius: '50%', background: 'linear-gradient(135deg,var(--forest),var(--forest-lt))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--head)', fontSize: '.78rem', fontWeight: 700, color: 'white' }}>
+            {initials(c.name)}
+          </div>
+          <span style={{ position: 'absolute', bottom: 0, right: 0, width: 10, height: 10, borderRadius: '50%', background: '#16a34a', border: '2px solid var(--off)' }} />
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontFamily: 'var(--head)', fontWeight: 700, fontSize: '.83rem', color: 'var(--ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</div>
+          {c.area && <div style={{ fontSize: '.72rem', color: 'var(--forest)', fontWeight: 600, marginTop: '1px' }}>{c.area}</div>}
+        </div>
+        <span style={{ background: 'var(--pale)', color: 'var(--forest)', border: '1px solid var(--mist)', borderRadius: 50, padding: '2px 8px', fontSize: '.67rem', fontWeight: 700, flexShrink: 0 }}>
+          {c.score >= 5 ? '🔥' : c.score >= 3 ? '⭐' : '✓'} {t('Match', 'Match')}
+        </span>
+      </div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '.3rem', marginBottom: '.6rem' }}>
+        {[c.experience, c.city, c.modality].filter(Boolean).map(tag => (
+          <span key={tag} className="jc-tag" style={{ fontSize: '.68rem', padding: '2px 7px' }}>{tag}</span>
+        ))}
+      </div>
+      <button className="btn btn-forest btn-sm" style={{ width: '100%', justifyContent: 'center', fontSize: '.74rem', borderRadius: 7, marginTop: '.2rem' }} onClick={() => setOpen(o => !o)}>
+        {open ? t('Ocultar contacto', 'Hide contact') : t('Contactar →', 'Contact →')}
+      </button>
+      {open && (
+        <div style={{ background: 'var(--white)', borderRadius: 8, padding: '.7rem .9rem', fontSize: '.8rem', lineHeight: 1.9, marginTop: '.5rem', border: '1px solid var(--line)' }}>
+          {c.email && <div>📧 <a href={`mailto:${c.email}`} style={{ color: 'var(--forest)', fontWeight: 600 }}>{c.email}</a></div>}
+          {c.whatsapp && <div>📱 <a href={`https://wa.me/${c.whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noreferrer" style={{ color: 'var(--forest)', fontWeight: 600 }}>{c.whatsapp}</a></div>}
+          {c.linkedin && <div>🔗 <a href={c.linkedin} target="_blank" rel="noreferrer" style={{ color: 'var(--forest)', fontWeight: 600 }}>LinkedIn</a></div>}
+          {c.cv_url && <div>📄 <a href={c.cv_url} target="_blank" rel="noreferrer" style={{ color: 'var(--forest)', fontWeight: 600 }}>{t('Ver CV', 'View CV')}</a></div>}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function CompanyView({
   view, coName, userEmail, candidates, loadCandidates, setView, t,
 }: {
@@ -2840,36 +2879,7 @@ function CompanyView({
               </button>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(300px,1fr))', gap: '.85rem' }}>
-              {matches.map(c => (
-                <div key={c.id} style={{ background: 'var(--off)', borderRadius: 10, padding: '.9rem 1rem', border: '1.5px solid var(--line)' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '.7rem', marginBottom: '.6rem' }}>
-                    <div style={{ position: 'relative', flexShrink: 0 }}>
-                      <div style={{ width: 38, height: 38, borderRadius: '50%', background: 'linear-gradient(135deg,var(--forest),var(--forest-lt))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--head)', fontSize: '.78rem', fontWeight: 700, color: 'white' }}>
-                        {initials(c.name)}
-                      </div>
-                      <span style={{ position: 'absolute', bottom: 0, right: 0, width: 10, height: 10, borderRadius: '50%', background: '#16a34a', border: '2px solid var(--off)' }} />
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontFamily: 'var(--head)', fontWeight: 700, fontSize: '.83rem', color: 'var(--ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</div>
-                      {c.area && <div style={{ fontSize: '.72rem', color: 'var(--forest)', fontWeight: 600, marginTop: '1px' }}>{tv(c.area, t)}</div>}
-                    </div>
-                    {/* Match score badge */}
-                    <span style={{ background: 'var(--pale)', color: 'var(--forest)', border: '1px solid var(--mist)', borderRadius: 50, padding: '2px 8px', fontSize: '.67rem', fontWeight: 700, flexShrink: 0 }}>
-                      {c.score >= 5 ? '🔥' : c.score >= 3 ? '⭐' : '✓'} {t('Match', 'Match')}
-                    </span>
-                  </div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '.3rem', marginBottom: '.6rem' }}>
-                    {[tv(c.experience, t), c.city, tv(c.modality, t)].filter(Boolean).map(tag => (
-                      <span key={tag} className="jc-tag" style={{ fontSize: '.68rem', padding: '2px 7px' }}>{tag}</span>
-                    ))}
-                  </div>
-                  {c.email && (
-                    <a href={`mailto:${c.email}`} className="btn btn-forest btn-sm" style={{ width: '100%', justifyContent: 'center', fontSize: '.74rem', borderRadius: 7, marginTop: '.2rem' }}>
-                      {t('Contactar →', 'Contact →')}
-                    </a>
-                  )}
-                </div>
-              ))}
+              {matches.map(c => <RecommendedCandCard key={c.id} c={c} t={t} />)}
             </div>
           </div>
         )}
