@@ -44,6 +44,16 @@ export default function Hero() {
             </a>
           </div>
         </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '.6rem', marginBottom: '1.2rem', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            {['👩‍💼','👨‍💻','👩‍🎨','👨‍🔬'].map((e, i) => (
+              <span key={i} style={{ width: 28, height: 28, borderRadius: '50%', background: 'var(--forest)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '.9rem', marginLeft: i > 0 ? -8 : 0, border: '2px solid white', zIndex: 4 - i, position: 'relative' }}>{e}</span>
+            ))}
+          </div>
+          <span style={{ fontSize: '.78rem', color: 'var(--ink-70)', lineHeight: 1.4 }}>
+            <strong style={{ color: 'var(--forest)' }}>{t('+500 candidatos', '+500 candidates')}</strong> {t('ya encontraron su match', 'already found their match')}
+          </span>
+        </div>
         <div className="hero-stats" id="heroStats">
           <div className="stat-item in">
             <div className="stat-bar"></div>

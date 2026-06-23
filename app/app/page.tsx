@@ -1639,6 +1639,9 @@ function CandidateView({
   const [acceptedMatches, setAcceptedMatches] = useState<Suggestion[]>([])
   const [respondingSugg, setRespondingSugg] = useState<string | null>(null)
   const [selectedJobScore, setSelectedJobScore] = useState<number | null>(null)
+  const [extraJobs, setExtraJobs] = useState<Job[]>([])
+  const [moreJobsLoading, setMoreJobsLoading] = useState(false)
+  const [noMoreJobs, setNoMoreJobs] = useState(false)
 
   useEffect(() => {
     if (!selectedJob || !candProfile?.id) { setSelectedJobScore(null); return }
@@ -1848,7 +1851,27 @@ function CandidateView({
 
   const setEdit = (k: string, v: string) => setEditData(prev => ({ ...prev, [k]: v }))
 
-  const doSearch = () => loadJobs(query, filterArea, filterCity, filterMod, filterSal)
+  const doSearch = () => { setExtraJobs([]); setNoMoreJobs(false); loadJobs(query, filterArea, filterCity, filterMod, filterSal) }
+
+  async function loadMoreJobs() {
+    if (moreJobsLoading || noMoreJobs) return
+    setMoreJobsLoading(true)
+    try {
+      const sb = createClient()
+      const nowIso = new Date().toISOString()
+      let q = sb.from('jobs').select('*, companies(company_name)').eq('active', true).or(`closes_at.is.null,closes_at.gte.${nowIso}`)
+      if (query) q = q.ilike('title', `%${query}%`)
+      if (filterArea) q = q.eq('area', filterArea)
+      if (filterCity) q = q.eq('city', filterCity)
+      if (filterMod) q = q.eq('modality', filterMod)
+      if (filterSal) q = q.ilike('salary_range', `%${filterSal}%`)
+      const offset = jobs.length + extraJobs.length
+      const { data } = await q.order('created_at', { ascending: false }).range(offset, offset + 49)
+      if (!data || data.length === 0) { setNoMoreJobs(true) }
+      else { setExtraJobs(prev => [...prev, ...data]) }
+    } catch { /* ignore */ }
+    setMoreJobsLoading(false)
+  }
 
   // ── JOB DETAIL MODAL ──
   const jobDetailModal = selectedJob && (
@@ -2021,6 +2044,17 @@ function CandidateView({
     const profileFields = [p?.whatsapp, p?.area, p?.city, p?.modality, p?.experience, p?.linkedin, (p?.skills as string[] | undefined)?.length ? true : false, !!p?.cv_url]
     const profilePct = Math.round((profileFields.filter(Boolean).length / profileFields.length) * 100)
 
+    // Top job recommendations (scored, un-applied, not in suggestions)
+    const suggJobIds = new Set(suggestions.map(s => s.job_id))
+    const recommendedJobs = candProfile
+      ? jobs
+          .filter(j => !myApplied.has(j.id) && !suggJobIds.has(j.id))
+          .map(j => ({ ...j, _score: scoreJobForCandidate(j, candProfile) }))
+          .filter(j => j._score >= 40)
+          .sort((a, b) => b._score - a._score)
+          .slice(0, 4)
+      : []
+
     // Recent applications (last 3)
     const recentApplied = jobs
       .filter(j => myApplied.has(j.id))
@@ -2106,6 +2140,40 @@ function CandidateView({
             </div>
           )
         })()}
+
+        {/* Job Recommendations */}
+        {recommendedJobs.length > 0 && (
+          <div className="card" style={{ padding: '0', marginBottom: '1rem', borderLeft: '3px solid var(--forest)' }}>
+            <div style={{ padding: '1rem 1.1rem .6rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>
+                <div className="card-section-title">✦ {t('Para vos', 'Top picks for you')}</div>
+                <div style={{ fontSize: '.73rem', color: 'var(--ink-45)', marginTop: '1px' }}>{t('Vacantes que encajan con tu perfil', 'Jobs matching your profile')}</div>
+              </div>
+              <span style={{ fontSize: '.72rem', background: 'var(--forest)', color: 'white', borderRadius: 5, padding: '2px 8px', fontWeight: 700 }}>{recommendedJobs.length}</span>
+            </div>
+            <div style={{ padding: '0 .7rem .7rem', display: 'flex', flexDirection: 'column', gap: '.5rem' }}>
+              {recommendedJobs.map(j => (
+                <div key={j.id} style={{ display: 'flex', alignItems: 'center', gap: '.75rem', padding: '.65rem .5rem', borderRadius: 8, background: 'var(--off)', cursor: 'pointer' }} onClick={() => setSelectedJob(j)}>
+                  <div className="jc-ava" style={{ width: 36, height: 36, fontSize: '.7rem', flexShrink: 0 }}>
+                    {initials(j.companies?.company_name || '—')}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 600, fontSize: '.82rem', color: 'var(--ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{j.title}</div>
+                    <div style={{ fontSize: '.72rem', color: 'var(--ink-45)', marginTop: '1px' }}>
+                      {j.companies?.company_name || '—'}{j.city ? ` · ${j.city}` : ''}
+                    </div>
+                  </div>
+                  <span style={{ fontSize: '.72rem', background: '#E4F0F1', color: 'var(--forest)', borderRadius: 5, padding: '2px 7px', fontWeight: 700, flexShrink: 0 }}>{j._score}% fit</span>
+                  <button
+                    className="btn btn-forest btn-sm"
+                    style={{ borderRadius: 6, padding: '4px 12px', fontSize: '.75rem', flexShrink: 0 }}
+                    onClick={e => { e.stopPropagation(); applyToJob(j) }}
+                  >{t('Postular →', 'Apply →')}</button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Suggestions (Path 2 — proactive matches) */}
         {suggestions.length > 0 && (
@@ -2252,7 +2320,7 @@ function CandidateView({
             </div>
             <div className="jobs-list" style={{ padding: '0 .7rem .7rem' }}>
               {jobs.slice(0, 8).map((j) => (
-                <JobRow key={j.id} job={j} applied={myApplied.has(j.id)} appliedAt={myApplied.get(j.id)} appStatus={myAppStatuses.get(j.id)?.status} saved={mySavedJobs.has(j.id)} onApply={applyToJob} onWithdraw={withdrawApplication} onSave={saveJob} onUnsave={unsaveJob} onSelect={setSelectedJob} t={t} />
+                <JobRow key={j.id} job={j} applied={myApplied.has(j.id)} appliedAt={myApplied.get(j.id)} appStatus={myAppStatuses.get(j.id)?.status} saved={mySavedJobs.has(j.id)} onApply={applyToJob} onWithdraw={withdrawApplication} onSave={saveJob} onUnsave={unsaveJob} onSelect={setSelectedJob} fitScore={candProfile ? scoreJobForCandidate(j, candProfile) : undefined} t={t} />
               ))}
             </div>
           </div>
@@ -2291,7 +2359,7 @@ function CandidateView({
             </button>
           </div>
           <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
-            <select className="filter-select" value={filterArea} onChange={e => { setFilterArea(e.target.value); loadJobs(query, e.target.value, filterCity, filterMod, filterSal) }}>
+            <select className="filter-select" value={filterArea} onChange={e => { setFilterArea(e.target.value); setExtraJobs([]); setNoMoreJobs(false); loadJobs(query, e.target.value, filterCity, filterMod, filterSal) }}>
               <option value="">{t('Área', 'Area')}</option>
               <option>{t('Tecnología / IT', 'Technology / IT')}</option>
               <option>{t('Diseño UX/UI', 'UX/UI Design')}</option>
@@ -2303,7 +2371,7 @@ function CandidateView({
               <option>{t('Producto / Product', 'Product')}</option>
               <option>{t('Legal', 'Legal')}</option>
             </select>
-            <select className="filter-select" value={filterCity} onChange={e => { setFilterCity(e.target.value); loadJobs(query, filterArea, e.target.value, filterMod, filterSal) }}>
+            <select className="filter-select" value={filterCity} onChange={e => { setFilterCity(e.target.value); setExtraJobs([]); setNoMoreJobs(false); loadJobs(query, filterArea, e.target.value, filterMod, filterSal) }}>
               <option value="">{t('Ciudad', 'City')}</option>
               <option>Bogotá</option><option>Medellín</option><option>Cali</option>
               <option>Barranquilla</option><option>Cartagena</option><option>Bucaramanga</option>
@@ -2311,13 +2379,13 @@ function CandidateView({
               <option>Santa Marta</option><option>Ibagué</option><option>Pasto</option>
               <option>Montería</option><option>Villavicencio</option>
             </select>
-            <select className="filter-select" value={filterMod} onChange={e => { setFilterMod(e.target.value); loadJobs(query, filterArea, filterCity, e.target.value, filterSal) }}>
+            <select className="filter-select" value={filterMod} onChange={e => { setFilterMod(e.target.value); setExtraJobs([]); setNoMoreJobs(false); loadJobs(query, filterArea, filterCity, e.target.value, filterSal) }}>
               <option value="">{t('Modalidad', 'Mode')}</option>
               <option>{t('Presencial', 'On-site')}</option>
               <option>{t('Remoto', 'Remote')}</option>
               <option>{t('Híbrido', 'Hybrid')}</option>
             </select>
-            <select className="filter-select" value={filterSal} onChange={e => { setFilterSal(e.target.value); loadJobs(query, filterArea, filterCity, filterMod, e.target.value) }}>
+            <select className="filter-select" value={filterSal} onChange={e => { setFilterSal(e.target.value); setExtraJobs([]); setNoMoreJobs(false); loadJobs(query, filterArea, filterCity, filterMod, e.target.value) }}>
               <option value="">{t('Salario', 'Salary')}</option>
               <option>Hasta $2M</option>
               <option>$2M – $4M</option>
@@ -2329,7 +2397,7 @@ function CandidateView({
               <button
                 className="btn btn-outline btn-sm"
                 style={{ flexShrink: 0 }}
-                onClick={() => { setQuery(''); setFilterArea(''); setFilterCity(''); setFilterMod(''); setFilterSal(''); loadJobs() }}
+                onClick={() => { setQuery(''); setFilterArea(''); setFilterCity(''); setFilterMod(''); setFilterSal(''); setExtraJobs([]); setNoMoreJobs(false); loadJobs() }}
               >
                 {t('Limpiar todo ✕', 'Clear all ✕')}
               </button>
@@ -2370,19 +2438,33 @@ function CandidateView({
         )}
 
         {!dataLoading && (() => {
-          const displayJobs = showSavedOnly ? jobs.filter(j => mySavedJobs.has(j.id)) : jobs
-          if (displayJobs.length === 0) return (
+          const allJobs = showSavedOnly ? jobs.filter(j => mySavedJobs.has(j.id)) : [...jobs, ...extraJobs]
+          if (allJobs.length === 0) return (
             <div className="empty-state">
               <div className="empty-title">{showSavedOnly ? t('Sin guardadas', 'No saved jobs') : t('Sin resultados', 'No results')}</div>
               <div className="empty-sub">{showSavedOnly ? t('Guardá vacantes con ★ para verlas aquí.', 'Bookmark jobs with ★ to see them here.') : t('Intentá con otros filtros.', 'Try different filters.')}</div>
             </div>
           )
           return (
-            <div className="jobs-list">
-              {displayJobs.map((j) => (
-                <JobRow key={j.id} job={j} applied={myApplied.has(j.id)} appliedAt={myApplied.get(j.id)} appStatus={myAppStatuses.get(j.id)?.status} saved={mySavedJobs.has(j.id)} onApply={applyToJob} onWithdraw={withdrawApplication} onSave={saveJob} onUnsave={unsaveJob} onSelect={setSelectedJob} t={t} />
-              ))}
-            </div>
+            <>
+              <div className="jobs-list">
+                {allJobs.map((j) => (
+                  <JobRow key={j.id} job={j} applied={myApplied.has(j.id)} appliedAt={myApplied.get(j.id)} appStatus={myAppStatuses.get(j.id)?.status} saved={mySavedJobs.has(j.id)} onApply={applyToJob} onWithdraw={withdrawApplication} onSave={saveJob} onUnsave={unsaveJob} onSelect={setSelectedJob} fitScore={candProfile ? scoreJobForCandidate(j, candProfile) : undefined} t={t} />
+                ))}
+              </div>
+              {!showSavedOnly && !noMoreJobs && (
+                <div style={{ textAlign: 'center', padding: '1rem 0' }}>
+                  <button
+                    className="btn btn-outline"
+                    onClick={loadMoreJobs}
+                    disabled={moreJobsLoading}
+                    style={{ borderRadius: 8, padding: '8px 24px', fontSize: '.82rem' }}
+                  >
+                    {moreJobsLoading ? t('Cargando…', 'Loading…') : t('Cargar más →', 'Load more →')}
+                  </button>
+                </div>
+              )}
+            </>
           )
         })()}
         {jobDetailModal}
@@ -2775,7 +2857,39 @@ function CandidateView({
   )
 }
 
-function JobRow({ job, applied, appliedAt, appStatus, saved, onApply, onWithdraw, onSave, onUnsave, onSelect, t }: {
+function scoreJobForCandidate(job: Job, cand: Record<string, unknown>): number {
+  let score = 0
+  const expRank = (e: string) => {
+    if (e === 'Sin experiencia') return 0
+    if (e === '1-2 años' || e === '1–2 años') return 1
+    if (e === '3-5 años' || e === '3–5 años') return 2
+    if (['5-10 años','5–10 años','6+ años','10+ años'].includes(e)) return 3
+    return -1
+  }
+  if (cand.area && job.area && cand.area === job.area) score += 40
+  if (cand.modality && job.modality) {
+    if (cand.modality === job.modality) score += 20
+    else if (job.modality === 'Remoto' || cand.modality === 'Remoto') score += 12
+    else if (job.modality === 'Híbrido' || cand.modality === 'Híbrido') score += 8
+  }
+  if (job.modality === 'Remoto') score += 15
+  else if (cand.city && job.city && cand.city === job.city) score += 15
+  if (!job.required_experience) score += 15
+  else if (cand.experience) {
+    const cr = expRank(cand.experience as string), jr = expRank(job.required_experience)
+    if (cr >= jr) score += 15
+    else if (cr === jr - 1) score += 8
+  }
+  const js = job.skills || [], cs = (cand.skills as string[]) || []
+  if (!js.length) score += 10
+  else if (cs.length) {
+    const m = js.filter(s => cs.some(c => c.toLowerCase() === s.toLowerCase())).length
+    score += Math.round((m / js.length) * 10)
+  }
+  return Math.min(score, 100)
+}
+
+function JobRow({ job, applied, appliedAt, appStatus, saved, onApply, onWithdraw, onSave, onUnsave, onSelect, fitScore, t }: {
   job: Job
   applied?: boolean
   appliedAt?: string
@@ -2786,6 +2900,7 @@ function JobRow({ job, applied, appliedAt, appStatus, saved, onApply, onWithdraw
   onSave?: (job: Job) => void
   onUnsave?: (job: Job) => void
   onSelect?: (job: Job) => void
+  fitScore?: number
   t?: (es: string, en: string) => string
 }) {
   const tr = t || ((es: string) => es)
@@ -2814,6 +2929,9 @@ function JobRow({ job, applied, appliedAt, appStatus, saved, onApply, onWithdraw
         )}
       </div>
       <div className="jc-right" onClick={e => e.stopPropagation()}>
+        {fitScore !== undefined && (
+          <span style={{ fontSize: '.7rem', background: fitScore >= 70 ? '#E4F0F1' : 'var(--off)', color: fitScore >= 70 ? 'var(--forest)' : 'var(--ink-45)', borderRadius: 5, padding: '2px 7px', fontWeight: 700, marginBottom: '.2rem', display: 'block', textAlign: 'right' }}>{fitScore}% fit</span>
+        )}
         {(onSave || onUnsave) && (
           <button
             title={saved ? tr('Quitar guardado', 'Remove bookmark') : tr('Guardar para después', 'Save for later')}
@@ -3720,6 +3838,7 @@ function MyJobsView({ userEmail, coName, onPost, t }: {
   const [appsLoading, setAppsLoading] = useState(false)
   const [pushingJobId, setPushingJobId] = useState<string | null>(null)
   const [pushResult, setPushResult] = useState<Record<string, number>>({})
+  const [savedCounts, setSavedCounts] = useState<Record<string, number>>({})
 
   useEffect(() => { loadMyJobs() }, [])
 
@@ -3745,6 +3864,12 @@ function MyJobsView({ userEmail, coName, onPost, t }: {
           })
           setAppCounts(counts)
           setFirstApplyAt(firstApply)
+        }
+        const { data: saves } = await sb.from('saved_jobs').select('job_id').in('job_id', ids)
+        if (saves) {
+          const sc: Record<string, number> = {}
+          saves.forEach((s: { job_id: string }) => { sc[s.job_id] = (sc[s.job_id] || 0) + 1 })
+          setSavedCounts(sc)
         }
       }
     } catch (e) { console.warn(e) }
@@ -4030,6 +4155,7 @@ function MyJobsView({ userEmail, coName, onPost, t }: {
                 <div style={{ display: 'flex', gap: '1rem', marginBottom: '.8rem', fontSize: '.74rem', color: 'var(--ink-45)' }}>
                   <span title={t('Vistas por candidatos', 'Views by candidates')}>👁 {j.views || 0} {t('vistas', 'views')}</span>
                   <span title={t('Postulaciones recibidas', 'Applications received')}>📋 {appCounts[j.id] || 0} {t('postulaciones', 'applications')}</span>
+                  {savedCounts[j.id] ? <span title={t('Candidatos que guardaron esta vacante', 'Candidates who saved this listing')}>★ {savedCounts[j.id]} {t('guardadas', 'saved')}</span> : null}
                   {(j.views || 0) > 0 && <span title={t('Tasa de conversión', 'Conversion rate')}>⚡ {Math.round(((appCounts[j.id] || 0) / (j.views || 1)) * 100)}% {t('conversión', 'conversion')}</span>}
                   {firstApplyAt[j.id] && <span title={t('Primera postulación', 'First application')}>🕐 {t('1ra en', '1st in')} {Math.round((Date.now() - new Date(j.created_at || 0).getTime()) > 0 ? (new Date(firstApplyAt[j.id]).getTime() - new Date(j.created_at || 0).getTime()) / 3600000 : 0)}h</span>}
                 </div>

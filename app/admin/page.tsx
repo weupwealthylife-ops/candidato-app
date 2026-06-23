@@ -5,6 +5,20 @@ import { createClient } from '@/lib/supabase/client'
 
 interface Row { [key: string]: unknown }
 
+function exportCsv(rows: Row[], cols: string[], filename: string) {
+  const header = cols.join(',')
+  const body = rows.map(r =>
+    cols.map(c => {
+      const v = Array.isArray(r[c]) ? (r[c] as string[]).join('; ') : String(r[c] ?? '')
+      return `"${v.replace(/"/g, '""')}"`
+    }).join(',')
+  ).join('\n')
+  const blob = new Blob([`${header}\n${body}`], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a'); a.href = url; a.download = filename; a.click()
+  URL.revokeObjectURL(url)
+}
+
 function StatCard({ label, value, sub }: { label: string; value: string | number; sub?: string }) {
   return (
     <div style={{ background: 'white', border: '1px solid var(--line)', borderRadius: 12, padding: '1.1rem 1.3rem' }}>
@@ -142,28 +156,40 @@ export default function AdminPage() {
 
         {tab === 'candidates' && (
           <div style={{ background: 'white', border: '1px solid var(--line)', borderRadius: 12, padding: '1.2rem' }}>
-            <div style={{ fontWeight: 700, fontSize: '.88rem', marginBottom: '.85rem', color: 'var(--ink)' }}>Todos los candidatos ({candidates.length})</div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '.85rem' }}>
+              <div style={{ fontWeight: 700, fontSize: '.88rem', color: 'var(--ink)' }}>Todos los candidatos ({candidates.length})</div>
+              <button onClick={() => exportCsv(candidates, ['name','email','area','city','modality','experience','skills','created_at'], 'candidatos.csv')} style={{ padding: '5px 12px', borderRadius: 7, border: '1px solid var(--line)', fontSize: '.76rem', cursor: 'pointer', background: 'white', color: 'var(--forest)', fontWeight: 600 }}>↓ CSV</button>
+            </div>
             <DataTable rows={candidates} cols={['name','email','area','city','modality','experience','skills','created_at']} />
           </div>
         )}
 
         {tab === 'companies' && (
           <div style={{ background: 'white', border: '1px solid var(--line)', borderRadius: 12, padding: '1.2rem' }}>
-            <div style={{ fontWeight: 700, fontSize: '.88rem', marginBottom: '.85rem', color: 'var(--ink)' }}>Todas las empresas ({companies.length})</div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '.85rem' }}>
+              <div style={{ fontWeight: 700, fontSize: '.88rem', color: 'var(--ink)' }}>Todas las empresas ({companies.length})</div>
+              <button onClick={() => exportCsv(companies, ['company_name','email','industry','city','looking_for_areas','created_at'], 'empresas.csv')} style={{ padding: '5px 12px', borderRadius: 7, border: '1px solid var(--line)', fontSize: '.76rem', cursor: 'pointer', background: 'white', color: 'var(--forest)', fontWeight: 600 }}>↓ CSV</button>
+            </div>
             <DataTable rows={companies} cols={['company_name','email','industry','city','looking_for_areas','created_at']} />
           </div>
         )}
 
         {tab === 'jobs' && (
           <div style={{ background: 'white', border: '1px solid var(--line)', borderRadius: 12, padding: '1.2rem' }}>
-            <div style={{ fontWeight: 700, fontSize: '.88rem', marginBottom: '.85rem', color: 'var(--ink)' }}>Todas las vacantes ({jobs.length})</div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '.85rem' }}>
+              <div style={{ fontWeight: 700, fontSize: '.88rem', color: 'var(--ink)' }}>Todas las vacantes ({jobs.length})</div>
+              <button onClick={() => exportCsv(jobs, ['title','company','area','city','modality','salary_range','active','created_at'], 'vacantes.csv')} style={{ padding: '5px 12px', borderRadius: 7, border: '1px solid var(--line)', fontSize: '.76rem', cursor: 'pointer', background: 'white', color: 'var(--forest)', fontWeight: 600 }}>↓ CSV</button>
+            </div>
             <DataTable rows={jobs} cols={['title','company','area','city','modality','salary_range','active','created_at']} />
           </div>
         )}
 
         {tab === 'applications' && (
           <div style={{ background: 'white', border: '1px solid var(--line)', borderRadius: 12, padding: '1.2rem' }}>
-            <div style={{ fontWeight: 700, fontSize: '.88rem', marginBottom: '.85rem', color: 'var(--ink)' }}>Todas las postulaciones ({applications.length})</div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '.85rem' }}>
+              <div style={{ fontWeight: 700, fontSize: '.88rem', color: 'var(--ink)' }}>Todas las postulaciones ({applications.length})</div>
+              <button onClick={() => exportCsv(applications, ['candidate','candidateEmail','job','status','applied_at'], 'postulaciones.csv')} style={{ padding: '5px 12px', borderRadius: 7, border: '1px solid var(--line)', fontSize: '.76rem', cursor: 'pointer', background: 'white', color: 'var(--forest)', fontWeight: 600 }}>↓ CSV</button>
+            </div>
             <DataTable rows={applications} cols={['candidate','candidateEmail','job','status','applied_at']} />
           </div>
         )}

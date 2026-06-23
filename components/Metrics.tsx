@@ -1,6 +1,45 @@
 'use client'
 
+import { useEffect, useRef, useState } from 'react'
 import { useLang } from '@/lib/LangContext'
+
+function useCountUp(target: number, duration = 1400, trigger: boolean) {
+  const [val, setVal] = useState(0)
+  useEffect(() => {
+    if (!trigger) return
+    const start = performance.now()
+    const step = (now: number) => {
+      const p = Math.min((now - start) / duration, 1)
+      const ease = 1 - Math.pow(1 - p, 3)
+      setVal(Math.round(ease * target))
+      if (p < 1) requestAnimationFrame(step)
+    }
+    requestAnimationFrame(step)
+  }, [trigger, target, duration])
+  return val
+}
+
+function AnimatedStat({ target, suffix = '', prefix = '', label, sub }: { target: number; suffix?: string; prefix?: string; label: string; sub?: string }) {
+  const ref = useRef<HTMLDivElement>(null)
+  const [visible, setVisible] = useState(false)
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setVisible(true); obs.disconnect() } }, { threshold: 0.3 })
+    obs.observe(el)
+    return () => obs.disconnect()
+  }, [])
+  const val = useCountUp(target, 1400, visible)
+  return (
+    <div ref={ref} style={{ textAlign: 'center', padding: '1rem' }}>
+      <div className="m-num" style={{ fontSize: '2.2rem', fontWeight: 800, lineHeight: 1 }}>
+        {prefix}{target < 100 ? val : val.toLocaleString('es-CO')}{suffix}
+      </div>
+      <div className="m-label" style={{ marginBottom: '.3rem' }}>{label}</div>
+      {sub && <div style={{ fontSize: '.72rem', color: 'var(--ink-45)' }}>{sub}</div>}
+    </div>
+  )
+}
 
 export default function Metrics() {
   const { t } = useLang()
@@ -12,6 +51,15 @@ export default function Metrics() {
           <span className="sec-eye">{t('Por qué Candidato', 'Why Candidato')}</span>
           <h2 className="sec-h2">{t('Resultados que hablan.', 'Results that speak.')}</h2>
         </div>
+
+        {/* Live counters row */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))', gap: '1rem', margin: '1.2rem 0', background: 'white', borderRadius: 14, padding: '.5rem', border: '1px solid var(--line)' }}>
+          <AnimatedStat target={500} prefix="+" suffix="" label={t('candidatos activos', 'active candidates')} />
+          <AnimatedStat target={80} suffix="%" label={t('tasa de match', 'match rate')} sub={t('matches exitosos', 'successful matches')} />
+          <AnimatedStat target={90} prefix="−" suffix="%" label={t('costo de contratar', 'cost to hire')} />
+          <AnimatedStat target={24} suffix="h" label={t('tiempo al primer match', 'time to first match')} />
+        </div>
+
         <div className="metrics-wrap">
           <div className="m-card dark in">
             <div className="m-tag">{t('Velocidad', 'Speed')}</div>

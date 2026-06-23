@@ -129,6 +129,9 @@ function buildHtml(type: NotifyType, name: string, extra: Record<string, string>
 
   if (type === 'match_confirmed') {
     const subject = `🤝 Match confirmado — ${extra.candidateName || 'Un candidato'} para ${extra.jobTitle || 'tu vacante'}`
+    const waPhone = extra.candidateWhatsapp ? extra.candidateWhatsapp.replace(/\D/g,'') : ''
+    const waMsg = extra.candidateWhatsapp ? `Hola ${extra.candidateName || ''}, te escribo de ${name} por la vacante de ${extra.jobTitle || ''} — encontré tu perfil en Candidato® y me gustaría conectar contigo.` : ''
+    const waBtn = waPhone ? `<a href="https://wa.me/${waPhone}?text=${encodeURIComponent(waMsg)}" style="display:inline-block;background:#25D366;color:white;border-radius:8px;padding:10px 22px;font-size:.85rem;font-weight:600;text-decoration:none;margin-bottom:12px">WhatsApp → Contactar</a><br/>` : ''
     const content = `
       <h2 style="color:#0E1E20;font-size:1.15rem;margin:0 0 12px">¡Match confirmado! 🎉</h2>
       <p style="color:#4a6a6a;font-size:.88rem;line-height:1.65;margin:0 0 16px">
@@ -144,6 +147,7 @@ function buildHtml(type: NotifyType, name: string, extra: Record<string, string>
         ${extra.candidateLinkedin ? `<div><span style="color:#9aacac;font-weight:600">LinkedIn:</span> <a href="${extra.candidateLinkedin}" style="color:#1B3B3E;font-weight:600">Ver perfil →</a></div>` : ''}
       </div>
       ${extra.cvUrl ? `<a href="${extra.cvUrl}" style="display:inline-block;background:#EA6440;color:white;border-radius:8px;padding:10px 22px;font-size:.85rem;font-weight:600;text-decoration:none;margin-bottom:12px">Descargar CV →</a><br/>` : ''}
+      ${waBtn}
       <a href="https://candidato.com.co/app" style="display:inline-block;background:#1B3B3E;color:white;border-radius:8px;padding:10px 22px;font-size:.85rem;font-weight:600;text-decoration:none">Ver todos mis matches →</a>
       <p style="color:#9aacac;font-size:.73rem;margin-top:14px">Coordina la entrevista directamente — toda la información de contacto está arriba.</p>
     `
