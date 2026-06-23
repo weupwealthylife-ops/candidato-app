@@ -4091,61 +4091,70 @@ function MyJobsView({ userEmail, coName, onPost, t }: {
             <div className="empty-sub">{t('Los candidatos que se postulen aparecerán aquí.', 'Candidates who apply will appear here.')}</div>
           </div>
         )}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          {applications.map(app => {
-            const c = app.candidates
-            if (!c) return null
-            return (
-              <div key={app.id} className="card">
-                <div style={{ display: 'flex', alignItems: 'center', gap: '.75rem', marginBottom: '.75rem' }}>
-                  <div style={{ width: 42, height: 42, borderRadius: '50%', background: 'linear-gradient(135deg,var(--forest),var(--forest-lt))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--head)', fontSize: '.85rem', fontWeight: 700, color: 'white', flexShrink: 0 }}>
-                    {initials(c.name)}
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem', flexWrap: 'wrap' }}>
-                      <div style={{ fontFamily: 'var(--head)', fontWeight: 700, fontSize: '.88rem' }}>{c.name}</div>
-                      {app.match_score != null && (
-                        <span style={{ fontSize: '.68rem', fontWeight: 700, borderRadius: 5, padding: '2px 7px', background: app.match_score >= 70 ? '#E4F0F1' : 'var(--off)', color: app.match_score >= 70 ? 'var(--forest)' : 'var(--ink-45)' }}>
-                          {app.match_score >= 70 ? '✦ ' : ''}{app.match_score}% fit
-                        </span>
-                      )}
+        {(() => {
+          const STAGES = [
+            { id: 'pending', label: t('Recibidas', 'Received'), color: '#f5f5f0', border: 'var(--line)' },
+            { id: 'reviewed', label: t('En revisión', 'Reviewing'), color: '#eff6ff', border: '#bfdbfe' },
+            { id: 'contacted', label: t('Contactados', 'Contacted'), color: '#f0fdf4', border: '#bbf7d0' },
+            { id: 'rejected', label: t('No avanzó', 'Rejected'), color: '#fef2f2', border: '#fecaca' },
+          ]
+          return (
+            <div style={{ overflowX: 'auto' }}>
+              <div style={{ display: 'flex', gap: '1rem', minWidth: 700, padding: '.5rem 0 1rem' }}>
+                {STAGES.map(stage => {
+                  const stageApps = applications.filter(a => a.status === stage.id)
+                  return (
+                    <div key={stage.id}
+                      style={{ flex: 1, minWidth: 160, background: dragOverCol === stage.id ? stage.color : stage.color, border: `1.5px solid ${stage.border}`, borderRadius: 12, padding: '.8rem .7rem' }}
+                      onDragOver={e => { e.preventDefault(); setDragOverCol(stage.id) }}
+                      onDrop={e => { e.preventDefault(); const appId = e.dataTransfer.getData('appId'); if (appId) updateAppStatus(appId, stage.id); setDragOverCol(null) }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '.6rem' }}>
+                        <span style={{ fontSize: '.75rem', fontWeight: 700, color: 'var(--ink-70)' }}>{stage.label}</span>
+                        <span style={{ fontSize: '.7rem', background: 'rgba(0,0,0,.08)', borderRadius: 10, padding: '1px 7px', fontWeight: 700, color: 'var(--ink-45)' }}>{stageApps.length}</span>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '.5rem' }}>
+                        {stageApps.map(app => {
+                          const c = app.candidates
+                          if (!c) return null
+                          return (
+                            <div key={app.id}
+                              draggable
+                              onDragStart={e => e.dataTransfer.setData('appId', app.id)}
+                              style={{ background: 'white', border: '1px solid var(--line)', borderRadius: 9, padding: '.65rem .7rem', cursor: 'grab', boxShadow: '0 1px 3px rgba(0,0,0,.06)' }}
+                            >
+                              <div style={{ fontWeight: 600, fontSize: '.8rem', color: 'var(--ink)' }}>{c.name}</div>
+                              <div style={{ fontSize: '.72rem', color: 'var(--ink-45)', marginTop: '2px' }}>{c.area || '—'}{c.experience ? ` · ${c.experience}` : ''}</div>
+                              {app.match_score !== undefined && app.match_score !== null && (
+                                <div style={{ marginTop: '.35rem', fontSize: '.7rem', background: app.match_score >= 70 ? '#E4F0F1' : 'var(--off)', color: app.match_score >= 70 ? 'var(--forest)' : 'var(--ink-45)', borderRadius: 5, padding: '1px 6px', display: 'inline-block', fontWeight: 700 }}>{app.match_score}% fit</div>
+                              )}
+                              <div style={{ marginTop: '.5rem', display: 'flex', gap: '.3rem', flexWrap: 'wrap' }}>
+                                {c.cv_url && <a href={c.cv_url} target="_blank" rel="noopener" style={{ fontSize: '.68rem', color: 'var(--forest)', textDecoration: 'underline' }}>CV</a>}
+                                {c.linkedin && <a href={c.linkedin} target="_blank" rel="noopener" style={{ fontSize: '.68rem', color: 'var(--forest)', textDecoration: 'underline' }}>LinkedIn</a>}
+                                {c.whatsapp && <a href={`https://wa.me/${c.whatsapp.replace(/\D/g,'')}`} target="_blank" rel="noopener" style={{ fontSize: '.68rem', color: '#25D366', textDecoration: 'underline' }}>WhatsApp</a>}
+                              </div>
+                              <div style={{ marginTop: '.5rem', display: 'flex', gap: '.25rem' }}>
+                                {stage.id !== 'contacted' && (
+                                  <button onClick={() => updateAppStatus(app.id, 'contacted')} style={{ flex: 1, fontSize: '.65rem', background: '#f0fdf4', color: '#15803d', border: '1px solid #bbf7d0', borderRadius: 5, padding: '3px 0', cursor: 'pointer', fontWeight: 600 }}>✓ {t('Contactar', 'Contact')}</button>
+                                )}
+                                {stage.id !== 'rejected' && (
+                                  <button onClick={() => updateAppStatus(app.id, 'rejected')} style={{ flex: 1, fontSize: '.65rem', background: '#fef2f2', color: '#b91c1c', border: '1px solid #fecaca', borderRadius: 5, padding: '3px 0', cursor: 'pointer', fontWeight: 600 }}>✕</button>
+                                )}
+                              </div>
+                            </div>
+                          )
+                        })}
+                        {stageApps.length === 0 && (
+                          <div style={{ fontSize: '.73rem', color: 'var(--ink-45)', textAlign: 'center', padding: '.75rem 0' }}>—</div>
+                        )}
+                      </div>
                     </div>
-                    <div style={{ fontSize: '.74rem', color: 'var(--forest)', fontWeight: 600 }}>{tv(c.area, t)}</div>
-                  </div>
-                  <select
-                    value={app.status}
-                    onChange={e => updateAppStatus(app.id, e.target.value)}
-                    style={{ fontSize: '.75rem', fontWeight: 700, padding: '4px 8px', borderRadius: '6px', border: '1.5px solid var(--line)', background: 'var(--off)', color: statusColor[app.status] || 'var(--ink)', cursor: 'pointer', outline: 'none' }}
-                  >
-                    <option value="pending">{t('Pendiente', 'Pending')}</option>
-                    <option value="reviewed">{t('Revisado', 'Reviewed')}</option>
-                    <option value="contacted">{t('Contactado', 'Contacted')}</option>
-                    <option value="rejected">{t('Descartado', 'Rejected')}</option>
-                  </select>
-                </div>
-                {[tv(c.experience, t), c.city, tv(c.modality, t)].filter(Boolean).length > 0 && (
-                  <div className="jc-tags" style={{ margin: '0 0 .65rem' }}>
-                    {[tv(c.experience, t), c.city, tv(c.modality, t)].filter(Boolean).map(tag => <span key={tag} className="jc-tag">{tag}</span>)}
-                  </div>
-                )}
-                {c.skills && c.skills.length > 0 && (
-                  <div className="jc-tags" style={{ margin: '0 0 .65rem' }}>
-                    {c.skills.slice(0, 5).map(s => <span key={s} className="jc-tag jc-tag-skill">{s}</span>)}
-                  </div>
-                )}
-                <div style={{ background: 'var(--off)', borderRadius: '8px', padding: '.65rem .9rem', fontSize: '.8rem', lineHeight: 1.9, marginBottom: '.75rem' }}>
-                  {c.email && <div><span style={{ color: 'var(--ink-45)', fontSize: '.72rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.04em' }}>Email</span><br /><a href={`mailto:${c.email}`} style={{ color: 'var(--forest)', fontWeight: 600 }}>{c.email}</a></div>}
-                  {c.whatsapp && <div style={{ marginTop: '.3rem' }}><span style={{ color: 'var(--ink-45)', fontSize: '.72rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.04em' }}>WhatsApp</span><br /><a href={`https://wa.me/${c.whatsapp.replace(/\D/g,'')}`} target="_blank" rel="noreferrer" style={{ color: 'var(--forest)', fontWeight: 600 }}>{c.whatsapp}</a></div>}
-                </div>
-                <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap' }}>
-                  {c.linkedin && <a href={c.linkedin.startsWith('http') ? c.linkedin : `https://${c.linkedin}`} target="_blank" rel="noreferrer" className="btn btn-outline btn-sm">LinkedIn →</a>}
-                  {c.cv_url && <a href={c.cv_url} target="_blank" rel="noreferrer" className="btn btn-outline btn-sm">{t('Descargar CV', 'Download CV')}</a>}
-                  <span style={{ marginLeft: 'auto', fontSize: '.72rem', color: 'var(--ink-45)', alignSelf: 'center' }}>{timeAgo(app.applied_at)}</span>
-                </div>
+                  )
+                })}
               </div>
-            )
-          })}
-        </div>
+            </div>
+          )
+        })()}
       </>
     )
   }
