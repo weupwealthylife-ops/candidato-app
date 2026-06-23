@@ -25,7 +25,7 @@ LANGUAGE sql STABLE AS $$
   FROM (
     SELECT c.id AS candidate_id, score_candidate_job(c.id, p_job_id) AS match_score
     FROM candidates c
-    WHERE c.open_to_work = true
+    WHERE c.open_to_work = true AND c.profile_visible IS NOT FALSE
   ) s
   WHERE s.match_score >= p_threshold
   ORDER BY s.match_score DESC

@@ -314,6 +314,7 @@ export default function AppPage() {
     try {
       const sb = createClient()
       let q = sb.from('candidates').select('id,name,email,whatsapp,area,experience,city,modality,salary_range,skills,linkedin,cv_url,created_at,open_to_work')
+        .neq('profile_visible', false)
       if (query) q = q.ilike('name', `%${query}%`)
       if (area) q = q.eq('area', area)
       if (city) q = q.eq('city', city)
@@ -961,8 +962,11 @@ export default function AppPage() {
                             <label>{t('Ciudad', 'City')}</label>
                             <select value={ccy} onChange={(e) => setCcy(e.target.value)}>
                               <option value="" disabled>{t('Seleccioná', 'Select')}</option>
-                              <option>Cali</option><option>Bogotá</option><option>Medellín</option>
-                              <option>Barranquilla</option><option>Bucaramanga</option>
+                              <option>Bogotá</option><option>Medellín</option><option>Cali</option>
+                              <option>Barranquilla</option><option>Cartagena</option><option>Bucaramanga</option>
+                              <option>Cúcuta</option><option>Manizales</option><option>Pereira</option>
+                              <option>Santa Marta</option><option>Ibagué</option><option>Pasto</option>
+                              <option>Montería</option><option>Villavicencio</option>
                               <option>{t('Otra', 'Other')}</option>
                             </select>
                           </div>
@@ -1150,8 +1154,11 @@ export default function AppPage() {
                             <label>{t('Ciudad', 'City')}</label>
                             <select value={cocity} onChange={(e) => setCocity(e.target.value)}>
                               <option value="" disabled>{t('Seleccioná', 'Select')}</option>
-                              <option>Cali</option><option>Bogotá</option>
-                              <option>Medellín</option><option>Barranquilla</option>
+                              <option>Bogotá</option><option>Medellín</option><option>Cali</option>
+                              <option>Barranquilla</option><option>Cartagena</option><option>Bucaramanga</option>
+                              <option>Cúcuta</option><option>Manizales</option><option>Pereira</option>
+                              <option>Santa Marta</option><option>Ibagué</option><option>Pasto</option>
+                              <option>Montería</option><option>Villavicencio</option>
                               <option>{t('Otra', 'Other')}</option>
                             </select>
                           </div>
@@ -1190,8 +1197,12 @@ export default function AppPage() {
                             <label>{t('Ciudad', 'City')}</label>
                             <select value={jobcity} onChange={(e) => setJobcity(e.target.value)}>
                               <option value="" disabled>{t('Ciudad', 'City')}</option>
-                              <option>Cali</option><option>Bogotá</option>
-                              <option>Medellín</option><option>{t('Otra', 'Other')}</option>
+                              <option>Bogotá</option><option>Medellín</option><option>Cali</option>
+                              <option>Barranquilla</option><option>Cartagena</option><option>Bucaramanga</option>
+                              <option>Cúcuta</option><option>Manizales</option><option>Pereira</option>
+                              <option>Santa Marta</option><option>Ibagué</option><option>Pasto</option>
+                              <option>Montería</option><option>Villavicencio</option>
+                              <option>{t('Otra', 'Other')}</option>
                             </select>
                           </div>
                           <div className="fg">
@@ -1610,6 +1621,7 @@ function CandidateView({
 
   // Applications state — Map<jobId, applied_at>
   const [myApplied, setMyApplied] = useState<Map<string, string>>(new Map())
+  const [myAppStatuses, setMyAppStatuses] = useState<Map<string, { status: string; match_score?: number }>>(new Map())
   const [applying, setApplying] = useState<string | null>(null)
   const [withdrawing, setWithdrawing] = useState<string | null>(null)
   const [appliedJob, setAppliedJob] = useState<Job | null>(null)
@@ -1740,12 +1752,14 @@ function CandidateView({
     if (!candidateId) return
     createClient()
       .from('applications')
-      .select('job_id, applied_at')
+      .select('job_id, applied_at, status, match_score')
       .eq('candidate_id', candidateId)
       .then(({ data }) => {
         if (data) {
           const m = new Map(data.map((a: { job_id: string; applied_at: string }) => [a.job_id, a.applied_at] as [string, string]))
           setMyApplied(m)
+          const s = new Map(data.map((a: { job_id: string; status: string; match_score?: number }) => [a.job_id, { status: a.status, match_score: a.match_score }] as [string, { status: string; match_score?: number }]))
+          setMyAppStatuses(s)
         }
       })
   }, [candProfile])
@@ -1790,6 +1804,7 @@ function CandidateView({
       const { error } = await sb.from('applications').insert({ job_id: job.id, candidate_id: candidateId, status: 'pending' })
       if (!error) {
         setMyApplied(prev => new Map([...prev, [job.id, now]]))
+        setMyAppStatuses(prev => new Map([...prev, [job.id, { status: 'pending' }]]))
         setAppliedJob(job)
         setSelectedJob(null)
         // Score the application asynchronously
@@ -1905,8 +1920,18 @@ function CandidateView({
         <div style={{ borderTop: '1px solid var(--line)', paddingTop: '1.1rem', display: 'flex', flexDirection: 'column', gap: '.6rem' }}>
           {myApplied.has(selectedJob.id) ? (
             <>
-              <div style={{ textAlign: 'center', fontSize: '.82rem', color: 'var(--forest)', background: 'var(--pale)', borderRadius: 8, padding: '.6rem', border: '1px solid var(--mist)' }}>
-                ✓ {t('Ya te postulaste', 'You applied')} · {appliedAgo(myApplied.get(selectedJob.id)!, t)}
+              <div style={{ borderRadius: 8, padding: '.65rem .9rem', border: '1px solid var(--mist)', background: 'var(--pale)' }}>
+                {(() => {
+                  const st = myAppStatuses.get(selectedJob.id)?.status || 'pending'
+                  const badge = st === 'contacted' ? { label: t('🚀 ¡La empresa quiere contactarte!', '🚀 Company wants to contact you!'), bg: '#dcfce7', color: '#15803d' }
+                    : st === 'reviewed' ? { label: t('👀 Tu postulación fue revisada', '👀 Your application was reviewed'), bg: '#dbeafe', color: '#1d4ed8' }
+                    : st === 'rejected' ? { label: t('Tu postulación no avanzó en esta oportunidad', 'Your application was not selected'), bg: '#fef2f2', color: '#b91c1c' }
+                    : { label: t('⏳ Postulación enviada — en espera de revisión', '⏳ Application sent — awaiting review'), bg: 'var(--pale)', color: 'var(--forest)' }
+                  return (
+                    <div style={{ background: badge.bg, color: badge.color, borderRadius: 6, padding: '.45rem .7rem', fontSize: '.81rem', fontWeight: 600, marginBottom: '.4rem', textAlign: 'center' }}>{badge.label}</div>
+                  )
+                })()}
+                <div style={{ fontSize: '.75rem', color: 'var(--ink-45)', textAlign: 'center' }}>{appliedAgo(myApplied.get(selectedJob.id)!, t)}</div>
               </div>
               <button
                 className="btn btn-sm"
@@ -2144,7 +2169,14 @@ function CandidateView({
                     <div style={{ fontSize: '.73rem', color: 'var(--ink-45)', marginTop: '1px' }}>{j.companies?.company_name || '—'}{j.city ? ` · ${j.city}` : ''}</div>
                   </div>
                   <span style={{ fontSize: '.7rem', color: 'var(--ink-45)', flexShrink: 0 }}>{appliedAgo(myApplied.get(j.id)!, t)}</span>
-                  <span style={{ fontSize: '.68rem', background: 'var(--pale)', color: 'var(--forest)', borderRadius: 5, padding: '2px 7px', fontWeight: 600, flexShrink: 0 }}>✓ {t('Enviada', 'Sent')}</span>
+                  {(() => {
+                    const st = myAppStatuses.get(j.id)?.status || 'pending'
+                    const badge = st === 'contacted' ? { label: t('🚀 Contactado', '🚀 Contacted'), bg: '#dcfce7', color: '#15803d' }
+                      : st === 'reviewed' ? { label: t('👀 Vista', '👀 Reviewed'), bg: '#dbeafe', color: '#1d4ed8' }
+                      : st === 'rejected' ? { label: t('No avanzó', 'Not selected'), bg: '#fef2f2', color: '#b91c1c' }
+                      : { label: t('⏳ Enviada', '⏳ Sent'), bg: 'var(--pale)', color: 'var(--forest)' }
+                    return <span style={{ fontSize: '.68rem', background: badge.bg, color: badge.color, borderRadius: 5, padding: '2px 7px', fontWeight: 600, flexShrink: 0 }}>{badge.label}</span>
+                  })()}
                 </div>
               ))}
             </div>
@@ -2185,7 +2217,22 @@ function CandidateView({
         )}
 
         {/* Job list */}
-        {dataLoading && <div className="loading-state">{t('Cargando vacantes…', 'Loading listings…')}</div>}
+        {dataLoading && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '.6rem' }}>
+            {[1,2,3].map(i => (
+              <div key={i} className="skeleton-card">
+                <div style={{ display: 'flex', gap: '.75rem', alignItems: 'center' }}>
+                  <div className="skeleton skeleton-avatar" />
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '.4rem' }}>
+                    <div className="skeleton skeleton-line medium" />
+                    <div className="skeleton skeleton-line short" />
+                  </div>
+                </div>
+                <div className="skeleton skeleton-line full" style={{ height: 10 }} />
+              </div>
+            ))}
+          </div>
+        )}
 
         {!dataLoading && jobs.length === 0 && (
           <div className="empty-state">
@@ -2204,7 +2251,7 @@ function CandidateView({
             </div>
             <div className="jobs-list" style={{ padding: '0 .7rem .7rem' }}>
               {jobs.slice(0, 8).map((j) => (
-                <JobRow key={j.id} job={j} applied={myApplied.has(j.id)} appliedAt={myApplied.get(j.id)} saved={mySavedJobs.has(j.id)} onApply={applyToJob} onWithdraw={withdrawApplication} onSave={saveJob} onUnsave={unsaveJob} onSelect={setSelectedJob} t={t} />
+                <JobRow key={j.id} job={j} applied={myApplied.has(j.id)} appliedAt={myApplied.get(j.id)} appStatus={myAppStatuses.get(j.id)?.status} saved={mySavedJobs.has(j.id)} onApply={applyToJob} onWithdraw={withdrawApplication} onSave={saveJob} onUnsave={unsaveJob} onSelect={setSelectedJob} t={t} />
               ))}
             </div>
           </div>
@@ -2257,8 +2304,11 @@ function CandidateView({
             </select>
             <select className="filter-select" value={filterCity} onChange={e => { setFilterCity(e.target.value); loadJobs(query, filterArea, e.target.value, filterMod, filterSal) }}>
               <option value="">{t('Ciudad', 'City')}</option>
-              <option>Cali</option><option>Bogotá</option><option>Medellín</option>
+              <option>Bogotá</option><option>Medellín</option><option>Cali</option>
               <option>Barranquilla</option><option>Cartagena</option><option>Bucaramanga</option>
+              <option>Cúcuta</option><option>Manizales</option><option>Pereira</option>
+              <option>Santa Marta</option><option>Ibagué</option><option>Pasto</option>
+              <option>Montería</option><option>Villavicencio</option>
             </select>
             <select className="filter-select" value={filterMod} onChange={e => { setFilterMod(e.target.value); loadJobs(query, filterArea, filterCity, e.target.value, filterSal) }}>
               <option value="">{t('Modalidad', 'Mode')}</option>
@@ -2300,7 +2350,23 @@ function CandidateView({
           </div>
         )}
 
-        {dataLoading && <div className="loading-state">{t('Cargando vacantes…', 'Loading listings…')}</div>}
+        {dataLoading && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '.6rem' }}>
+            {[1,2,3,4,5].map(i => (
+              <div key={i} className="skeleton-card">
+                <div style={{ display: 'flex', gap: '.75rem', alignItems: 'center' }}>
+                  <div className="skeleton skeleton-avatar" style={{ borderRadius: 8 }} />
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '.4rem' }}>
+                    <div className="skeleton skeleton-line medium" />
+                    <div className="skeleton skeleton-line short" />
+                  </div>
+                  <div className="skeleton skeleton-line" style={{ width: 52, height: 22, borderRadius: 20 }} />
+                </div>
+                <div className="skeleton skeleton-line" style={{ width: '80%', height: 10 }} />
+              </div>
+            ))}
+          </div>
+        )}
 
         {!dataLoading && (() => {
           const displayJobs = showSavedOnly ? jobs.filter(j => mySavedJobs.has(j.id)) : jobs
@@ -2313,7 +2379,7 @@ function CandidateView({
           return (
             <div className="jobs-list">
               {displayJobs.map((j) => (
-                <JobRow key={j.id} job={j} applied={myApplied.has(j.id)} appliedAt={myApplied.get(j.id)} saved={mySavedJobs.has(j.id)} onApply={applyToJob} onWithdraw={withdrawApplication} onSave={saveJob} onUnsave={unsaveJob} onSelect={setSelectedJob} t={t} />
+                <JobRow key={j.id} job={j} applied={myApplied.has(j.id)} appliedAt={myApplied.get(j.id)} appStatus={myAppStatuses.get(j.id)?.status} saved={mySavedJobs.has(j.id)} onApply={applyToJob} onWithdraw={withdrawApplication} onSave={saveJob} onUnsave={unsaveJob} onSelect={setSelectedJob} t={t} />
               ))}
             </div>
           )
@@ -2573,7 +2639,7 @@ function CandidateView({
                 {isEditing
                   ? <select style={sel} value={editData.city} onChange={e => setEdit('city', e.target.value)}>
                       <option value="">{t('Seleccioná', 'Select')}</option>
-                      {['Cali','Bogotá','Medellín','Barranquilla','Cartagena','Bucaramanga'].map(o => <option key={o}>{o}</option>)}
+                      {['Bogotá','Medellín','Cali','Barranquilla','Cartagena','Bucaramanga','Cúcuta','Manizales','Pereira','Santa Marta','Ibagué','Pasto','Montería','Villavicencio'].map(o => <option key={o}>{o}</option>)}
                     </select>
                   : <span style={{ fontSize: '.82rem' }}>{city || <span style={{ color: 'var(--ink-45)' }}>—</span>}</span>}
               </div>
@@ -2708,10 +2774,11 @@ function CandidateView({
   )
 }
 
-function JobRow({ job, applied, appliedAt, saved, onApply, onWithdraw, onSave, onUnsave, onSelect, t }: {
+function JobRow({ job, applied, appliedAt, appStatus, saved, onApply, onWithdraw, onSave, onUnsave, onSelect, t }: {
   job: Job
   applied?: boolean
   appliedAt?: string
+  appStatus?: string
   saved?: boolean
   onApply?: (job: Job) => void
   onWithdraw?: (job: Job) => void
@@ -2758,9 +2825,14 @@ function JobRow({ job, applied, appliedAt, saved, onApply, onWithdraw, onSave, o
         <span className="jc-time">{timeAgo(job.created_at)}</span>
         {applied ? (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '.2rem', marginTop: '.35rem' }}>
-            <span style={{ background: 'var(--pale)', color: 'var(--forest)', border: '1.5px solid var(--mist)', borderRadius: 7, padding: '3px 10px', fontSize: '.75rem', fontWeight: 600 }}>
-              {tr('Postulado ✓', 'Applied ✓')}
-            </span>
+            {(() => {
+              const st = appStatus || 'pending'
+              const badge = st === 'contacted' ? { label: tr('🚀 Contactado', '🚀 Contacted'), bg: '#dcfce7', color: '#15803d', border: '#bbf7d0' }
+                : st === 'reviewed' ? { label: tr('👀 Vista', '👀 Reviewed'), bg: '#dbeafe', color: '#1d4ed8', border: '#bfdbfe' }
+                : st === 'rejected' ? { label: tr('No avanzó', 'Not selected'), bg: '#fef2f2', color: '#b91c1c', border: '#fecaca' }
+                : { label: tr('⏳ Enviada', '⏳ Sent'), bg: 'var(--pale)', color: 'var(--forest)', border: 'var(--mist)' }
+              return <span style={{ background: badge.bg, color: badge.color, border: `1.5px solid ${badge.border}`, borderRadius: 7, padding: '3px 10px', fontSize: '.75rem', fontWeight: 600 }}>{badge.label}</span>
+            })()}
             {appliedAt && (
               <span style={{ fontSize: '.68rem', color: 'var(--ink-45)' }}>
                 {appliedAgo(appliedAt, tr)}
@@ -3300,7 +3372,11 @@ function MyCompanyView({ userEmail, coProfile, onUpdate, t }: {
                 <div><label style={lbl}>{t('Ciudad', 'City')}</label>
                   <select style={inp} value={form.city} onChange={e => f('city', e.target.value)}>
                     <option value="">{t('Seleccioná', 'Select')}</option>
-                    <option>Cali</option><option>Bogotá</option><option>Medellín</option><option>Barranquilla</option><option>Cartagena</option>
+                    <option>Bogotá</option><option>Medellín</option><option>Cali</option>
+                    <option>Barranquilla</option><option>Cartagena</option><option>Bucaramanga</option>
+                    <option>Cúcuta</option><option>Manizales</option><option>Pereira</option>
+                    <option>Santa Marta</option><option>Ibagué</option><option>Pasto</option>
+                    <option>Montería</option><option>Villavicencio</option>
                   </select>
                 </div>
                 <div><label style={lbl}>Website</label><input style={inp} value={form.website} onChange={e => f('website', e.target.value)} placeholder="www.tuempresa.com" /></div>
@@ -3478,8 +3554,11 @@ function TalentView({ candidates, loadCandidates, t }: {
           </select>
           <select className="filter-select" value={filterCity} onChange={e => { setFilterCity(e.target.value); setSearchErr(''); loadCandidates(query, filterArea, e.target.value, filterMod, filterSal) }}>
             <option value="">{t('Ciudad', 'City')}</option>
-            <option>Cali</option><option>Bogotá</option><option>Medellín</option>
+            <option>Bogotá</option><option>Medellín</option><option>Cali</option>
             <option>Barranquilla</option><option>Cartagena</option><option>Bucaramanga</option>
+            <option>Cúcuta</option><option>Manizales</option><option>Pereira</option>
+            <option>Santa Marta</option><option>Ibagué</option><option>Pasto</option>
+            <option>Montería</option><option>Villavicencio</option>
           </select>
           <select className="filter-select" value={filterMod} onChange={e => { setFilterMod(e.target.value); setSearchErr(''); loadCandidates(query, filterArea, filterCity, e.target.value, filterSal, filterExp) }}>
             <option value="">{t('Modalidad', 'Mode')}</option>
@@ -3894,7 +3973,10 @@ function MyJobsView({ userEmail, coName, onPost, t }: {
                   </select>
                   <select style={{ ...inp, flex: 1 }} value={editCity} onChange={e => setEditCity(e.target.value)}>
                     <option value="">{t('Ciudad', 'City')}</option>
-                    <option>Cali</option><option>Bogotá</option><option>Medellín</option><option>Barranquilla</option>
+                    <option>Bogotá</option><option>Medellín</option><option>Cali</option>
+                    <option>Barranquilla</option><option>Cartagena</option><option>Bucaramanga</option>
+                    <option>Cúcuta</option><option>Manizales</option><option>Pereira</option>
+                    <option>Santa Marta</option><option>Ibagué</option><option>Villavicencio</option>
                   </select>
                 </div>
                 <div style={{ display: 'flex', gap: '.5rem' }}>
@@ -4079,7 +4161,12 @@ function PostJobView({ userEmail, onSuccess, t }: {
             <label>{t('Ciudad', 'City')}</label>
             <select value={city} onChange={e => setCity(e.target.value)}>
               <option value="" disabled>{t('Ciudad', 'City')}</option>
-              <option>Cali</option><option>Bogotá</option><option>Medellín</option><option>Barranquilla</option><option>{t('Otra', 'Other')}</option>
+              <option>Bogotá</option><option>Medellín</option><option>Cali</option>
+              <option>Barranquilla</option><option>Cartagena</option><option>Bucaramanga</option>
+              <option>Cúcuta</option><option>Manizales</option><option>Pereira</option>
+              <option>Santa Marta</option><option>Ibagué</option><option>Pasto</option>
+              <option>Montería</option><option>Villavicencio</option>
+              <option>{t('Otra', 'Other')}</option>
             </select>
           </div>
           <div className="fg">
