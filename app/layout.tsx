@@ -23,6 +23,8 @@ export const metadata: Metadata = {
   keywords: ['empleo colombia', 'trabajo remoto colombia', 'matching empleo', 'ofertas trabajo cali bogota medellin', 'headhunting colombia', 'talento tecnologia'],
   authors: [{ name: 'Candidato', url: 'https://candidato.com.co' }],
   robots: { index: true, follow: true },
+  manifest: '/manifest.webmanifest',
+  appleWebApp: { capable: true, statusBarStyle: 'default', title: 'Candidato' },
   openGraph: {
     title: 'Candidato® — La conexión que estaba destinada',
     description: 'Matching inteligente entre talento y empresas en Colombia. Gratis para candidatos. Sin spam, solo oportunidades que importan.',

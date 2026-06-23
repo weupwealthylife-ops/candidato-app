@@ -215,6 +215,9 @@ export default function AppPage() {
   const [candView, setCandView] = useState<CandView>('dashboard')
   const [compView, setCompView] = useState<CompView>('codashboard')
   const [avatarOpen, setAvatarOpen] = useState(false)
+  const [unreadCount, setUnreadCount] = useState(0)
+  const [notifOpen, setNotifOpen] = useState(false)
+  const [notifStatuses, setNotifStatuses] = useState<Map<string, { status: string; match_score?: number }>>(new Map())
 
   // Real data
   const [jobs, setJobs] = useState<Job[]>([])
@@ -292,6 +295,14 @@ export default function AppPage() {
 
   const showToast = (title: string, sub: string, ico = '✅') =>
     setToast({ ico, title, sub })
+
+  function markNotifsRead() {
+    const seen: Record<string, string> = {}
+    notifStatuses.forEach((v, jobId) => { seen[jobId] = v.status })
+    localStorage.setItem('candidato_seen_statuses', JSON.stringify(seen))
+    setUnreadCount(0)
+    setNotifOpen(false)
+  }
 
   async function loadJobs(query = '', area = '', city = '', mod = '', sal = '') {
     setDataLoading(true)
@@ -1474,6 +1485,44 @@ export default function AppPage() {
                   {t('Mi perfil', 'My profile')}
                 </button>
                 <div className="sidebar-spacer"></div>
+                <div style={{ position: 'relative' }}>
+                  <button
+                    className={`nav-item`}
+                    onClick={() => { setNotifOpen(o => !o); if (unreadCount > 0) markNotifsRead() }}
+                    style={{ position: 'relative' }}
+                  >
+                    <span className="nav-ico">🔔</span>
+                    <span>{t('Notificaciones', 'Notifications')}</span>
+                    {unreadCount > 0 && (
+                      <span style={{ position: 'absolute', top: 6, right: 10, background: 'var(--coral)', color: 'white', borderRadius: '50%', width: 17, height: 17, fontSize: '.65rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{unreadCount}</span>
+                    )}
+                  </button>
+                  {notifOpen && (
+                    <div style={{ position: 'absolute', left: '105%', top: 0, background: 'white', border: '1.5px solid var(--line)', borderRadius: 12, boxShadow: '0 4px 24px rgba(0,0,0,.1)', width: 280, zIndex: 200, padding: '.8rem' }}>
+                      <div style={{ fontWeight: 700, fontSize: '.82rem', color: 'var(--ink)', marginBottom: '.6rem' }}>{t('Notificaciones', 'Notifications')}</div>
+                      {notifStatuses.size === 0 ? (
+                        <div style={{ fontSize: '.78rem', color: 'var(--ink-45)' }}>{t('Sin notificaciones', 'No notifications')}</div>
+                      ) : (
+                        [...notifStatuses.entries()].filter(([, v]) => ['contacted','reviewed','rejected'].includes(v.status)).map(([jobId, v]) => {
+                          const job = jobs.find(j => j.id === jobId)
+                          const seen = JSON.parse(localStorage.getItem('candidato_seen_statuses') || '{}') as Record<string, string>
+                          const isNew = seen[jobId] !== v.status
+                          return (
+                            <div key={jobId} style={{ padding: '.5rem .4rem', borderBottom: '1px solid var(--line)', cursor: 'pointer', background: isNew ? '#f0fdf4' : 'transparent', borderRadius: 6, marginBottom: '.2rem' }}
+                              onClick={() => { setCandView('jobs'); setNotifOpen(false) }}>
+                              <div style={{ fontSize: '.78rem', fontWeight: isNew ? 700 : 400, color: 'var(--ink)' }}>{job?.title || t('Vacante', 'Job')}</div>
+                              <div style={{ fontSize: '.72rem', color: v.status === 'contacted' ? '#15803d' : v.status === 'rejected' ? '#b91c1c' : '#1d4ed8', marginTop: '2px' }}>
+                                {v.status === 'contacted' ? t('🚀 ¡La empresa quiere contactarte!', '🚀 Company wants to contact you!') :
+                                 v.status === 'reviewed' ? t('👀 Tu postulación fue revisada', '👀 Application reviewed') :
+                                 t('Tu postulación no avanzó', 'Application not selected')}
+                              </div>
+                            </div>
+                          )
+                        })
+                      )}
+                    </div>
+                  )}
+                </div>
                 <button className="nav-item nav-item-logout" onClick={logout}>{t('Salir', 'Log out')}</button>
               </>
             ) : (
@@ -1516,6 +1565,15 @@ export default function AppPage() {
                 t={t}
                 onRetryProfile={() => currentUser && loadProfile(currentUser.email)}
                 showToast={showToast}
+                onAppStatusesLoaded={(statuses) => {
+                  setNotifStatuses(statuses)
+                  const seen = JSON.parse(localStorage.getItem('candidato_seen_statuses') || '{}') as Record<string, string>
+                  let count = 0
+                  statuses.forEach((v, jobId) => {
+                    if (['contacted', 'reviewed', 'rejected'].includes(v.status) && seen[jobId] !== v.status) count++
+                  })
+                  setUnreadCount(count)
+                }}
               />
             ) : (
               <CompanyView
@@ -1545,6 +1603,13 @@ export default function AppPage() {
             </button>
             <button className={`mobile-nav-btn${candView === 'settings' ? ' active' : ''}`} onClick={() => setCandView('settings')}>
               <span className="mobile-nav-ico">⚙</span>{t('Config.', 'Settings')}
+            </button>
+            <button className={`mobile-nav-btn`} onClick={() => { setNotifOpen(o => !o); if (unreadCount > 0) markNotifsRead() }} style={{ position: 'relative' }}>
+              <span className="mobile-nav-ico">🔔</span>
+              {t('Alerts', 'Alerts')}
+              {unreadCount > 0 && (
+                <span style={{ position: 'absolute', top: 4, right: 8, background: 'var(--coral)', color: 'white', borderRadius: '50%', width: 16, height: 16, fontSize: '.6rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{unreadCount}</span>
+              )}
             </button>
             <button className="mobile-nav-btn" onClick={logout}>
               <span className="mobile-nav-ico">←</span>{t('Salir', 'Out')}
@@ -1597,7 +1662,7 @@ export default function AppPage() {
 }
 
 function CandidateView({
-  view, firstName, skills, user, candProfile, onProfileUpdate, jobs, dataLoading, loadJobs, setView, t, onRetryProfile, showToast,
+  view, firstName, skills, user, candProfile, onProfileUpdate, jobs, dataLoading, loadJobs, setView, t, onRetryProfile, showToast, onAppStatusesLoaded,
 }: {
   view: CandView
   firstName: string
@@ -1612,6 +1677,7 @@ function CandidateView({
   onRetryProfile: () => void
   showToast: (title: string, sub: string, ico?: string) => void
   t: (es: string, en: string) => string
+  onAppStatusesLoaded?: (statuses: Map<string, { status: string; match_score?: number }>) => void
 }) {
   const [query, setQuery] = useState('')
   const [filterArea, setFilterArea] = useState('')
@@ -1775,6 +1841,10 @@ function CandidateView({
         if (data) setMySavedJobs(new Map(data.map((s: { job_id: string; created_at: string }) => [s.job_id, s.created_at] as [string, string])))
       })
   }, [candProfile])
+
+  useEffect(() => {
+    if (onAppStatusesLoaded) onAppStatusesLoaded(myAppStatuses)
+  }, [myAppStatuses])
 
   useEffect(() => {
     if (!selectedJob?.id) return
@@ -2852,6 +2922,21 @@ function CandidateView({
           </div>
           <Toggle on={profileVisible} onToggle={() => { const v = !profileVisible; setProfileVisible(v); saveProfileVisible(v) }} />
         </div>
+        <div className="settings-section-title" style={{ marginTop: '1.4rem' }}>{t('Referidos', 'Referrals')}</div>
+        <div style={{ padding: '.75rem', background: 'var(--pale)', borderRadius: 10, display: 'flex', flexDirection: 'column', gap: '.5rem' }}>
+          <div style={{ fontSize: '.82rem', color: 'var(--ink)', fontWeight: 600 }}>{t('Invitá a un amigo', 'Invite a friend')}</div>
+          <div style={{ fontSize: '.74rem', color: 'var(--ink-45)', lineHeight: 1.5 }}>{t('Compartí tu link único. Cada candidato que se registre con tu link suma a tu red.', 'Share your unique link. Every candidate who signs up with it joins your network.')}</div>
+          {user?.email && (() => {
+            const refCode = btoa(user.email).replace(/[^a-zA-Z0-9]/g, '').slice(0, 12)
+            const refUrl = `https://candidato.com.co/app?ref=${refCode}`
+            return (
+              <div style={{ display: 'flex', gap: '.5rem', alignItems: 'center', marginTop: '.25rem' }}>
+                <input readOnly value={refUrl} style={{ flex: 1, fontSize: '.73rem', padding: '6px 9px', border: '1px solid var(--line)', borderRadius: 7, background: 'white', color: 'var(--ink-70)' }} onClick={e => (e.target as HTMLInputElement).select()} />
+                <button className="btn btn-forest btn-sm" onClick={() => { navigator.clipboard.writeText(refUrl).then(() => {}) }}>{t('Copiar', 'Copy')}</button>
+              </div>
+            )
+          })()}
+        </div>
       </div>
     </>
   )
@@ -3829,6 +3914,7 @@ function MyJobsView({ userEmail, coName, onPost, t }: {
   const [editArea, setEditArea] = useState('')
   const [saving, setSaving] = useState(false)
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
+  const [dragOverCol, setDragOverCol] = useState<string | null>(null)
   // applicant counts per job_id
   const [appCounts, setAppCounts] = useState<Record<string, number>>({})
   const [firstApplyAt, setFirstApplyAt] = useState<Record<string, string>>({})
