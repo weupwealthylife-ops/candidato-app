@@ -1830,6 +1830,7 @@ function CandidateView({
       const { error } = await sb.from('applications').delete().eq('job_id', job.id).eq('candidate_id', candidateId)
       if (!error) {
         setMyApplied(prev => { const m = new Map(prev); m.delete(job.id); return m })
+        setMyAppStatuses(prev => { const m = new Map(prev); m.delete(job.id); return m })
         setSelectedJob(null)
       }
     } catch (e) { console.warn(e) }
@@ -2956,7 +2957,7 @@ function CompanyView({
   coName: string
   userEmail: string
   candidates: Candidate[]
-  loadCandidates: (q?: string, area?: string, city?: string, modality?: string, salary?: string) => void
+  loadCandidates: (q?: string, area?: string, city?: string, modality?: string, salary?: string, experience?: string) => void
   setView: (v: CompView) => void
   t: (es: string, en: string) => string
 }) {
@@ -3377,6 +3378,7 @@ function MyCompanyView({ userEmail, coProfile, onUpdate, t }: {
                     <option>Cúcuta</option><option>Manizales</option><option>Pereira</option>
                     <option>Santa Marta</option><option>Ibagué</option><option>Pasto</option>
                     <option>Montería</option><option>Villavicencio</option>
+                    <option>{t('Otra', 'Other')}</option>
                   </select>
                 </div>
                 <div><label style={lbl}>Website</label><input style={inp} value={form.website} onChange={e => f('website', e.target.value)} placeholder="www.tuempresa.com" /></div>
@@ -3976,7 +3978,8 @@ function MyJobsView({ userEmail, coName, onPost, t }: {
                     <option>Bogotá</option><option>Medellín</option><option>Cali</option>
                     <option>Barranquilla</option><option>Cartagena</option><option>Bucaramanga</option>
                     <option>Cúcuta</option><option>Manizales</option><option>Pereira</option>
-                    <option>Santa Marta</option><option>Ibagué</option><option>Villavicencio</option>
+                    <option>Santa Marta</option><option>Ibagué</option><option>Pasto</option>
+                    <option>Montería</option><option>Villavicencio</option>
                   </select>
                 </div>
                 <div style={{ display: 'flex', gap: '.5rem' }}>
