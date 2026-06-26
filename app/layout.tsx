@@ -17,6 +17,7 @@ const sora = Sora({
 })
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://candidato.com.co'),
   title: 'Candidato® — Matching inteligente de talento en Colombia',
   description:
     'Candidato conecta el mejor talento colombiano con las empresas que más crecen. Matching inteligente, sin ruido, sin spam. 100% gratis para candidatos.',
