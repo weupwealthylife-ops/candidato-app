@@ -253,6 +253,19 @@ export default function AppPage() {
     const urlType = params.get('type')
     if (urlType === 'company') setUserType('company')
 
+    // Mercado Pago return — check before demo early-return so toast always shows
+    const payment = params.get('payment')
+    if (payment === 'success') {
+      showToast('¡Vacante publicada!', 'El pago fue aprobado — tu vacante ya está activa. ✦', '🎉')
+      window.history.replaceState({}, '', '/app')
+    } else if (payment === 'pending') {
+      showToast('Pago en proceso', 'Te notificaremos cuando se confirme. La vacante se activará automáticamente.', '⏳')
+      window.history.replaceState({}, '', '/app')
+    } else if (payment === 'failure') {
+      showToast('Pago no procesado', 'No se realizó ningún cobro. Podés intentarlo de nuevo.', '❌')
+      window.history.replaceState({}, '', '/app')
+    }
+
     // Demo mode for UI auditing (no Supabase required)
     if (params.get('demo') === 'candidate') {
       enterApp({ email: 'demo@candidato.co', name: 'Ana García', type: 'candidate' })
@@ -284,19 +297,6 @@ export default function AppPage() {
 
     if (params.get('error') === 'verification_failed') {
       showToast('Enlace inválido', 'El enlace expiró. Registrate de nuevo.', '❌')
-    }
-
-    // Mercado Pago return
-    const payment = params.get('payment')
-    if (payment === 'success') {
-      showToast('¡Vacante publicada!', 'El pago fue aprobado — tu vacante ya está activa. ✦', '🎉')
-      window.history.replaceState({}, '', '/app')
-    } else if (payment === 'pending') {
-      showToast('Pago en proceso', 'Te notificaremos cuando se confirme. La vacante se activará automáticamente.', '⏳')
-      window.history.replaceState({}, '', '/app')
-    } else if (payment === 'failure') {
-      showToast('Pago no procesado', 'No se realizó ningún cobro. Podés intentarlo de nuevo.', '❌')
-      window.history.replaceState({}, '', '/app')
     }
   }, [])
 
