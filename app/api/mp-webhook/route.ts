@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 
 const MP_ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN!
+const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://candidato.com.co'
 
 function baseUrl(raw: string): string {
   try { const u = new URL(raw); return `${u.protocol}//${u.host}` } catch { return raw }
@@ -12,6 +13,19 @@ function adminClient() {
     baseUrl(process.env.NEXT_PUBLIC_SUPABASE_URL!),
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   )
+}
+
+async function sendReceipt(to: string, name: string, jobTitle: string, amount: string, credits: number) {
+  await fetch(`${BASE_URL}/api/notify`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      type: 'payment_confirmed',
+      to,
+      name,
+      extra: { jobTitle, amount, credits: credits > 0 ? String(credits) : '' },
+    }),
+  }).catch(() => {})
 }
 
 export async function POST(req: NextRequest) {
@@ -33,27 +47,39 @@ export async function POST(req: NextRequest) {
   const ref = payment.external_reference as string | undefined
   if (!ref) return NextResponse.json({ ok: true })
 
-  // external_reference format: "jobId" or "jobId:credits:companyId"
+  // external_reference: "jobId" or "jobId:credits:companyId"
   const [jobId, creditsStr, companyId] = ref.split(':')
   const extraCredits = parseInt(creditsStr ?? '0', 10) || 0
 
   const sb = adminClient()
 
   if (payment.status === 'approved') {
-    // Activate the primary job
-    await sb.from('jobs').update({ active: true }).eq('id', jobId)
+    // Activate the job and clear payment_pending flag
+    await sb.from('jobs').update({ active: true, payment_pending: false }).eq('id', jobId)
 
-    // If bundle purchase, add remaining credits to the company
+    // Fetch job title + company info for receipt
+    const { data: job } = await sb.from('jobs').select('title, companies(name, email)').eq('id', jobId).maybeSingle()
+    const co = (job?.companies as { name?: string; email?: string } | null)
+    const totalCOP = payment.transaction_amount
+      ? `$${Number(payment.transaction_amount).toLocaleString('es-CO')} COP`
+      : '—'
+
+    // Bundle credits
     if (extraCredits > 0 && companyId) {
-      const { data: co } = await sb.from('companies').select('job_credits').eq('id', companyId).maybeSingle()
-      const current = (co as { job_credits?: number } | null)?.job_credits ?? 0
+      const { data: coRow } = await sb.from('companies').select('job_credits').eq('id', companyId).maybeSingle()
+      const current = (coRow as { job_credits?: number } | null)?.job_credits ?? 0
       await sb.from('companies').update({ job_credits: current + extraCredits }).eq('id', companyId)
     }
 
-    console.log(`[mp-webhook] Job ${jobId} activated, +${extraCredits} credits to company ${companyId ?? 'n/a'} — payment ${paymentId}`)
+    // Send receipt email to company
+    if (co?.email) {
+      await sendReceipt(co.email, co.name ?? 'equipo', job?.title ?? '', totalCOP, extraCredits)
+    }
+
+    console.log(`[mp-webhook] Job ${jobId} activated, +${extraCredits} credits — payment ${paymentId}`)
   } else if (payment.status === 'rejected' || payment.status === 'cancelled') {
     await sb.from('jobs').delete().eq('id', jobId).eq('active', false)
-    console.log(`[mp-webhook] Job ${jobId} draft removed — payment ${payment.status}`)
+    console.log(`[mp-webhook] Job ${jobId} draft removed — ${payment.status}`)
   }
 
   return NextResponse.json({ ok: true })

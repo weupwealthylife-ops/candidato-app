@@ -586,6 +586,13 @@ export default function AppPage() {
     loadJobs()
     loadCandidates()
     if (user.type === 'candidate') loadProfile(user.email)
+    // Redirect company to Mis vacantes after successful payment
+    if (user.type === 'company') {
+      const ps = new URLSearchParams(window.location.search)
+      if (ps.get('payment') === 'success' || ps.get('payment') === 'pending') {
+        setCompView('myjobs')
+      }
+    }
   }
 
   const logout = async () => {
@@ -4244,13 +4251,19 @@ function MyJobsView({ userEmail, coName, onPost, t }: {
                     <div style={{ fontFamily: 'var(--head)', fontWeight: 700, fontSize: '.95rem', color: 'var(--ink)' }}>{j.title}</div>
                     <div style={{ fontSize: '.74rem', color: 'var(--ink-45)', marginTop: '2px' }}>{timeAgo(j.created_at)}</div>
                   </div>
-                  <button
-                    onClick={() => toggleActive(j.id, j.active ?? false)}
-                    title={j.active ? t('Pausar vacante', 'Pause listing') : t('Activar vacante', 'Activate listing')}
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '.72rem', fontWeight: 700, padding: '4px 10px 4px 8px', borderRadius: '50px', background: j.active ? '#dcfce7' : 'var(--off)', color: j.active ? '#15803d' : 'var(--ink-45)', border: j.active ? '1px solid #bbf7d0' : '1px solid var(--line)', cursor: 'pointer' }}>
-                    {j.active && <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#16a34a', display: 'inline-block', flexShrink: 0 }} />}
-                    {j.active ? t('Activa', 'Active') : t('Inactiva', 'Inactive')}
-                  </button>
+                  {!j.active && (j as Job & { payment_pending?: boolean }).payment_pending ? (
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: '.72rem', fontWeight: 700, padding: '4px 10px', borderRadius: '50px', background: '#FFF8E1', color: '#B45309', border: '1px solid #FDE68A' }}>
+                      ⏳ {t('Pago pendiente', 'Payment pending')}
+                    </span>
+                  ) : (
+                    <button
+                      onClick={() => toggleActive(j.id, j.active ?? false)}
+                      title={j.active ? t('Pausar vacante', 'Pause listing') : t('Activar vacante', 'Activate listing')}
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '.72rem', fontWeight: 700, padding: '4px 10px 4px 8px', borderRadius: '50px', background: j.active ? '#dcfce7' : 'var(--off)', color: j.active ? '#15803d' : 'var(--ink-45)', border: j.active ? '1px solid #bbf7d0' : '1px solid var(--line)', cursor: 'pointer' }}>
+                      {j.active && <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#16a34a', display: 'inline-block', flexShrink: 0 }} />}
+                      {j.active ? t('Activa', 'Active') : t('Inactiva', 'Inactive')}
+                    </button>
+                  )}
                 </div>
                 <div className="jc-tags" style={{ margin: '0 0 .8rem' }}>
                   {j.modality && <span className="jc-tag">{j.modality}</span>}
