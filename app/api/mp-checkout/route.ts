@@ -72,15 +72,18 @@ export async function POST(req: NextRequest) {
   })
 
   const mpData = await mpRes.json()
+  console.log('[mp-checkout] MP response:', mpRes.status, JSON.stringify(mpData).slice(0, 400))
   if (!mpRes.ok) {
-    console.error('[mp-checkout] MP API error:', mpData)
-    // Clean up draft job on MP failure
     await sb.from('jobs').delete().eq('id', jobId)
-    return NextResponse.json({ error: 'mp_error', detail: mpData?.message ?? mpData?.cause ?? JSON.stringify(mpData) }, { status: 500 })
+    return NextResponse.json({ error: 'mp_error', detail: mpData?.message ?? mpData?.cause ?? JSON.stringify(mpData).slice(0, 200) }, { status: 500 })
   }
 
   // sandbox_init_point = test URL; init_point = production URL
   const url = mpData.sandbox_init_point ?? mpData.init_point
+  if (!url) {
+    await sb.from('jobs').delete().eq('id', jobId)
+    return NextResponse.json({ error: 'mp_error', detail: 'No checkout URL in MP response' }, { status: 500 })
+  }
 
   return NextResponse.json({ url, job_id: jobId })
 }
