@@ -42,6 +42,7 @@ export async function POST(req: NextRequest) {
     required_experience: required_experience || null,
     closes_at: closes_at ? new Date(closes_at).toISOString() : null,
     active: false,
+    payment_pending: true,
   }]).select('id').single()
 
   if (jobErr || !job) {

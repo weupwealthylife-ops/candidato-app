@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 // Supported notification types
-type NotifyType = 'application_submitted' | 'company_contacted' | 'match_found' | 'application_status_changed' | 'match_confirmed'
+type NotifyType = 'application_submitted' | 'company_contacted' | 'match_found' | 'application_status_changed' | 'match_confirmed' | 'payment_confirmed'
 
 interface NotifyPayload {
   type: NotifyType
@@ -134,6 +134,26 @@ function buildHtml(type: NotifyType, name: string, extra: Record<string, string>
       ${extra.cvUrl ? `<a href="${extra.cvUrl}" style="display:inline-block;background:#EA6440;color:white;border-radius:8px;padding:10px 22px;font-size:.85rem;font-weight:600;text-decoration:none;margin-bottom:12px">Descargar CV →</a><br/>` : ''}
       <a href="https://candidato.com.co/app" style="display:inline-block;background:#1B3B3E;color:white;border-radius:8px;padding:10px 22px;font-size:.85rem;font-weight:600;text-decoration:none">Ver todos mis matches →</a>
       <p style="color:#9aacac;font-size:.73rem;margin-top:14px">Coordina la entrevista directamente — toda la información de contacto está arriba.</p>
+    `
+    return { subject, html: base.replace('CONTENT', content) }
+  }
+
+  if (type === 'payment_confirmed') {
+    const subject = `✅ Vacante publicada — ${extra.jobTitle || 'Tu vacante'} ya está activa`
+    const content = `
+      <h2 style="color:#0E1E20;font-size:1.15rem;margin:0 0 12px">¡Pago recibido! Tu vacante está activa. 🎉</h2>
+      <p style="color:#4a6a6a;font-size:.88rem;line-height:1.65;margin:0 0 16px">
+        Hola <strong style="color:#1B3B3E">${name}</strong>, confirmamos el pago de tu publicación en Candidato®.
+      </p>
+      <div style="background:#E4F0F1;border-radius:8px;padding:14px 18px;margin-bottom:16px;font-size:.83rem;line-height:1.8">
+        <div><span style="color:#9aacac;font-weight:600">Vacante:</span> <strong style="color:#1B3B3E">${extra.jobTitle || '—'}</strong></div>
+        <div><span style="color:#9aacac;font-weight:600">Monto:</span> <strong style="color:#1B3B3E">${extra.amount || '—'}</strong></div>
+        ${extra.credits ? `<div><span style="color:#9aacac;font-weight:600">Créditos adicionales:</span> <strong style="color:#1B3B3E">${extra.credits} vacante${parseInt(extra.credits)>1?'s':''} disponible${parseInt(extra.credits)>1?'s':''}</strong></div>` : ''}
+      </div>
+      <p style="color:#4a6a6a;font-size:.88rem;line-height:1.65;margin:0 0 16px">
+        El algoritmo de matching ya está buscando los candidatos más compatibles. Te avisaremos cuando haya resultados.
+      </p>
+      <a href="https://candidato.com.co/app" style="display:inline-block;background:#1B3B3E;color:white;border-radius:8px;padding:10px 22px;font-size:.85rem;font-weight:600;text-decoration:none">Ver mi vacante →</a>
     `
     return { subject, html: base.replace('CONTENT', content) }
   }
