@@ -4,9 +4,13 @@ import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 const MP_ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN!
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://candidato.com.co'
 
+function baseUrl(raw: string): string {
+  try { const u = new URL(raw); return `${u.protocol}//${u.host}` } catch { return raw }
+}
+
 function adminClient() {
   return createSupabaseClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    baseUrl(process.env.NEXT_PUBLIC_SUPABASE_URL!),
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   )
 }
