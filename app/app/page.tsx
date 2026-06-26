@@ -3940,7 +3940,22 @@ function PostJobView({ userEmail, onSuccess, t }: {
   const [skillInput, setSkillInput] = useState('')
   const [closesAt, setClosesAt] = useState('')
   const [saving, setSaving] = useState(false)
-  const [done, setDone] = useState(false)
+  const [payErr, setPayErr] = useState('')
+  const [qty, setQty] = useState(1)
+  const [jobCredits, setJobCredits] = useState<number | null>(null)
+
+  useEffect(() => {
+    const sb = createClient()
+    sb.from('companies').select('job_credits').ilike('email', userEmail).maybeSingle()
+      .then(({ data }) => setJobCredits((data as { job_credits?: number } | null)?.job_credits ?? 0))
+  }, [userEmail])
+
+  const PLANS = [
+    { qty: 1, price: 300000, label: t('1 vacante', '1 listing'), badge: '' },
+    { qty: 2, price: 500000, label: t('2 vacantes', '2 listings'), badge: t('Ahorrás $100K', 'Save $100K') },
+    { qty: 3, price: 700000, label: t('3 vacantes', '3 listings'), badge: t('Ahorrás $200K', 'Save $200K') },
+  ]
+  const activePlan = PLANS.find(p => p.qty === qty)!
 
   const addSk = () => {
     const v = skillInput.trim()
@@ -3948,39 +3963,54 @@ function PostJobView({ userEmail, onSuccess, t }: {
     setSkillInput('')
   }
 
-  async function submit() {
+  async function handlePay() {
     if (!title.trim()) return
     setSaving(true)
+    setPayErr('')
     try {
-      const sb = createClient()
-      const { data: co } = await sb.from('companies').select('id').ilike('email', userEmail).maybeSingle()
-      const jobPayload = {
-        company_id: co?.id || null,
-        title: title.trim(),
-        modality: mod,
-        city,
-        area,
-        salary_range: sal,
-        description: desc.trim(),
-        skills,
-        required_experience: reqExp || null,
-        active: true,
-        closes_at: closesAt ? new Date(closesAt).toISOString() : null,
+      // If the company has job credits, use one instead of going to payment
+      if ((jobCredits ?? 0) > 0) {
+        const sb = createClient()
+        const { data: co } = await sb.from('companies').select('id, job_credits').ilike('email', userEmail).maybeSingle()
+        if (co && (co as { job_credits?: number }).job_credits! > 0) {
+          await sb.from('jobs').insert([{
+            company_id: co.id,
+            title: title.trim(), modality: mod || null, city: city || null, area: area || null,
+            salary_range: sal || null, description: desc.trim() || null,
+            skills, required_experience: reqExp || null,
+            closes_at: closesAt ? new Date(closesAt).toISOString() : null,
+            active: true,
+          }])
+          await sb.from('companies').update({ job_credits: (co as { job_credits: number }).job_credits - 1 }).eq('id', co.id)
+          setSaving(false)
+          onSuccess()
+          return
+        }
       }
-      const { error } = await sb.from('jobs').insert([jobPayload])
-      if (error) console.warn('[Supabase] jobs insert:', error.message)
-    } catch (e) { console.warn(e) }
-    setSaving(false)
-    setDone(true)
-    setTimeout(onSuccess, 1200)
-  }
 
-  if (done) return (
-    <div className="empty-state" style={{ color: 'var(--forest)' }}>
-      <div className="empty-title">{t('Vacante publicada', 'Listing published')}</div>
-      <div className="empty-sub">{t('Redirigiendo…', 'Redirecting…')}</div>
-    </div>
-  )
+      const res = await fetch('/api/mp-checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title, modality: mod, city, area,
+          salary_range: sal, description: desc,
+          skills, required_experience: reqExp,
+          closes_at: closesAt, userEmail, qty,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok || !data.url) {
+        const detail = data?.detail ? ` (${data.detail})` : ''
+        setPayErr(t(`Error al iniciar el pago${detail}. Intentá de nuevo.`, `Payment error${detail}. Please try again.`))
+        setSaving(false)
+        return
+      }
+      window.location.href = data.url
+    } catch {
+      setPayErr(t('Error de conexión. Intentá de nuevo.', 'Connection error. Please try again.'))
+      setSaving(false)
+    }
+  }
 
   return (
     <>
@@ -4062,8 +4092,57 @@ function PostJobView({ userEmail, onSuccess, t }: {
             <textarea value={desc} onChange={e => setDesc(e.target.value)} placeholder={t('¿Qué hace este rol? ¿Qué buscás en el candidato ideal?', 'What does this role do? What are you looking for?')} rows={4} />
           </div>
           <div className="fg fg-full">
-            <button className="submit-btn" disabled={saving || !title.trim()} onClick={submit}>
-              {saving ? t('Publicando…', 'Publishing…') : t('Publicar vacante →', 'Post listing →')}
+            {(jobCredits ?? 0) > 0 ? (
+              /* Has credits — skip payment */
+              <div style={{ background: '#EAF6EC', border: '1.5px solid #2ecc71', borderRadius: 10, padding: '.9rem 1rem', marginBottom: '.75rem', display: 'flex', alignItems: 'center', gap: '.75rem' }}>
+                <span style={{ fontSize: '1.1rem' }}>✅</span>
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: '.84rem', color: 'var(--ink)' }}>
+                    {t(`Tenés ${jobCredits} vacante${jobCredits! > 1 ? 's' : ''} disponible${jobCredits! > 1 ? 's' : ''}`, `You have ${jobCredits} listing credit${jobCredits! > 1 ? 's' : ''}`)}
+                  </div>
+                  <div style={{ fontSize: '.75rem', color: 'var(--ink-45)', marginTop: 2 }}>
+                    {t('Esta publicación se activa sin costo adicional.', 'This listing activates at no extra cost.')}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              /* Bundle picker */
+              <div style={{ marginBottom: '.9rem' }}>
+                <div style={{ fontSize: '.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--ink-45)', marginBottom: '.55rem' }}>
+                  {t('¿Cuántas vacantes necesitás?', 'How many listings do you need?')}
+                </div>
+                <div style={{ display: 'flex', gap: '.6rem' }}>
+                  {PLANS.map(p => (
+                    <button key={p.qty} type="button" onClick={() => setQty(p.qty)} style={{
+                      flex: 1, border: `2px solid ${qty === p.qty ? 'var(--forest)' : 'var(--line)'}`,
+                      borderRadius: 12, padding: '.7rem .5rem', background: qty === p.qty ? 'var(--pale)' : 'white',
+                      cursor: 'pointer', textAlign: 'center', transition: 'all .15s',
+                    }}>
+                      <div style={{ fontWeight: 800, fontSize: '1rem', color: 'var(--ink)', lineHeight: 1 }}>
+                        ${(p.price / 1000).toFixed(0)}K
+                      </div>
+                      <div style={{ fontSize: '.72rem', color: 'var(--ink-45)', marginTop: 3 }}>{p.label}</div>
+                      {p.badge && (
+                        <div style={{ marginTop: 4, fontSize: '.63rem', fontWeight: 700, color: 'var(--forest)', background: 'rgba(27,59,62,.1)', borderRadius: 4, padding: '2px 5px', display: 'inline-block' }}>
+                          {p.badge}
+                        </div>
+                      )}
+                    </button>
+                  ))}
+                </div>
+                <div style={{ marginTop: '.6rem', fontSize: '.74rem', color: 'var(--ink-45)', display: 'flex', alignItems: 'center', gap: '.4rem' }}>
+                  <span>💳</span>
+                  {t('PSE, Nequi, tarjeta · Activa en segundos · Pago único', 'PSE, Nequi, card · Active in seconds · One-time')}
+                </div>
+              </div>
+            )}
+            {payErr && <div style={{ color: '#c0392b', fontSize: '.82rem', marginBottom: '.5rem' }}>{payErr}</div>}
+            <button className="submit-btn" disabled={saving || !title.trim()} onClick={handlePay}>
+              {saving
+                ? t('Publicando…', 'Publishing…')
+                : (jobCredits ?? 0) > 0
+                  ? t('Publicar vacante →', 'Publish listing →')
+                  : t(`Continuar al pago $${(activePlan.price / 1000).toFixed(0)}K →`, `Continue to payment $${(activePlan.price / 1000).toFixed(0)}K →`)}
             </button>
           </div>
         </div>

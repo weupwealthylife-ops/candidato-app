@@ -1263,7 +1263,7 @@ footer{
 .ob-back-link:hover{color:var(--ink)}
 
 /* ── GATE & WELCOME ── */
-.ob-gate{width:100%}
+.ob-gate{width:100%;text-align:center}
 .ob-gate-center{display:flex;flex-direction:column;align-items:center}
 .ob-gate-eyebrow{font-size:.68rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--coral);margin-bottom:.7rem}
 .ob-gate-title{font-family:var(--head);font-size:1.45rem;font-weight:800;color:var(--ink);letter-spacing:-.03em;line-height:1.15;margin-bottom:.45rem}
