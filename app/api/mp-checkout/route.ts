@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
 
   if (jobErr || !job) {
     console.error('[mp-checkout] DB insert error:', jobErr)
-    return NextResponse.json({ error: 'Failed to save job' }, { status: 500 })
+    return NextResponse.json({ error: 'db_error', detail: jobErr?.message ?? 'insert returned null' }, { status: 500 })
   }
 
   const jobId = job.id
@@ -76,7 +76,7 @@ export async function POST(req: NextRequest) {
     console.error('[mp-checkout] MP API error:', mpData)
     // Clean up draft job on MP failure
     await sb.from('jobs').delete().eq('id', jobId)
-    return NextResponse.json({ error: 'Payment provider error' }, { status: 500 })
+    return NextResponse.json({ error: 'mp_error', detail: mpData?.message ?? mpData?.cause ?? JSON.stringify(mpData) }, { status: 500 })
   }
 
   // sandbox_init_point = test URL; init_point = production URL

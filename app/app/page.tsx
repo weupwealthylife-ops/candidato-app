@@ -4356,7 +4356,8 @@ function PostJobView({ userEmail, onSuccess, t }: {
       })
       const data = await res.json()
       if (!res.ok || !data.url) {
-        setPayErr(t('Error al iniciar el pago. Intentá de nuevo.', 'Payment error. Please try again.'))
+        const detail = data?.detail ? ` (${data.detail})` : ''
+        setPayErr(t(`Error al iniciar el pago${detail}. Intentá de nuevo.`, `Payment error${detail}. Please try again.`))
         setSaving(false)
         return
       }
