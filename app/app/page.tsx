@@ -285,6 +285,19 @@ export default function AppPage() {
     if (params.get('error') === 'verification_failed') {
       showToast('Enlace inválido', 'El enlace expiró. Registrate de nuevo.', '❌')
     }
+
+    // Mercado Pago return
+    const payment = params.get('payment')
+    if (payment === 'success') {
+      showToast('¡Vacante publicada!', 'El pago fue aprobado — tu vacante ya está activa. ✦', '🎉')
+      window.history.replaceState({}, '', '/app')
+    } else if (payment === 'pending') {
+      showToast('Pago en proceso', 'Te notificaremos cuando se confirme. La vacante se activará automáticamente.', '⏳')
+      window.history.replaceState({}, '', '/app')
+    } else if (payment === 'failure') {
+      showToast('Pago no procesado', 'No se realizó ningún cobro. Podés intentarlo de nuevo.', '❌')
+      window.history.replaceState({}, '', '/app')
+    }
   }, [])
 
   useEffect(() => {
@@ -4318,7 +4331,7 @@ function PostJobView({ userEmail, onSuccess, t }: {
   const [skillInput, setSkillInput] = useState('')
   const [closesAt, setClosesAt] = useState('')
   const [saving, setSaving] = useState(false)
-  const [done, setDone] = useState(false)
+  const [payErr, setPayErr] = useState('')
 
   const addSk = () => {
     const v = skillInput.trim()
@@ -4326,39 +4339,33 @@ function PostJobView({ userEmail, onSuccess, t }: {
     setSkillInput('')
   }
 
-  async function submit() {
+  async function handlePay() {
     if (!title.trim()) return
     setSaving(true)
+    setPayErr('')
     try {
-      const sb = createClient()
-      const { data: co } = await sb.from('companies').select('id').ilike('email', userEmail).maybeSingle()
-      const jobPayload = {
-        company_id: co?.id || null,
-        title: title.trim(),
-        modality: mod,
-        city,
-        area,
-        salary_range: sal,
-        description: desc.trim(),
-        skills,
-        required_experience: reqExp || null,
-        active: true,
-        closes_at: closesAt ? new Date(closesAt).toISOString() : null,
+      const res = await fetch('/api/mp-checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title, modality: mod, city, area,
+          salary_range: sal, description: desc,
+          skills, required_experience: reqExp,
+          closes_at: closesAt, userEmail,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok || !data.url) {
+        setPayErr(t('Error al iniciar el pago. Intentá de nuevo.', 'Payment error. Please try again.'))
+        setSaving(false)
+        return
       }
-      const { error } = await sb.from('jobs').insert([jobPayload])
-      if (error) console.warn('[Supabase] jobs insert:', error.message)
-    } catch (e) { console.warn(e) }
-    setSaving(false)
-    setDone(true)
-    setTimeout(onSuccess, 1200)
+      window.location.href = data.url
+    } catch {
+      setPayErr(t('Error de conexión. Intentá de nuevo.', 'Connection error. Please try again.'))
+      setSaving(false)
+    }
   }
-
-  if (done) return (
-    <div className="empty-state" style={{ color: 'var(--forest)' }}>
-      <div className="empty-title">{t('Vacante publicada', 'Listing published')}</div>
-      <div className="empty-sub">{t('Redirigiendo…', 'Redirecting…')}</div>
-    </div>
-  )
 
   return (
     <>
@@ -4445,8 +4452,21 @@ function PostJobView({ userEmail, onSuccess, t }: {
             <textarea value={desc} onChange={e => setDesc(e.target.value)} placeholder={t('¿Qué hace este rol? ¿Qué buscás en el candidato ideal?', 'What does this role do? What are you looking for?')} rows={4} />
           </div>
           <div className="fg fg-full">
-            <button className="submit-btn" disabled={saving || !title.trim()} onClick={submit}>
-              {saving ? t('Publicando…', 'Publishing…') : t('Publicar vacante →', 'Post listing →')}
+            {/* Pricing notice */}
+            <div style={{ background: 'var(--pale)', borderRadius: 10, padding: '.9rem 1rem', marginBottom: '.75rem', display: 'flex', alignItems: 'center', gap: '.75rem' }}>
+              <span style={{ fontSize: '1.1rem' }}>💳</span>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: '.84rem', color: 'var(--ink)' }}>
+                  {t('Publicación por $99.000 COP', 'Posting fee: $99,000 COP')}
+                </div>
+                <div style={{ fontSize: '.75rem', color: 'var(--ink-45)', marginTop: 2 }}>
+                  {t('Pago único · PSE, Nequi, tarjeta · Activa en segundos', 'One-time · PSE, Nequi, card · Active in seconds')}
+                </div>
+              </div>
+            </div>
+            {payErr && <div style={{ color: '#c0392b', fontSize: '.82rem', marginBottom: '.5rem' }}>{payErr}</div>}
+            <button className="submit-btn" disabled={saving || !title.trim()} onClick={handlePay}>
+              {saving ? t('Redirigiendo al pago…', 'Redirecting to payment…') : t('Continuar al pago $99.000 →', 'Continue to payment →')}
             </button>
           </div>
         </div>
