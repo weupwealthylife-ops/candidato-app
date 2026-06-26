@@ -20,29 +20,38 @@ export async function POST(req: NextRequest) {
 
   const { type, data } = body as { type?: string; data?: { id?: string | number } }
 
-  // MP also sends GET pings — handle gracefully
   if (type !== 'payment' || !data?.id) return NextResponse.json({ ok: true })
 
   const paymentId = String(data.id)
 
-  // Verify payment with MP
   const mpRes = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
     headers: { Authorization: `Bearer ${MP_ACCESS_TOKEN}` },
   })
   if (!mpRes.ok) return NextResponse.json({ ok: true })
 
   const payment = await mpRes.json()
-  const jobId = payment.external_reference as string | undefined
+  const ref = payment.external_reference as string | undefined
+  if (!ref) return NextResponse.json({ ok: true })
 
-  if (!jobId) return NextResponse.json({ ok: true })
+  // external_reference format: "jobId" or "jobId:credits:companyId"
+  const [jobId, creditsStr, companyId] = ref.split(':')
+  const extraCredits = parseInt(creditsStr ?? '0', 10) || 0
 
   const sb = adminClient()
 
   if (payment.status === 'approved') {
+    // Activate the primary job
     await sb.from('jobs').update({ active: true }).eq('id', jobId)
-    console.log(`[mp-webhook] Job ${jobId} activated — payment ${paymentId}`)
+
+    // If bundle purchase, add remaining credits to the company
+    if (extraCredits > 0 && companyId) {
+      const { data: co } = await sb.from('companies').select('job_credits').eq('id', companyId).maybeSingle()
+      const current = (co as { job_credits?: number } | null)?.job_credits ?? 0
+      await sb.from('companies').update({ job_credits: current + extraCredits }).eq('id', companyId)
+    }
+
+    console.log(`[mp-webhook] Job ${jobId} activated, +${extraCredits} credits to company ${companyId ?? 'n/a'} — payment ${paymentId}`)
   } else if (payment.status === 'rejected' || payment.status === 'cancelled') {
-    // Remove draft job to keep DB clean
     await sb.from('jobs').delete().eq('id', jobId).eq('active', false)
     console.log(`[mp-webhook] Job ${jobId} draft removed — payment ${payment.status}`)
   }
@@ -50,7 +59,6 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ ok: true })
 }
 
-// MP sends GET requests to verify the webhook URL
 export async function GET() {
   return NextResponse.json({ ok: true })
 }

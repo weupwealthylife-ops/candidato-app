@@ -1,0 +1,1 @@
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS job_credits integer NOT NULL DEFAULT 0;
