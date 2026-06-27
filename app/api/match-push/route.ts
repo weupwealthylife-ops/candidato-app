@@ -6,10 +6,9 @@ function baseUrl(raw: string): string {
 }
 
 function sb() {
-  return createClient(
-    baseUrl(process.env.NEXT_PUBLIC_SUPABASE_URL!),
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!key) throw new Error('SUPABASE_SERVICE_ROLE_KEY is not set')
+  return createClient(baseUrl(process.env.NEXT_PUBLIC_SUPABASE_URL!), key)
 }
 
 export async function POST(req: NextRequest) {
