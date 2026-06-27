@@ -1519,6 +1519,15 @@ footer{
   /* Company section for companies */
   .for-co-grid{grid-template-columns:1fr!important}
   .for-co-card{padding:1.8rem 1.4rem!important}
+
+  /* Pricing grid on mobile — stack cards */
+  .pgrid{grid-template-columns:1fr;max-width:380px}
+  .pc.feat{transform:none}
+  .pc{animation:none}
+
+  /* Bundle picker — smaller text on small screens */
+  .bundle-plan-price{font-size:.95rem!important}
+  .bundle-plan-label{font-size:.65rem!important}
 }
 
 @media(max-width:380px){
@@ -1527,6 +1536,8 @@ footer{
   .sec-h2{font-size:1.7rem}
   .stats-row{grid-template-columns:1fr}
   .apply-modal{padding:1.2rem 1rem 1.8rem}
+  /* Bundle picker — 3 cards very tight, reduce padding */
+  .fg .bundle-plans{gap:.4rem!important}
 }
 
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}

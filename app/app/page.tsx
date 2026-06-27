@@ -210,6 +210,7 @@ export default function AppPage() {
   const [jobarea, setJobarea] = useState('')
   const [jobsal, setJobsal] = useState('')
   const [jobdesc, setJobdesc] = useState('')
+  const [coQty, setCoQty] = useState(1)
 
   // App view
   const [candView, setCandView] = useState<CandView>('dashboard')
@@ -506,34 +507,49 @@ export default function AppPage() {
       if (error) {
         console.error('[DB] companies insert failed:', error.message, error.details)
         showToast('Error al guardar', error.message, '⚠️')
-      } else {
-        dbOk = true
-        const compId = data?.[0]?.id
-        if (jobtitle.trim() && compId) {
-          const jobPayload: Record<string, unknown> = {
-            company_id: compId,
-            title: jobtitle.trim(),
-            active: true,
-          }
-          if (jobmod) jobPayload.modality = jobmod
-          if (jobcity) jobPayload.city = jobcity
-          if (jobarea) jobPayload.area = jobarea
-          if (jobsal) jobPayload.salary_range = jobsal
-          if (jobdesc.trim()) jobPayload.description = jobdesc.trim()
-          if (coSkills.length > 0) jobPayload.skills = coSkills
-          const { error: jobErr } = await sb.from('jobs').insert([jobPayload])
-          if (jobErr) console.error('[DB] jobs insert failed:', jobErr.message)
-        }
+        setSubmitting(false)
+        return
       }
 
-      try {
-        await sb.auth.signUp({
-          email,
-          password: crypto.randomUUID(),
-          options: { emailRedirectTo: `${window.location.origin}/auth/callback?next=/app` },
-        })
-      } catch {
-        // non-blocking
+      dbOk = true
+
+      // Auth signup — non-blocking, sends magic link email
+      sb.auth.signUp({
+        email,
+        password: crypto.randomUUID(),
+        options: { emailRedirectTo: `${window.location.origin}/auth/callback?next=/app` },
+      }).catch(() => {})
+
+      // If a job was filled, go through MP checkout
+      if (jobtitle.trim()) {
+        const closeDate = new Date()
+        closeDate.setMonth(closeDate.getMonth() + 1)
+        try {
+          const res = await fetch('/api/mp-checkout', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              title: jobtitle.trim(),
+              modality: jobmod || null,
+              city: jobcity || null,
+              area: jobarea || null,
+              salary_range: jobsal || null,
+              description: jobdesc.trim() || null,
+              skills: coSkills,
+              closes_at: closeDate.toISOString(),
+              userEmail: email,
+              qty: coQty,
+            }),
+          })
+          const mpData = await res.json()
+          if (res.ok && mpData.url) {
+            window.location.href = mpData.url
+            return
+          }
+          showToast('Error de pago', mpData.detail || 'Intentá de nuevo', '⚠️')
+        } catch {
+          showToast('Error', 'Error de conexión', '⚠️')
+        }
       }
     } catch (e) {
       console.error('[submitCompany] unexpected:', e)
@@ -542,7 +558,7 @@ export default function AppPage() {
     setSubmitting(false)
 
     if (dbOk) {
-      setCurrentUser({ name, email, type: 'company', companyName: coname.trim() })
+      setCurrentUser({ name: `${cofn} ${coln}`.trim(), email: coem.trim().toLowerCase(), type: 'company', companyName: coname.trim() })
       setPhase('verify')
     }
   }
@@ -1238,7 +1254,49 @@ export default function AppPage() {
                             <label>{t('Descripción', 'Description')} <span style={{color:'var(--ink-45)',fontWeight:400}}>{t('(opcional)', '(optional)')}</span></label>
                             <textarea value={jobdesc} onChange={(e) => setJobdesc(e.target.value)} placeholder={t('¿Qué hace este rol? ¿Qué buscás en el candidato ideal?', 'What does this role do? What are you looking for in the ideal candidate?')} rows={3} />
                           </div>
-                          <div className="fg fg-full" style={{ display: 'flex', gap: '.6rem', marginTop: '.4rem', alignItems: 'center' }}>
+                          <div className="fg fg-full">
+                            {/* Bundle picker */}
+                            {jobtitle.trim() && (() => {
+                              const OB_PLANS = [
+                                { qty: 1, price: 300000, label: t('1 vacante', '1 listing'), badge: '' },
+                                { qty: 2, price: 500000, label: t('2 vacantes', '2 listings'), badge: t('Ahorrás $100K', 'Save $100K') },
+                                { qty: 3, price: 700000, label: t('3 vacantes', '3 listings'), badge: t('Ahorrás $200K', 'Save $200K') },
+                              ]
+                              return (
+                                <div style={{ marginBottom: '.9rem' }}>
+                                  <div style={{ fontSize: '.65rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--ink-45)', marginBottom: '.6rem' }}>
+                                    {t('¿Cuántas vacantes necesitás?', 'How many listings?')}
+                                  </div>
+                                  <div style={{ display: 'flex', gap: '.55rem' }}>
+                                    {OB_PLANS.map(p => {
+                                      const sel = coQty === p.qty
+                                      return (
+                                        <button key={p.qty} type="button" onClick={() => setCoQty(p.qty)} style={{
+                                          flex: 1, border: `2px solid ${sel ? 'var(--forest)' : 'var(--line)'}`,
+                                          borderRadius: 12, padding: '.75rem .4rem',
+                                          background: sel ? 'var(--pale)' : '#fafafa',
+                                          cursor: 'pointer', textAlign: 'center', transition: 'all .15s',
+                                          position: 'relative',
+                                        }}>
+                                          {p.badge && (
+                                            <div style={{ position: 'absolute', top: -9, left: '50%', transform: 'translateX(-50%)', whiteSpace: 'nowrap', fontSize: '.56rem', fontWeight: 700, color: 'var(--white)', background: 'var(--forest)', borderRadius: 20, padding: '1px 6px' }}>
+                                              {p.badge}
+                                            </div>
+                                          )}
+                                          <div style={{ fontWeight: 900, fontSize: '1rem', color: sel ? 'var(--forest)' : 'var(--ink)', lineHeight: 1 }}>
+                                            ${p.price.toLocaleString('es-CO')}
+                                          </div>
+                                          <div style={{ fontSize: '.6rem', color: 'var(--ink-45)', marginTop: 1 }}>COP</div>
+                                          <div style={{ fontSize: '.68rem', fontWeight: 600, color: sel ? 'var(--forest)' : 'var(--ink-70)', marginTop: 4 }}>{p.label}</div>
+                                        </button>
+                                      )
+                                    })}
+                                  </div>
+                                </div>
+                              )
+                            })()}
+                          </div>
+                          <div className="fg fg-full" style={{ display: 'flex', gap: '.6rem', alignItems: 'center' }}>
                             <button className="ob-back-link" onClick={() => nextCoStep(1)}>{t('← Atrás', '← Back')}</button>
                             <button
                               className="submit-btn"
@@ -1246,7 +1304,11 @@ export default function AppPage() {
                               onClick={submitCompany}
                               style={{ flex: 1, marginTop: 0 }}
                             >
-                              {submitting ? t('Guardando…', 'Saving…') : t('Publicar vacante →', 'Post listing →')}
+                              {submitting
+                                ? t('Redirigiendo…', 'Redirecting…')
+                                : jobtitle.trim()
+                                  ? t(`Continuar al pago $${(({ 1: 300000, 2: 500000, 3: 700000 } as Record<number,number>)[coQty] / 1000).toFixed(0)}K →`, `Continue to payment $${(({ 1: 300000, 2: 500000, 3: 700000 } as Record<number,number>)[coQty] / 1000).toFixed(0)}K →`)
+                                  : t('Crear cuenta →', 'Create account →')}
                             </button>
                           </div>
                           <div className="fg fg-full">
@@ -3804,10 +3866,21 @@ function MyJobsView({ userEmail, coName, onPost, t }: {
       {loading && <div className="loading-state">{t('Cargando…', 'Loading…')}</div>}
 
       {!loading && myJobs.length === 0 && (
-        <div className="empty-state">
-          <div className="empty-title">{t('Aún no publicaste vacantes', 'No listings yet')}</div>
-          <div className="empty-sub">{t('Publicá tu primera vacante para encontrar candidatos.', 'Post your first listing to find candidates.')}</div>
-          <button className="btn btn-forest" style={{ marginTop: '1rem' }} onClick={onPost}>{t('Publicar vacante →', 'Post a listing →')}</button>
+        <div style={{ textAlign: 'center', padding: '3.5rem 1rem 2rem' }}>
+          <div style={{ fontSize: '3rem', marginBottom: '1rem', lineHeight: 1 }}>📋</div>
+          <div style={{ fontFamily: 'var(--head)', fontSize: '1.25rem', fontWeight: 800, color: 'var(--ink)', letterSpacing: '-.02em', marginBottom: '.45rem' }}>
+            {t('Publicá tu primera vacante', 'Post your first listing')}
+          </div>
+          <p style={{ fontSize: '.84rem', color: 'var(--ink-45)', maxWidth: 320, margin: '0 auto 1.5rem', lineHeight: 1.6 }}>
+            {t('El algoritmo encontrará los candidatos más compatibles automáticamente.', 'The algorithm will automatically find the most compatible candidates.')}
+          </p>
+          <button className="btn btn-forest" style={{ fontSize: '.9rem', padding: '.75rem 1.6rem' }} onClick={onPost}>
+            {t('Publicar vacante →', 'Post a listing →')}
+          </button>
+          <div style={{ marginTop: '1rem', fontSize: '.72rem', color: 'var(--ink-45)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '.35rem' }}>
+            <span>💳</span>
+            {t('$300.000 COP · Sin suscripción · Pago único', '$300,000 COP · No subscription · One-time payment')}
+          </div>
         </div>
       )}
 
