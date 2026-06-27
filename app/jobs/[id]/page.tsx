@@ -13,11 +13,13 @@ function baseUrl(r: string) {
 function getSupabase() {
   const url = baseUrl(process.env.NEXT_PUBLIC_SUPABASE_URL ?? '');
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '';
+  if (!url || !key) return null;
   return createClient(url, key);
 }
 
 async function fetchJob(id: string) {
   const supabase = getSupabase();
+  if (!supabase) return null;
   const { data } = await supabase
     .from('jobs')
     .select('title, area, city, modality, salary_range, description, skills, closes_at, companies(company_name)')
