@@ -264,7 +264,8 @@ export default function AppPage() {
     // After email verification the callback route redirects here with ?verified=1
     // and a live Supabase session — auto-login without requiring the gate again.
     const sb = createClient()
-    sb.auth.getSession().then(async ({ data: { session } }) => {
+    sb.auth.getSession().then(async (res: { data: { session: import('@supabase/supabase-js').Session | null } }) => {
+      const session = res.data?.session
       if (!session?.user?.email) return
       const email = session.user.email
       const { data: cand } = await sb.from('candidates').select('name,email').ilike('email', email).maybeSingle()
@@ -1697,7 +1698,7 @@ function CandidateView({
     if (!selectedJob || !candProfile?.id) { setSelectedJobScore(null); return }
     createClient()
       .rpc('score_candidate_job', { p_candidate_id: candProfile.id as string, p_job_id: selectedJob.id })
-      .then(({ data }) => setSelectedJobScore(typeof data === 'number' ? data : null))
+      .then(({ data }: { data: unknown }) => setSelectedJobScore(typeof data === 'number' ? data : null))
   }, [selectedJob?.id, candProfile?.id])
 
   useEffect(() => {
@@ -1708,7 +1709,7 @@ function CandidateView({
       .eq('candidate_id', candProfile.id as string)
       .eq('status', 'pending')
       .order('match_score', { ascending: false })
-      .then(({ data }) => setSuggestions((data as unknown as Suggestion[]) || []))
+      .then(({ data }: { data: unknown }) => setSuggestions((data as unknown as Suggestion[]) || []))
   }, [candProfile?.id])
 
   async function respondToSuggestion(suggId: string, jobId: string, accept: boolean) {
@@ -1784,11 +1785,9 @@ function CandidateView({
       .from('applications')
       .select('job_id, applied_at')
       .eq('candidate_id', candidateId)
-      .then(({ data }) => {
-        if (data) {
-          const m = new Map(data.map((a: { job_id: string; applied_at: string }) => [a.job_id, a.applied_at] as [string, string]))
-          setMyApplied(m)
-        }
+      .then(({ data }: { data: unknown }) => {
+        const rows = data as Array<{ job_id: string; applied_at: string }> | null
+        if (rows) setMyApplied(new Map(rows.map(a => [a.job_id, a.applied_at] as [string, string])))
       })
   }, [candProfile])
 
@@ -1796,8 +1795,9 @@ function CandidateView({
     const candidateId = candProfile?.id as string | undefined
     if (!candidateId) return
     createClient().from('saved_jobs').select('job_id, created_at').eq('candidate_id', candidateId)
-      .then(({ data }) => {
-        if (data) setMySavedJobs(new Map(data.map((s: { job_id: string; created_at: string }) => [s.job_id, s.created_at] as [string, string])))
+      .then(({ data }: { data: unknown }) => {
+        const rows = data as Array<{ job_id: string; created_at: string }> | null
+        if (rows) setMySavedJobs(new Map(rows.map(s => [s.job_id, s.created_at] as [string, string])))
       })
   }, [candProfile])
 
@@ -1836,7 +1836,7 @@ function CandidateView({
         setSelectedJob(null)
         // Score the application asynchronously
         sb.rpc('score_candidate_job', { p_candidate_id: candidateId, p_job_id: job.id })
-          .then(({ data: score }) => {
+          .then(({ data: score }: { data: unknown }) => {
             if (typeof score === 'number') {
               sb.from('applications').update({ match_score: score }).eq('job_id', job.id).eq('candidate_id', candidateId).then(() => {})
             }
@@ -2894,7 +2894,7 @@ function CompanyView({
   useEffect(() => {
     if (!userEmail) return
     createClient().from('companies').select('*').ilike('email', userEmail).maybeSingle()
-      .then(({ data }) => { if (data) setCoProfile(data) })
+      .then(({ data }: { data: unknown }) => { if (data) setCoProfile(data as Record<string, unknown>) })
   }, [userEmail])
 
   // Simple skill/area-based candidate matching
@@ -4052,7 +4052,7 @@ function PostJobView({ userEmail, onSuccess, t }: {
   useEffect(() => {
     const sb = createClient()
     sb.from('companies').select('job_credits').ilike('email', userEmail).maybeSingle()
-      .then(({ data }) => setJobCredits((data as { job_credits?: number } | null)?.job_credits ?? 0))
+      .then(({ data }: { data: unknown }) => setJobCredits((data as { job_credits?: number } | null)?.job_credits ?? 0))
   }, [userEmail])
 
   const PLANS = [

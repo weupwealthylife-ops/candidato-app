@@ -1,5 +1,4 @@
 import { createClient } from '@supabase/supabase-js';
-import { unstable_noStore as noStore } from 'next/cache';
 import type { Metadata } from 'next';
 
 function baseUrl(r: string) {
@@ -90,7 +89,6 @@ export default async function JobDetailPage({
 }: {
   params: { id: string };
 }) {
-  noStore();
   await incrementViews(params.id);
   const job = await fetchJob(params.id);
 
