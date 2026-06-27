@@ -833,24 +833,21 @@ export default function AppPage() {
                   <div className="ob-gate ob-gate-center">
                     <div className="ob-welcome-avatar">{foundName?.[0]?.toUpperCase() || '?'}</div>
                     <div className="ob-welcome-label">{t('Bienvenido/a de vuelta', 'Welcome back')}</div>
-                    <h2 className="ob-gate-title" style={{ textAlign: 'center', marginTop: '.2rem' }}>
+                    <h2 className="ob-gate-title" style={{ textAlign: 'center', marginTop: '.3rem', fontSize: '1.7rem' }}>
                       {foundName.split(' ')[0]}
                     </h2>
-                    <p className="ob-gate-sub" style={{ textAlign: 'center', marginBottom: '1.6rem' }}>{gateEmail}</p>
-                    <button className="submit-btn" onClick={() => enterApp({ name: foundName, email: gateEmail, type: userType, companyName: userType === 'company' ? coname : undefined })}>
+                    <p style={{ textAlign: 'center', fontSize: '.78rem', color: 'var(--ink-45)', marginBottom: '1.6rem', marginTop: '.15rem' }}>{gateEmail}</p>
+                    <button className="submit-btn" style={{ fontSize: '1rem', padding: '.9rem 1.5rem' }} onClick={() => enterApp({ name: foundName, email: gateEmail, type: userType, companyName: userType === 'company' ? coname : undefined })}>
                       {t('Ir a mi panel →', 'Go to my dashboard →')}
                     </button>
-                    <div className="ob-divider-thin"></div>
-                    <p className="ob-gate-hint" style={{ marginTop: 0 }}>
-                      {t('¿No sos vos?', 'Not you?')}
-                    </p>
+                    <div style={{ width: '100%', height: 1, background: 'var(--line)', margin: '1.4rem 0 1rem' }}></div>
                     <button
                       onClick={() => { setCurrentUser(null); if (userType === 'candidate') setCem(gateEmail); else setCoem(gateEmail); setPhase('register') }}
                       className="ob-notme-btn"
                     >
                       {t('Crear cuenta nueva con este email', 'Create new account with this email')}
                     </button>
-                    <button onClick={() => { setPhase('gate'); setGateEmail('') }} className="ob-notme-btn">
+                    <button onClick={() => { setPhase('gate'); setGateEmail('') }} className="ob-notme-btn" style={{ marginTop: '.4rem' }}>
                       {t('← Usar otro email', '← Use a different email')}
                     </button>
                   </div>
@@ -3951,7 +3948,8 @@ function PostJobView({ userEmail, onSuccess, t }: {
   const [desc, setDesc] = useState('')
   const [skills, setSkills] = useState<string[]>([])
   const [skillInput, setSkillInput] = useState('')
-  const [closesAt, setClosesAt] = useState('')
+  const defaultCloses = (() => { const d = new Date(); d.setMonth(d.getMonth() + 1); return d.toISOString().split('T')[0] })()
+  const [closesAt, setClosesAt] = useState(defaultCloses)
   const [saving, setSaving] = useState(false)
   const [payErr, setPayErr] = useState('')
   const [qty, setQty] = useState(1)
@@ -4085,7 +4083,7 @@ function PostJobView({ userEmail, onSuccess, t }: {
             </select>
           </div>
           <div className="fg">
-            <label>{t('Fecha de cierre', 'Closing date')} <span style={{color:'var(--ink-45)',fontWeight:400,textTransform:'none',letterSpacing:0}}>{t('(opcional)', '(optional)')}</span></label>
+            <label>{t('Disponible hasta', 'Available until')} <span style={{color:'var(--ink-45)',fontWeight:400,textTransform:'none',letterSpacing:0}}>{t('(1 mes por defecto)', '(1 month default)')}</span></label>
             <input type="date" value={closesAt} onChange={e => setClosesAt(e.target.value)} min={new Date().toISOString().split('T')[0]} />
           </div>
           <div className="fg fg-full">
@@ -4121,31 +4119,38 @@ function PostJobView({ userEmail, onSuccess, t }: {
             ) : (
               /* Bundle picker */
               <div style={{ marginBottom: '.9rem' }}>
-                <div style={{ fontSize: '.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--ink-45)', marginBottom: '.55rem' }}>
+                <div style={{ fontSize: '.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--ink-45)', marginBottom: '.7rem' }}>
                   {t('¿Cuántas vacantes necesitás?', 'How many listings do you need?')}
                 </div>
-                <div style={{ display: 'flex', gap: '.6rem' }}>
-                  {PLANS.map(p => (
-                    <button key={p.qty} type="button" onClick={() => setQty(p.qty)} style={{
-                      flex: 1, border: `2px solid ${qty === p.qty ? 'var(--forest)' : 'var(--line)'}`,
-                      borderRadius: 12, padding: '.7rem .5rem', background: qty === p.qty ? 'var(--pale)' : 'white',
-                      cursor: 'pointer', textAlign: 'center', transition: 'all .15s',
-                    }}>
-                      <div style={{ fontWeight: 800, fontSize: '1rem', color: 'var(--ink)', lineHeight: 1 }}>
-                        ${(p.price / 1000).toFixed(0)}K
-                      </div>
-                      <div style={{ fontSize: '.72rem', color: 'var(--ink-45)', marginTop: 3 }}>{p.label}</div>
-                      {p.badge && (
-                        <div style={{ marginTop: 4, fontSize: '.63rem', fontWeight: 700, color: 'var(--forest)', background: 'rgba(27,59,62,.1)', borderRadius: 4, padding: '2px 5px', display: 'inline-block' }}>
-                          {p.badge}
+                <div style={{ display: 'flex', gap: '.7rem' }}>
+                  {PLANS.map(p => {
+                    const selected = qty === p.qty
+                    return (
+                      <button key={p.qty} type="button" onClick={() => setQty(p.qty)} style={{
+                        flex: 1, border: `2px solid ${selected ? 'var(--forest)' : 'var(--line)'}`,
+                        borderRadius: 14, padding: '1rem .6rem .85rem',
+                        background: selected ? 'var(--pale)' : '#fafafa',
+                        cursor: 'pointer', textAlign: 'center', transition: 'all .15s',
+                        boxShadow: selected ? '0 0 0 3px rgba(27,59,62,.1)' : 'none',
+                        position: 'relative',
+                      }}>
+                        {p.badge && (
+                          <div style={{ position: 'absolute', top: -10, left: '50%', transform: 'translateX(-50%)', whiteSpace: 'nowrap', fontSize: '.6rem', fontWeight: 700, color: 'var(--white)', background: 'var(--forest)', borderRadius: 20, padding: '2px 8px', letterSpacing: '.04em' }}>
+                            {p.badge}
+                          </div>
+                        )}
+                        <div style={{ fontWeight: 900, fontSize: '1.15rem', color: selected ? 'var(--forest)' : 'var(--ink)', lineHeight: 1, letterSpacing: '-.02em' }}>
+                          ${p.price.toLocaleString('es-CO')}
                         </div>
-                      )}
-                    </button>
-                  ))}
+                        <div style={{ fontSize: '.65rem', color: 'var(--ink-45)', marginTop: 2, fontWeight: 500 }}>COP</div>
+                        <div style={{ fontSize: '.75rem', fontWeight: 600, color: selected ? 'var(--forest)' : 'var(--ink-70)', marginTop: 5 }}>{p.label}</div>
+                      </button>
+                    )
+                  })}
                 </div>
-                <div style={{ marginTop: '.6rem', fontSize: '.74rem', color: 'var(--ink-45)', display: 'flex', alignItems: 'center', gap: '.4rem' }}>
+                <div style={{ marginTop: '.65rem', fontSize: '.73rem', color: 'var(--ink-45)', display: 'flex', alignItems: 'center', gap: '.45rem' }}>
                   <span>💳</span>
-                  {t('PSE, Nequi, tarjeta · Activa en segundos · Pago único', 'PSE, Nequi, card · Active in seconds · One-time')}
+                  {t('PSE, Nequi, tarjeta · Se activa al instante · Pago único', 'PSE, Nequi, card · Active instantly · One-time')}
                 </div>
               </div>
             )}
@@ -4155,7 +4160,7 @@ function PostJobView({ userEmail, onSuccess, t }: {
                 ? t('Publicando…', 'Publishing…')
                 : (jobCredits ?? 0) > 0
                   ? t('Publicar vacante →', 'Publish listing →')
-                  : t(`Continuar al pago $${(activePlan.price / 1000).toFixed(0)}K →`, `Continue to payment $${(activePlan.price / 1000).toFixed(0)}K →`)}
+                  : t(`Continuar al pago · $${activePlan.price.toLocaleString('es-CO')} COP →`, `Continue to payment · $${activePlan.price.toLocaleString('es-CO')} COP →`)}
             </button>
           </div>
         </div>

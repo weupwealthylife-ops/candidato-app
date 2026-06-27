@@ -1309,13 +1309,15 @@ footer{
 
 /* Welcome screen */
 .ob-welcome-avatar{
-  width:68px;height:68px;border-radius:50%;
-  background:linear-gradient(135deg,var(--forest),var(--forest-lt));
+  width:80px;height:80px;border-radius:50%;
+  background:linear-gradient(135deg,var(--forest) 0%,#2e8b6e 100%);
   display:flex;align-items:center;justify-content:center;
-  font-family:var(--head);font-size:1.7rem;font-weight:700;color:var(--white);
+  font-family:var(--head);font-size:2rem;font-weight:800;color:var(--white);
+  box-shadow:0 4px 20px rgba(27,59,62,.25);
+  margin-bottom:.1rem;
 }
 .ob-welcome-label{
-  margin-top:.8rem;font-size:.68rem;font-weight:700;letter-spacing:.1em;
+  margin-top:.9rem;font-size:.65rem;font-weight:700;letter-spacing:.12em;
   text-transform:uppercase;color:var(--coral);
 }
 .ob-notme-btn{
