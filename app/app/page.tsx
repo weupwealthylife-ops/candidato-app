@@ -3747,6 +3747,16 @@ function MyJobsView({ userEmail, coName, onPost, t }: {
     setSaving(false)
   }
 
+  async function renewJob(id: string, currentClosesAt: string | null | undefined) {
+    try {
+      const sb = createClient()
+      const base = currentClosesAt ? new Date(currentClosesAt) : new Date()
+      base.setMonth(base.getMonth() + 1)
+      await sb.from('jobs').update({ closes_at: base.toISOString(), active: true }).eq('id', id)
+      await loadMyJobs()
+    } catch (e) { console.warn(e) }
+  }
+
   async function deleteJob(id: string) {
     try {
       const sb = createClient()
@@ -3961,6 +3971,7 @@ function MyJobsView({ userEmail, coName, onPost, t }: {
                 </div>
                 <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap', paddingTop: '.75rem', borderTop: '1px solid var(--line)', alignItems: 'center' }}>
                   <button className="btn btn-outline btn-sm" onClick={() => startEdit(j)}>{t('Editar', 'Edit')}</button>
+                  <button className="btn btn-outline btn-sm" onClick={() => renewJob(j.id, j.closes_at)} title={t('Extender cierre +1 mes', 'Extend close date +1 month')}>📅 +1 {t('mes', 'month')}</button>
                   <a
                     href={`https://wa.me/?text=${encodeURIComponent(`${t('Estamos contratando', 'We\'re hiring')}: ${j.title}${j.city ? ` · ${j.city}` : ''}${j.modality ? ` · ${j.modality}` : ''} — ${t('Postulate en', 'Apply at')} https://candidato.com.co/jobs/${j.id}`)}`}
                     target="_blank" rel="noopener noreferrer"

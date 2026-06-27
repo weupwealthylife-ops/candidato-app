@@ -1,9 +1,18 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { useLang } from '@/lib/LangContext'
 
 export default function Hero() {
   const { t } = useLang()
+  const [activeJobs, setActiveJobs] = useState<number | null>(null)
+
+  useEffect(() => {
+    fetch('/api/stats')
+      .then(r => r.json())
+      .then(d => setActiveJobs(d.activeJobs ?? null))
+      .catch(() => {})
+  }, [])
 
   return (
     <section className="hero" id="hero">
@@ -47,8 +56,8 @@ export default function Hero() {
         <div className="hero-stats" id="heroStats">
           <div className="stat-item in">
             <div className="stat-bar"></div>
-            <div className="stat-n">+2.400</div>
-            <div className="stat-l">{t('CVs procesados', 'CVs processed')}</div>
+            <div className="stat-n">{activeJobs !== null ? `+${activeJobs.toLocaleString('es-CO')}` : '+2.400'}</div>
+            <div className="stat-l">{t('Vacantes activas', 'Active listings')}</div>
           </div>
           <div className="stat-item in">
             <div className="stat-bar"></div>

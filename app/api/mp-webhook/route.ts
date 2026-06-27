@@ -54,6 +54,13 @@ export async function POST(req: NextRequest) {
   const sb = adminClient()
 
   if (payment.status === 'approved') {
+    // Idempotency: skip if job is already active (payment already processed)
+    const { data: existingJob } = await sb.from('jobs').select('active, payment_pending').eq('id', jobId).maybeSingle()
+    if (existingJob?.active === true && existingJob?.payment_pending === false) {
+      console.log(`[mp-webhook] Payment ${paymentId} already processed for job ${jobId}, skipping`)
+      return NextResponse.json({ ok: true })
+    }
+
     // Activate the job and clear payment_pending flag
     await sb.from('jobs').update({ active: true, payment_pending: false }).eq('id', jobId)
 

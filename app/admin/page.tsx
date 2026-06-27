@@ -57,7 +57,7 @@ export default function AdminPage() {
     const [c, co, j, a] = await Promise.all([
       sb.from('candidates').select('id,name,email,area,city,modality,experience,skills,created_at').order('created_at', { ascending: false }).limit(200),
       sb.from('companies').select('id,company_name,email,industry,city,looking_for_areas,created_at').order('created_at', { ascending: false }).limit(200),
-      sb.from('jobs').select('id,title,area,city,modality,salary_range,active,created_at,companies(company_name)').order('created_at', { ascending: false }).limit(200),
+      sb.from('jobs').select('id,title,area,city,modality,salary_range,active,views,closes_at,created_at,companies(company_name)').order('created_at', { ascending: false }).limit(200),
       sb.from('applications').select('id,status,applied_at,candidates(name,email),jobs(title)').order('applied_at', { ascending: false }).limit(200),
     ])
     setCandidates(c.data || [])
@@ -82,6 +82,7 @@ export default function AdminPage() {
   const candWithCV = candidates.filter(c => c.cv_url).length
   const activeJobs = jobs.filter(j => j.active).length
   const pendingApps = applications.filter(a => a.status === 'pending').length
+  const totalViews = jobs.reduce((sum, j) => sum + (Number(j.views) || 0), 0)
 
   const tabs = [
     { id: 'overview', label: 'Resumen' },
@@ -126,6 +127,7 @@ export default function AdminPage() {
               <StatCard label="Empresas" value={companies.length} sub="registradas" />
               <StatCard label="Vacantes activas" value={activeJobs} sub={`de ${jobs.length} total`} />
               <StatCard label="Postulaciones" value={applications.length} sub={`${pendingApps} pendientes`} />
+              <StatCard label="Vistas totales" value={totalViews.toLocaleString('es-CO')} sub="en todas las vacantes" />
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
               <div style={{ background: 'white', border: '1px solid var(--line)', borderRadius: 12, padding: '1.2rem' }}>
@@ -157,7 +159,7 @@ export default function AdminPage() {
         {tab === 'jobs' && (
           <div style={{ background: 'white', border: '1px solid var(--line)', borderRadius: 12, padding: '1.2rem' }}>
             <div style={{ fontWeight: 700, fontSize: '.88rem', marginBottom: '.85rem', color: 'var(--ink)' }}>Todas las vacantes ({jobs.length})</div>
-            <DataTable rows={jobs} cols={['title','company','area','city','modality','salary_range','active','created_at']} />
+            <DataTable rows={jobs} cols={['title','company','area','city','modality','salary_range','active','views','closes_at','created_at']} />
           </div>
         )}
 

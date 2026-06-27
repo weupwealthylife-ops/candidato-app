@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { unstable_noStore as noStore } from 'next/cache';
 import type { Metadata } from 'next';
 
 function baseUrl(r: string) {
@@ -27,6 +28,12 @@ async function fetchJob(id: string) {
     .eq('active', true)
     .maybeSingle();
   return data;
+}
+
+async function incrementViews(id: string) {
+  const supabase = getSupabase();
+  if (!supabase) return;
+  try { await supabase.rpc('increment_job_views', { job_id: id }) } catch { /* non-critical */ }
 }
 
 export async function generateMetadata({
@@ -83,6 +90,8 @@ export default async function JobDetailPage({
 }: {
   params: { id: string };
 }) {
+  noStore();
+  await incrementViews(params.id);
   const job = await fetchJob(params.id);
 
   const forest = '#1B3B3E';
