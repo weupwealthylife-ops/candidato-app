@@ -92,7 +92,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'mp_error', detail: mpData?.message ?? mpData?.cause ?? JSON.stringify(mpData).slice(0, 200) }, { status: 500 })
   }
 
-  const url = mpData.sandbox_init_point ?? mpData.init_point
+  // TEST- tokens → sandbox checkout; APP_USR- tokens → real checkout
+  const isTest = MP_ACCESS_TOKEN.startsWith('TEST-')
+  const url = isTest ? mpData.sandbox_init_point : mpData.init_point
   if (!url) {
     await sb.from('jobs').delete().eq('id', jobId)
     return NextResponse.json({ error: 'mp_error', detail: 'No checkout URL in MP response' }, { status: 500 })
