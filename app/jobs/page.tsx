@@ -59,9 +59,10 @@ const offWhite = '#FAFAF8'
 export default async function JobsPage({
   searchParams,
 }: {
-  searchParams: { q?: string }
+  searchParams: Promise<{ q?: string }>
 }) {
-  const q = searchParams.q?.trim() || undefined
+  const { q: rawQ } = await searchParams
+  const q = rawQ?.trim() || undefined
   const jobs = await fetchJobs(q)
 
   return (

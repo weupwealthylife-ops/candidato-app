@@ -38,9 +38,10 @@ async function incrementViews(id: string) {
 export async function generateMetadata({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }): Promise<Metadata> {
-  const job = await fetchJob(params.id);
+  const { id } = await params;
+  const job = await fetchJob(id);
 
   if (!job) {
     return { title: 'Vacante — Candidato®' };
@@ -58,7 +59,7 @@ export async function generateMetadata({
     openGraph: {
       title,
       description,
-      url: `https://candidato.com.co/jobs/${params.id}`,
+      url: `https://candidato.com.co/jobs/${id}`,
       images: [
         {
           url: 'https://candidato.com.co/bird-logo.png',
@@ -87,10 +88,11 @@ function formatDate(dateStr: string) {
 export default async function JobDetailPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
-  await incrementViews(params.id);
-  const job = await fetchJob(params.id);
+  const { id } = await params;
+  await incrementViews(id);
+  const job = await fetchJob(id);
 
   const forest = '#1B3B3E';
   const coral = '#EA6440';
