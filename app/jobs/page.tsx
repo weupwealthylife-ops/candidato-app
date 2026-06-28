@@ -108,9 +108,9 @@ export default async function JobsPage({
                 Buscar
               </button>
               {q && (
-                <a href="/jobs" style={{ padding: '10px 14px', borderRadius: '10px', border: '1.5px solid #ddd', fontSize: '14px', color: '#666', textDecoration: 'none', background: 'white', display: 'flex', alignItems: 'center' }}>
+                <Link href="/jobs" style={{ padding: '10px 14px', borderRadius: '10px', border: '1.5px solid #ddd', fontSize: '14px', color: '#666', textDecoration: 'none', background: 'white', display: 'flex', alignItems: 'center' }}>
                   ✕
-                </a>
+                </Link>
               )}
             </div>
           </form>

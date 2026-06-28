@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 
 export default function AdminLogin() {
   const router = useRouter()
@@ -64,7 +65,7 @@ export default function AdminLogin() {
           {loading ? 'Verificando…' : 'Ingresar →'}
         </button>
       </div>
-      <a href="/" style={{ fontSize: '.75rem', color: '#9aacac', textDecoration: 'none' }}>← Volver al sitio</a>
+      <Link href="/" style={{ fontSize: '.75rem', color: '#9aacac', textDecoration: 'none' }}>← Volver al sitio</Link>
     </div>
   )
 }

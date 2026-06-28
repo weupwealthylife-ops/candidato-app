@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
+import Link from 'next/link'
 
 interface Props {
   params: Promise<{ id: string }>
@@ -67,9 +68,9 @@ export default async function PublicJobPage({ params }: Props) {
       `}</style>
 
       <div style={{ marginBottom: '1.5rem', textAlign: 'center' }}>
-        <a href="/" style={{ fontFamily: 'Georgia,serif', fontWeight: 700, fontSize: '1.15rem', color: 'var(--forest)', textDecoration: 'none', letterSpacing: '-.01em' }}>
+        <Link href="/" style={{ fontFamily: 'Georgia,serif', fontWeight: 700, fontSize: '1.15rem', color: 'var(--forest)', textDecoration: 'none', letterSpacing: '-.01em' }}>
           Candidato<sup style={{ fontSize: '.55em' }}>®</sup>
-        </a>
+        </Link>
         <div style={{ fontSize: '.72rem', color: 'var(--ink-45)', marginTop: '2px' }}>Matching inteligente · Colombia</div>
       </div>
 
@@ -130,7 +131,7 @@ export default async function PublicJobPage({ params }: Props) {
       </div>
 
       <div style={{ marginTop: '1.5rem', fontSize: '.72rem', color: 'var(--ink-45)', textAlign: 'center' }}>
-        <a href="/" style={{ color: 'inherit', textDecoration: 'none' }}>Candidato® · Matching inteligente para Colombia</a>
+        <Link href="/" style={{ color: 'inherit', textDecoration: 'none' }}>Candidato® · Matching inteligente para Colombia</Link>
       </div>
     </main>
   )

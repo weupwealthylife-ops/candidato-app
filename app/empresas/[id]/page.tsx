@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
+import Link from 'next/link'
 
 interface Props {
   params: Promise<{ id: string }>
@@ -48,9 +49,9 @@ export default async function CompanyPublicPage({ params }: Props) {
 
       {/* Brand bar */}
       <div style={{ marginBottom: '1.5rem', textAlign: 'center' }}>
-        <a href="/" style={{ fontFamily: 'Georgia,serif', fontWeight: 700, fontSize: '1.1rem', color: 'var(--forest)', textDecoration: 'none' }}>
+        <Link href="/" style={{ fontFamily: 'Georgia,serif', fontWeight: 700, fontSize: '1.1rem', color: 'var(--forest)', textDecoration: 'none' }}>
           Candidato<sup style={{ fontSize: '.55em' }}>®</sup>
-        </a>
+        </Link>
         <div style={{ fontSize: '.7rem', color: 'var(--ink-45)', marginTop: '2px' }}>Matching inteligente · Colombia</div>
       </div>
 
@@ -128,7 +129,7 @@ export default async function CompanyPublicPage({ params }: Props) {
       </div>
 
       <div style={{ marginTop: '1rem', fontSize: '.7rem', color: 'var(--ink-45)' }}>
-        <a href="/" style={{ color: 'inherit', textDecoration: 'none' }}>Candidato® · Matching inteligente para Colombia</a>
+        <Link href="/" style={{ color: 'inherit', textDecoration: 'none' }}>Candidato® · Matching inteligente para Colombia</Link>
       </div>
     </main>
   )
