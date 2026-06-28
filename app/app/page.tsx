@@ -847,24 +847,52 @@ export default function AppPage() {
 
                 {/* ── WELCOME BACK ── */}
                 {phase === 'welcome' && (
-                  <div className="ob-gate ob-gate-center">
-                    <div className="ob-welcome-avatar">{foundName?.[0]?.toUpperCase() || '?'}</div>
-                    <div className="ob-welcome-label">{t('Bienvenido/a de vuelta', 'Welcome back')}</div>
-                    <h2 className="ob-gate-title" style={{ textAlign: 'center', marginTop: '.3rem', fontSize: '1.7rem' }}>
+                  <div className="ob-gate ob-gate-center" style={{ gap: 0 }}>
+                    {/* Avatar */}
+                    <div className="ob-welcome-avatar" style={{ background: userType === 'company' ? 'var(--forest)' : 'var(--coral)', marginBottom: '1rem' }}>
+                      {foundName?.[0]?.toUpperCase() || '?'}
+                    </div>
+
+                    {/* Eyebrow */}
+                    <div style={{ fontSize: '.65rem', fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: userType === 'company' ? 'var(--forest)' : 'var(--coral)', marginBottom: '.4rem' }}>
+                      {userType === 'company' ? t('Empresa · Bienvenido/a de vuelta', 'Company · Welcome back') : t('Candidato · Bienvenido/a de vuelta', 'Candidate · Welcome back')}
+                    </div>
+
+                    {/* Name */}
+                    <h2 style={{ fontFamily: 'var(--head)', fontSize: '1.9rem', fontWeight: 800, color: 'var(--ink)', margin: '0 0 .25rem', textAlign: 'center', letterSpacing: '-.03em' }}>
                       {foundName.split(' ')[0]}
                     </h2>
-                    <p style={{ textAlign: 'center', fontSize: '.78rem', color: 'var(--ink-45)', marginBottom: '1.6rem', marginTop: '.15rem' }}>{gateEmail}</p>
-                    <button className="submit-btn" style={{ fontSize: '1rem', padding: '.9rem 1.5rem' }} onClick={() => enterApp({ name: foundName, email: gateEmail, type: userType, companyName: userType === 'company' ? coname : undefined })}>
-                      {t('Ir a mi panel →', 'Go to my dashboard →')}
+
+                    {/* Email */}
+                    <p style={{ fontSize: '.78rem', color: 'var(--ink-45)', margin: '0 0 .7rem', textAlign: 'center' }}>{gateEmail}</p>
+
+                    {/* Context hint */}
+                    <p style={{ fontSize: '.82rem', color: 'var(--ink-70)', margin: '0 0 1.5rem', textAlign: 'center', lineHeight: 1.5 }}>
+                      {userType === 'company'
+                        ? t('Gestioná tus vacantes y encontrá talento.', 'Manage your listings and find talent.')
+                        : t('Tu próximo match te espera.', 'Your next match is waiting.')}
+                    </p>
+
+                    {/* Primary CTA */}
+                    <button
+                      className="submit-btn"
+                      style={{ fontSize: '1rem', padding: '.9rem 1.5rem', background: userType === 'company' ? 'var(--forest)' : 'var(--coral)', width: '100%' }}
+                      onClick={() => enterApp({ name: foundName, email: gateEmail, type: userType, companyName: userType === 'company' ? coname : undefined })}
+                    >
+                      {userType === 'company'
+                        ? t('Ver mis vacantes →', 'Go to my listings →')
+                        : t('Ver mis matches →', 'See my matches →')}
                     </button>
-                    <div style={{ width: '100%', height: 1, background: 'var(--line)', margin: '1.4rem 0 1rem' }}></div>
+
+                    {/* Secondary actions */}
+                    <div style={{ width: '100%', height: '1px', background: 'var(--line)', margin: '1.3rem 0 .9rem' }} />
                     <button
                       onClick={() => { setCurrentUser(null); if (userType === 'candidate') setCem(gateEmail); else setCoem(gateEmail); setPhase('register') }}
                       className="ob-notme-btn"
                     >
                       {t('Crear cuenta nueva con este email', 'Create new account with this email')}
                     </button>
-                    <button onClick={() => { setPhase('gate'); setGateEmail('') }} className="ob-notme-btn" style={{ marginTop: '.4rem' }}>
+                    <button onClick={() => { setPhase('gate'); setGateEmail('') }} className="ob-notme-btn" style={{ marginTop: '.35rem' }}>
                       {t('← Usar otro email', '← Use a different email')}
                     </button>
                   </div>
@@ -1260,8 +1288,8 @@ export default function AppPage() {
                             {jobtitle.trim() && (() => {
                               const OB_PLANS = [
                                 { qty: 1, price: 300000, label: t('1 vacante', '1 listing'), badge: '' },
-                                { qty: 2, price: 500000, label: t('2 vacantes', '2 listings'), badge: t('Ahorrás $100K', 'Save $100K') },
-                                { qty: 3, price: 700000, label: t('3 vacantes', '3 listings'), badge: t('Ahorrás $200K', 'Save $200K') },
+                                { qty: 2, price: 500000, label: t('2 vacantes', '2 listings'), badge: t('Ahorrás $100.000', 'Save $100K') },
+                                { qty: 3, price: 700000, label: t('3 vacantes', '3 listings'), badge: t('Ahorrás $200.000', 'Save $200K') },
                               ]
                               return (
                                 <div style={{ marginBottom: '.9rem' }}>
@@ -1308,7 +1336,7 @@ export default function AppPage() {
                               {submitting
                                 ? t('Redirigiendo…', 'Redirecting…')
                                 : jobtitle.trim()
-                                  ? t(`Continuar al pago $${(({ 1: 300000, 2: 500000, 3: 700000 } as Record<number,number>)[coQty] / 1000).toFixed(0)}K →`, `Continue to payment $${(({ 1: 300000, 2: 500000, 3: 700000 } as Record<number,number>)[coQty] / 1000).toFixed(0)}K →`)
+                                  ? t(`Continuar al pago · $${({ 1: 300000, 2: 500000, 3: 700000 } as Record<number,number>)[coQty].toLocaleString('es-CO')} COP →`, `Continue to payment · $${({ 1: 300000, 2: 500000, 3: 700000 } as Record<number,number>)[coQty].toLocaleString('es-CO')} COP →`)
                                   : t('Crear cuenta →', 'Create account →')}
                             </button>
                           </div>
@@ -4057,8 +4085,8 @@ function PostJobView({ userEmail, onSuccess, t }: {
 
   const PLANS = [
     { qty: 1, price: 300000, label: t('1 vacante', '1 listing'), badge: '' },
-    { qty: 2, price: 500000, label: t('2 vacantes', '2 listings'), badge: t('Ahorrás $100K', 'Save $100K') },
-    { qty: 3, price: 700000, label: t('3 vacantes', '3 listings'), badge: t('Ahorrás $200K', 'Save $200K') },
+    { qty: 2, price: 500000, label: t('2 vacantes', '2 listings'), badge: t('Ahorrás $100.000', 'Save $100K') },
+    { qty: 3, price: 700000, label: t('3 vacantes', '3 listings'), badge: t('Ahorrás $200.000', 'Save $200K') },
   ]
   const activePlan = PLANS.find(p => p.qty === qty)!
 
