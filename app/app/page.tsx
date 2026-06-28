@@ -3661,6 +3661,7 @@ function MyJobsView({ userEmail, coName, onPost, t }: {
   const [appsLoading, setAppsLoading] = useState(false)
   const [pushingJobId, setPushingJobId] = useState<string | null>(null)
   const [pushResult, setPushResult] = useState<Record<string, number>>({})
+  const [copiedJobId, setCopiedJobId] = useState<string | null>(null)
 
   useEffect(() => { loadMyJobs() }, [])
 
@@ -4000,6 +4001,19 @@ function MyJobsView({ userEmail, coName, onPost, t }: {
                 <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap', paddingTop: '.75rem', borderTop: '1px solid var(--line)', alignItems: 'center' }}>
                   <button className="btn btn-outline btn-sm" onClick={() => startEdit(j)}>{t('Editar', 'Edit')}</button>
                   <button className="btn btn-outline btn-sm" onClick={() => renewJob(j.id, j.closes_at)} title={t('Extender cierre +1 mes', 'Extend close date +1 month')}>📅 +1 {t('mes', 'month')}</button>
+                  <button
+                    className="btn btn-sm"
+                    style={{ background: copiedJobId === j.id ? 'var(--forest)' : 'var(--off)', border: '1.5px solid var(--line)', color: copiedJobId === j.id ? 'white' : 'var(--ink-70)', borderRadius: 7, padding: '4px 11px', fontSize: '.77rem', fontWeight: 600, cursor: 'pointer' }}
+                    title={t('Copiar enlace de la vacante', 'Copy job link')}
+                    onClick={() => {
+                      navigator.clipboard.writeText(`https://candidato.com.co/jobs/${j.id}`).then(() => {
+                        setCopiedJobId(j.id)
+                        setTimeout(() => setCopiedJobId(null), 2000)
+                      }).catch(() => {})
+                    }}
+                  >
+                    {copiedJobId === j.id ? t('¡Copiado!', 'Copied!') : '🔗 Link'}
+                  </button>
                   <a
                     href={`https://wa.me/?text=${encodeURIComponent(`${t('Estamos contratando', 'We\'re hiring')}: ${j.title}${j.city ? ` · ${j.city}` : ''}${j.modality ? ` · ${j.modality}` : ''} — ${t('Postulate en', 'Apply at')} https://candidato.com.co/jobs/${j.id}`)}`}
                     target="_blank" rel="noopener noreferrer"

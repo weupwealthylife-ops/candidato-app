@@ -118,6 +118,7 @@ export default async function PublicJobPage({ params }: Props) {
           <span>🔗 Compartir:</span>
           <a href={`https://wa.me/?text=${encodeURIComponent(`Mirá esta vacante de ${job.title} en Candidato®: https://candidato.com.co/jobs/${job.id}`)}`} target="_blank" rel="noopener" style={{ color: '#25D366', fontWeight: 600, textDecoration: 'none' }}>WhatsApp</a>
           <a href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(`https://candidato.com.co/jobs/${job.id}`)}`} target="_blank" rel="noopener" style={{ color: '#0077B5', fontWeight: 600, textDecoration: 'none' }}>LinkedIn</a>
+          <a href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(`${job.title}${co ? ` en ${co}` : ''} — Postulate en Candidato®`)}&url=${encodeURIComponent(`https://candidato.com.co/jobs/${job.id}`)}`} target="_blank" rel="noopener" style={{ color: '#000', fontWeight: 600, textDecoration: 'none' }}>X</a>
         </div>
 
         <div style={{ borderTop: '1px solid var(--line)', paddingTop: '1.3rem', marginTop: '.5rem', display: 'flex', flexDirection: 'column', gap: '.7rem' }}>
