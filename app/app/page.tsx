@@ -776,7 +776,6 @@ export default function AppPage() {
                 {/* ── GATE: role cards + email ── */}
                 {phase === 'gate' && (
                   <div className="ob-gate">
-                    <p className="ob-gate-eyebrow">Candidato®</p>
                     <h2 className="ob-gate-title">
                       {t('¿Cómo querés usar Candidato?', 'How do you want to use Candidato?')}
                     </h2>

@@ -66,7 +66,7 @@ export default function Hero() {
         <div className="hero-stats" id="heroStats">
           <div className="stat-item in">
             <div className="stat-bar"></div>
-            <div className="stat-n">{activeJobs !== null ? `+${activeJobs.toLocaleString('es-CO')}` : '+2.400'}</div>
+            <div className="stat-n">{activeJobs ? `+${activeJobs.toLocaleString('es-CO')}` : '+2.400'}</div>
             <div className="stat-l">{t('Vacantes activas', 'Active listings')}</div>
           </div>
           <div className="stat-item in">

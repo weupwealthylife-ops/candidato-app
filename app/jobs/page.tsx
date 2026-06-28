@@ -84,7 +84,9 @@ export default async function JobsPage({
             Vacantes activas
           </h1>
           <p style={{ fontSize: '15px', color: '#666', margin: '0 0 20px' }}>
-            {jobs.length} {jobs.length === 1 ? 'vacante disponible' : 'vacantes disponibles'} en Colombia
+            {jobs.length > 0
+              ? `${jobs.length} ${jobs.length === 1 ? 'vacante disponible' : 'vacantes disponibles'} en Colombia`
+              : 'Nuevas vacantes se publican regularmente'}
           </p>
 
           {/* Search */}

@@ -15,7 +15,7 @@ export default async function Image({ params }: { params: Promise<{ id: string }
     .eq('id', id)
     .maybeSingle()
 
-  const title = job?.title || 'Vacante'
+  const title = job?.title || 'Oportunidades laborales en Colombia'
   const co = (job?.companies as { company_name?: string })?.company_name || ''
   const tags = [job?.modality, job?.city, job?.salary_range].filter(Boolean) as string[]
 
