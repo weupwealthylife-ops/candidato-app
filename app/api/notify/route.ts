@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 // Supported notification types
-type NotifyType = 'application_submitted' | 'company_contacted' | 'match_found' | 'application_status_changed' | 'match_confirmed' | 'payment_confirmed'
+type NotifyType = 'application_submitted' | 'company_contacted' | 'match_found' | 'application_status_changed' | 'match_confirmed' | 'payment_confirmed' | 'expiry_reminder'
 
 interface NotifyPayload {
   type: NotifyType
@@ -153,6 +153,26 @@ function buildHtml(type: NotifyType, name: string, extra: Record<string, string>
     `
     return { subject, html: base.replace('CONTENT', content) }
   }
+
+  if (type === 'expiry_reminder') {
+    const subject = `⏰ Tu vacante "${extra.jobTitle || 'tu vacante'}" cierra el ${extra.closesAt || 'pronto'}`
+    const content = `
+      <h2 style="color:#0E1E20;font-size:1.15rem;margin:0 0 12px">Hola ${name}, tu vacante está por vencer 👋</h2>
+      <p style="color:#4a6a6a;font-size:.88rem;line-height:1.65;margin:0 0 16px">
+        La publicación de <strong style="color:#1B3B3E">${extra.jobTitle || 'tu vacante'}</strong> cierra el
+        <strong style="color:#EA6440"> ${extra.closesAt || 'próximamente'}</strong>.
+        Si aún buscás candidatos, podés renovarla en un solo clic.
+      </p>
+      <div style="background:#FFF8E1;border:1px solid #FDE68A;border-radius:8px;padding:14px 18px;margin-bottom:20px">
+        <p style="color:#B45309;font-size:.83rem;font-weight:600;margin:0 0 4px">¿Qué pasa si no renovás?</p>
+        <p style="color:#92400e;font-size:.82rem;line-height:1.6;margin:0">La vacante se desactiva automáticamente y los candidatos ya no podrán postularse. Los postulantes actuales seguirán visibles en tu panel.</p>
+      </div>
+      <a href="${extra.renewUrl || 'https://candidato.com.co/app'}" style="display:inline-block;background:#1B3B3E;color:white;border-radius:8px;padding:12px 26px;font-size:.88rem;font-weight:700;text-decoration:none;margin-bottom:8px">Renovar vacante →</a>
+      <p style="color:#9aacac;font-size:.75rem;margin-top:14px">Si ya encontraste al candidato ideal, ¡felicitaciones! No tenés que hacer nada.</p>
+    `
+    return { subject, html: base.replace('CONTENT', content) }
+  }
+
 
   if (type === 'payment_confirmed') {
     const subject = `✅ Vacante publicada — ${extra.jobTitle || 'Tu vacante'} ya está activa`

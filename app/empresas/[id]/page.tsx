@@ -3,12 +3,13 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 
 interface Props {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const sb = createClient()
-  const { data } = await sb.from('companies').select('company_name, industry, city, description').eq('id', params.id).maybeSingle()
+  const { id } = await params
+  const sb = await createClient()
+  const { data } = await sb.from('companies').select('company_name, industry, city, description').eq('id', id).maybeSingle()
   if (!data) return { title: 'Empresa — Candidato®' }
   return {
     title: `${data.company_name} — Candidato®`,
@@ -17,10 +18,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function CompanyPublicPage({ params }: Props) {
-  const sb = createClient()
+  const { id } = await params
+  const sb = await createClient()
   const [{ data: co }, { data: jobs }] = await Promise.all([
-    sb.from('companies').select('id, company_name, industry, size, city, description, mission, values, website, linkedin, looking_for_areas, looking_for_experience, looking_for_modality').eq('id', params.id).maybeSingle(),
-    sb.from('jobs').select('id, title, modality, city, area, salary_range, created_at').eq('company_id', params.id).eq('active', true).order('created_at', { ascending: false }).limit(10),
+    sb.from('companies').select('id, company_name, industry, size, city, description, mission, values, website, linkedin, looking_for_areas, looking_for_experience, looking_for_modality').eq('id', id).maybeSingle(),
+    sb.from('jobs').select('id, title, modality, city, area, salary_range, created_at').eq('company_id', id).eq('active', true).order('created_at', { ascending: false }).limit(10),
   ])
 
   if (!co) notFound()
@@ -100,7 +102,7 @@ export default async function CompanyPublicPage({ params }: Props) {
           <div style={{ fontFamily: 'Georgia,serif', fontWeight: 700, fontSize: '.95rem', color: 'var(--ink)', marginBottom: '.9rem' }}>
             Vacantes abiertas <span style={{ fontSize: '.75rem', background: 'var(--forest)', color: 'white', borderRadius: 5, padding: '2px 8px', marginLeft: '.4rem', fontFamily: 'inherit', fontWeight: 700 }}>{jobs.length}</span>
           </div>
-          {jobs.map(j => (
+          {jobs.map((j: { id: string; title: string; modality?: string; city?: string; area?: string; salary_range?: string; created_at: string }) => (
             <a key={j.id} href={`/jobs/${j.id}`} className="co-job">
               <div style={{ width: 36, height: 36, borderRadius: 9, background: 'var(--pale)', color: 'var(--forest)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '.75rem', fontWeight: 800, flexShrink: 0 }}>
                 {j.area?.[0] || '?'}

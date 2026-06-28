@@ -210,14 +210,12 @@ export default function AppPage() {
   const [jobarea, setJobarea] = useState('')
   const [jobsal, setJobsal] = useState('')
   const [jobdesc, setJobdesc] = useState('')
+  const [coQty, setCoQty] = useState(1)
 
   // App view
   const [candView, setCandView] = useState<CandView>('dashboard')
   const [compView, setCompView] = useState<CompView>('codashboard')
   const [avatarOpen, setAvatarOpen] = useState(false)
-  const [unreadCount, setUnreadCount] = useState(0)
-  const [notifOpen, setNotifOpen] = useState(false)
-  const [notifStatuses, setNotifStatuses] = useState<Map<string, { status: string; match_score?: number }>>(new Map())
 
   // Real data
   const [jobs, setJobs] = useState<Job[]>([])
@@ -253,19 +251,6 @@ export default function AppPage() {
     const urlType = params.get('type')
     if (urlType === 'company') setUserType('company')
 
-    // Mercado Pago return — check before demo early-return so toast always shows
-    const payment = params.get('payment')
-    if (payment === 'success') {
-      showToast('¡Vacante publicada!', 'El pago fue aprobado — tu vacante ya está activa. ✦', '🎉')
-      window.history.replaceState({}, '', '/app')
-    } else if (payment === 'pending') {
-      showToast('Pago en proceso', 'Te notificaremos cuando se confirme. La vacante se activará automáticamente.', '⏳')
-      window.history.replaceState({}, '', '/app')
-    } else if (payment === 'failure') {
-      showToast('Pago no procesado', 'No se realizó ningún cobro. Podés intentarlo de nuevo.', '❌')
-      window.history.replaceState({}, '', '/app')
-    }
-
     // Demo mode for UI auditing (no Supabase required)
     if (params.get('demo') === 'candidate') {
       enterApp({ email: 'demo@candidato.co', name: 'Ana García', type: 'candidate' })
@@ -279,7 +264,8 @@ export default function AppPage() {
     // After email verification the callback route redirects here with ?verified=1
     // and a live Supabase session — auto-login without requiring the gate again.
     const sb = createClient()
-    sb.auth.getSession().then(async ({ data: { session } }) => {
+    sb.auth.getSession().then(async (res: { data: { session: import('@supabase/supabase-js').Session | null } }) => {
+      const session = res.data?.session
       if (!session?.user?.email) return
       const email = session.user.email
       const { data: cand } = await sb.from('candidates').select('name,email').ilike('email', email).maybeSingle()
@@ -309,14 +295,6 @@ export default function AppPage() {
   const showToast = (title: string, sub: string, ico = '✅') =>
     setToast({ ico, title, sub })
 
-  function markNotifsRead() {
-    const seen: Record<string, string> = {}
-    notifStatuses.forEach((v, jobId) => { seen[jobId] = v.status })
-    localStorage.setItem('candidato_seen_statuses', JSON.stringify(seen))
-    setUnreadCount(0)
-    setNotifOpen(false)
-  }
-
   async function loadJobs(query = '', area = '', city = '', mod = '', sal = '') {
     setDataLoading(true)
     try {
@@ -338,7 +316,6 @@ export default function AppPage() {
     try {
       const sb = createClient()
       let q = sb.from('candidates').select('id,name,email,whatsapp,area,experience,city,modality,salary_range,skills,linkedin,cv_url,created_at,open_to_work')
-        .neq('profile_visible', false)
       if (query) q = q.ilike('name', `%${query}%`)
       if (area) q = q.eq('area', area)
       if (city) q = q.eq('city', city)
@@ -531,34 +508,49 @@ export default function AppPage() {
       if (error) {
         console.error('[DB] companies insert failed:', error.message, error.details)
         showToast('Error al guardar', error.message, '⚠️')
-      } else {
-        dbOk = true
-        const compId = data?.[0]?.id
-        if (jobtitle.trim() && compId) {
-          const jobPayload: Record<string, unknown> = {
-            company_id: compId,
-            title: jobtitle.trim(),
-            active: true,
-          }
-          if (jobmod) jobPayload.modality = jobmod
-          if (jobcity) jobPayload.city = jobcity
-          if (jobarea) jobPayload.area = jobarea
-          if (jobsal) jobPayload.salary_range = jobsal
-          if (jobdesc.trim()) jobPayload.description = jobdesc.trim()
-          if (coSkills.length > 0) jobPayload.skills = coSkills
-          const { error: jobErr } = await sb.from('jobs').insert([jobPayload])
-          if (jobErr) console.error('[DB] jobs insert failed:', jobErr.message)
-        }
+        setSubmitting(false)
+        return
       }
 
-      try {
-        await sb.auth.signUp({
-          email,
-          password: crypto.randomUUID(),
-          options: { emailRedirectTo: `${window.location.origin}/auth/callback?next=/app` },
-        })
-      } catch {
-        // non-blocking
+      dbOk = true
+
+      // Auth signup — non-blocking, sends magic link email
+      sb.auth.signUp({
+        email,
+        password: crypto.randomUUID(),
+        options: { emailRedirectTo: `${window.location.origin}/auth/callback?next=/app` },
+      }).catch(() => {})
+
+      // If a job was filled, go through MP checkout
+      if (jobtitle.trim()) {
+        const closeDate = new Date()
+        closeDate.setMonth(closeDate.getMonth() + 1)
+        try {
+          const res = await fetch('/api/mp-checkout', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              title: jobtitle.trim(),
+              modality: jobmod || null,
+              city: jobcity || null,
+              area: jobarea || null,
+              salary_range: jobsal || null,
+              description: jobdesc.trim() || null,
+              skills: coSkills,
+              closes_at: closeDate.toISOString(),
+              userEmail: email,
+              qty: coQty,
+            }),
+          })
+          const mpData = await res.json()
+          if (res.ok && mpData.url) {
+            window.location.href = mpData.url
+            return
+          }
+          showToast('Error de pago', mpData.detail || 'Intentá de nuevo', '⚠️')
+        } catch {
+          showToast('Error', 'Error de conexión', '⚠️')
+        }
       }
     } catch (e) {
       console.error('[submitCompany] unexpected:', e)
@@ -567,7 +559,7 @@ export default function AppPage() {
     setSubmitting(false)
 
     if (dbOk) {
-      setCurrentUser({ name, email, type: 'company', companyName: coname.trim() })
+      setCurrentUser({ name: `${cofn} ${coln}`.trim(), email: coem.trim().toLowerCase(), type: 'company', companyName: coname.trim() })
       setPhase('verify')
     }
   }
@@ -855,27 +847,52 @@ export default function AppPage() {
 
                 {/* ── WELCOME BACK ── */}
                 {phase === 'welcome' && (
-                  <div className="ob-gate ob-gate-center">
-                    <div className="ob-welcome-avatar">{foundName?.[0]?.toUpperCase() || '?'}</div>
-                    <div className="ob-welcome-label">{t('Bienvenido/a de vuelta', 'Welcome back')}</div>
-                    <h2 className="ob-gate-title" style={{ textAlign: 'center', marginTop: '.2rem' }}>
+                  <div className="ob-gate ob-gate-center" style={{ gap: 0 }}>
+                    {/* Avatar */}
+                    <div className="ob-welcome-avatar" style={{ background: userType === 'company' ? 'var(--forest)' : 'var(--coral)', marginBottom: '1rem' }}>
+                      {foundName?.[0]?.toUpperCase() || '?'}
+                    </div>
+
+                    {/* Eyebrow */}
+                    <div style={{ fontSize: '.65rem', fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: userType === 'company' ? 'var(--forest)' : 'var(--coral)', marginBottom: '.4rem' }}>
+                      {userType === 'company' ? t('Empresa · Bienvenido/a de vuelta', 'Company · Welcome back') : t('Candidato · Bienvenido/a de vuelta', 'Candidate · Welcome back')}
+                    </div>
+
+                    {/* Name */}
+                    <h2 style={{ fontFamily: 'var(--head)', fontSize: '1.9rem', fontWeight: 800, color: 'var(--ink)', margin: '0 0 .25rem', textAlign: 'center', letterSpacing: '-.03em' }}>
                       {foundName.split(' ')[0]}
                     </h2>
-                    <p className="ob-gate-sub" style={{ textAlign: 'center', marginBottom: '1.6rem' }}>{gateEmail}</p>
-                    <button className="submit-btn" onClick={() => enterApp({ name: foundName, email: gateEmail, type: userType, companyName: userType === 'company' ? coname : undefined })}>
-                      {t('Ir a mi panel →', 'Go to my dashboard →')}
-                    </button>
-                    <div className="ob-divider-thin"></div>
-                    <p className="ob-gate-hint" style={{ marginTop: 0 }}>
-                      {t('¿No sos vos?', 'Not you?')}
+
+                    {/* Email */}
+                    <p style={{ fontSize: '.78rem', color: 'var(--ink-45)', margin: '0 0 .7rem', textAlign: 'center' }}>{gateEmail}</p>
+
+                    {/* Context hint */}
+                    <p style={{ fontSize: '.82rem', color: 'var(--ink-70)', margin: '0 0 1.5rem', textAlign: 'center', lineHeight: 1.5 }}>
+                      {userType === 'company'
+                        ? t('Gestioná tus vacantes y encontrá talento.', 'Manage your listings and find talent.')
+                        : t('Tu próximo match te espera.', 'Your next match is waiting.')}
                     </p>
+
+                    {/* Primary CTA */}
+                    <button
+                      className="submit-btn"
+                      style={{ fontSize: '1rem', padding: '.9rem 1.5rem', background: userType === 'company' ? 'var(--forest)' : 'var(--coral)', width: '100%' }}
+                      onClick={() => enterApp({ name: foundName, email: gateEmail, type: userType, companyName: userType === 'company' ? coname : undefined })}
+                    >
+                      {userType === 'company'
+                        ? t('Ver mis vacantes →', 'Go to my listings →')
+                        : t('Ver mis matches →', 'See my matches →')}
+                    </button>
+
+                    {/* Secondary actions */}
+                    <div style={{ width: '100%', height: '1px', background: 'var(--line)', margin: '1.3rem 0 .9rem' }} />
                     <button
                       onClick={() => { setCurrentUser(null); if (userType === 'candidate') setCem(gateEmail); else setCoem(gateEmail); setPhase('register') }}
                       className="ob-notme-btn"
                     >
                       {t('Crear cuenta nueva con este email', 'Create new account with this email')}
                     </button>
-                    <button onClick={() => { setPhase('gate'); setGateEmail('') }} className="ob-notme-btn">
+                    <button onClick={() => { setPhase('gate'); setGateEmail('') }} className="ob-notme-btn" style={{ marginTop: '.35rem' }}>
                       {t('← Usar otro email', '← Use a different email')}
                     </button>
                   </div>
@@ -993,11 +1010,8 @@ export default function AppPage() {
                             <label>{t('Ciudad', 'City')}</label>
                             <select value={ccy} onChange={(e) => setCcy(e.target.value)}>
                               <option value="" disabled>{t('Seleccioná', 'Select')}</option>
-                              <option>Bogotá</option><option>Medellín</option><option>Cali</option>
-                              <option>Barranquilla</option><option>Cartagena</option><option>Bucaramanga</option>
-                              <option>Cúcuta</option><option>Manizales</option><option>Pereira</option>
-                              <option>Santa Marta</option><option>Ibagué</option><option>Pasto</option>
-                              <option>Montería</option><option>Villavicencio</option>
+                              <option>Cali</option><option>Bogotá</option><option>Medellín</option>
+                              <option>Barranquilla</option><option>Bucaramanga</option>
                               <option>{t('Otra', 'Other')}</option>
                             </select>
                           </div>
@@ -1185,11 +1199,8 @@ export default function AppPage() {
                             <label>{t('Ciudad', 'City')}</label>
                             <select value={cocity} onChange={(e) => setCocity(e.target.value)}>
                               <option value="" disabled>{t('Seleccioná', 'Select')}</option>
-                              <option>Bogotá</option><option>Medellín</option><option>Cali</option>
-                              <option>Barranquilla</option><option>Cartagena</option><option>Bucaramanga</option>
-                              <option>Cúcuta</option><option>Manizales</option><option>Pereira</option>
-                              <option>Santa Marta</option><option>Ibagué</option><option>Pasto</option>
-                              <option>Montería</option><option>Villavicencio</option>
+                              <option>Cali</option><option>Bogotá</option>
+                              <option>Medellín</option><option>Barranquilla</option>
                               <option>{t('Otra', 'Other')}</option>
                             </select>
                           </div>
@@ -1228,24 +1239,20 @@ export default function AppPage() {
                             <label>{t('Ciudad', 'City')}</label>
                             <select value={jobcity} onChange={(e) => setJobcity(e.target.value)}>
                               <option value="" disabled>{t('Ciudad', 'City')}</option>
-                              <option>Bogotá</option><option>Medellín</option><option>Cali</option>
-                              <option>Barranquilla</option><option>Cartagena</option><option>Bucaramanga</option>
-                              <option>Cúcuta</option><option>Manizales</option><option>Pereira</option>
-                              <option>Santa Marta</option><option>Ibagué</option><option>Pasto</option>
-                              <option>Montería</option><option>Villavicencio</option>
-                              <option>{t('Otra', 'Other')}</option>
+                              <option>Cali</option><option>Bogotá</option>
+                              <option>Medellín</option><option>{t('Otra', 'Other')}</option>
                             </select>
                           </div>
                           <div className="fg">
                             <label>{t('Área', 'Area')}</label>
                             <select value={jobarea} onChange={(e) => setJobarea(e.target.value)}>
                               <option value="" disabled>{t('Área', 'Area')}</option>
-                              <option>{t('Tecnología / IT', 'Technology / IT')}</option>
-                              <option>{t('Diseño UX/UI', 'UX/UI Design')}</option>
-                              <option>Marketing y Comunicaciones</option>
-                              <option>{t('Ventas y Comercial', 'Sales')}</option>
-                              <option>{t('Finanzas y Contabilidad', 'Finance & Accounting')}</option>
-                              <option>{t('Recursos Humanos', 'Human Resources')}</option>
+                              <option>{t('Tecnología', 'Technology')}</option>
+                              <option>{t('Diseño', 'Design')}</option>
+                              <option>Marketing</option>
+                              <option>{t('Ventas', 'Sales')}</option>
+                              <option>{t('Finanzas', 'Finance')}</option>
+                              <option>{t('RRHH', 'HR')}</option>
                               <option>{t('Operaciones', 'Operations')}</option>
                               <option>{t('Otra', 'Other')}</option>
                             </select>
@@ -1276,7 +1283,49 @@ export default function AppPage() {
                             <label>{t('Descripción', 'Description')} <span style={{color:'var(--ink-45)',fontWeight:400}}>{t('(opcional)', '(optional)')}</span></label>
                             <textarea value={jobdesc} onChange={(e) => setJobdesc(e.target.value)} placeholder={t('¿Qué hace este rol? ¿Qué buscás en el candidato ideal?', 'What does this role do? What are you looking for in the ideal candidate?')} rows={3} />
                           </div>
-                          <div className="fg fg-full" style={{ display: 'flex', gap: '.6rem', marginTop: '.4rem', alignItems: 'center' }}>
+                          <div className="fg fg-full">
+                            {/* Bundle picker */}
+                            {jobtitle.trim() && (() => {
+                              const OB_PLANS = [
+                                { qty: 1, price: 300000, label: t('1 vacante', '1 listing'), badge: '' },
+                                { qty: 2, price: 500000, label: t('2 vacantes', '2 listings'), badge: t('Ahorrás $100.000', 'Save $100K') },
+                                { qty: 3, price: 700000, label: t('3 vacantes', '3 listings'), badge: t('Ahorrás $200.000', 'Save $200K') },
+                              ]
+                              return (
+                                <div style={{ marginBottom: '.9rem' }}>
+                                  <div style={{ fontSize: '.65rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--ink-45)', marginBottom: '.6rem' }}>
+                                    {t('¿Cuántas vacantes necesitás?', 'How many listings?')}
+                                  </div>
+                                  <div style={{ display: 'flex', gap: '.55rem' }}>
+                                    {OB_PLANS.map(p => {
+                                      const sel = coQty === p.qty
+                                      return (
+                                        <button key={p.qty} type="button" onClick={() => setCoQty(p.qty)} style={{
+                                          flex: 1, border: `2px solid ${sel ? 'var(--forest)' : 'var(--line)'}`,
+                                          borderRadius: 12, padding: '.75rem .4rem',
+                                          background: sel ? 'var(--pale)' : '#fafafa',
+                                          cursor: 'pointer', textAlign: 'center', transition: 'all .15s',
+                                          position: 'relative',
+                                        }}>
+                                          {p.badge && (
+                                            <div style={{ position: 'absolute', top: -9, left: '50%', transform: 'translateX(-50%)', whiteSpace: 'nowrap', fontSize: '.56rem', fontWeight: 700, color: 'var(--white)', background: 'var(--forest)', borderRadius: 20, padding: '1px 6px' }}>
+                                              {p.badge}
+                                            </div>
+                                          )}
+                                          <div style={{ fontWeight: 900, fontSize: '1rem', color: sel ? 'var(--forest)' : 'var(--ink)', lineHeight: 1 }}>
+                                            ${p.price.toLocaleString('es-CO')}
+                                          </div>
+                                          <div style={{ fontSize: '.6rem', color: 'var(--ink-45)', marginTop: 1 }}>COP</div>
+                                          <div style={{ fontSize: '.68rem', fontWeight: 600, color: sel ? 'var(--forest)' : 'var(--ink-70)', marginTop: 4 }}>{p.label}</div>
+                                        </button>
+                                      )
+                                    })}
+                                  </div>
+                                </div>
+                              )
+                            })()}
+                          </div>
+                          <div className="fg fg-full" style={{ display: 'flex', gap: '.6rem', alignItems: 'center' }}>
                             <button className="ob-back-link" onClick={() => nextCoStep(1)}>{t('← Atrás', '← Back')}</button>
                             <button
                               className="submit-btn"
@@ -1284,7 +1333,11 @@ export default function AppPage() {
                               onClick={submitCompany}
                               style={{ flex: 1, marginTop: 0 }}
                             >
-                              {submitting ? t('Guardando…', 'Saving…') : t('Publicar vacante →', 'Post listing →')}
+                              {submitting
+                                ? t('Redirigiendo…', 'Redirecting…')
+                                : jobtitle.trim()
+                                  ? t(`Continuar al pago · $${({ 1: 300000, 2: 500000, 3: 700000 } as Record<number,number>)[coQty].toLocaleString('es-CO')} COP →`, `Continue to payment · $${({ 1: 300000, 2: 500000, 3: 700000 } as Record<number,number>)[coQty].toLocaleString('es-CO')} COP →`)
+                                  : t('Crear cuenta →', 'Create account →')}
                             </button>
                           </div>
                           <div className="fg fg-full">
@@ -1505,44 +1558,6 @@ export default function AppPage() {
                   {t('Mi perfil', 'My profile')}
                 </button>
                 <div className="sidebar-spacer"></div>
-                <div style={{ position: 'relative' }}>
-                  <button
-                    className={`nav-item`}
-                    onClick={() => { setNotifOpen(o => !o); if (unreadCount > 0) markNotifsRead() }}
-                    style={{ position: 'relative' }}
-                  >
-                    <span className="nav-ico">🔔</span>
-                    <span>{t('Notificaciones', 'Notifications')}</span>
-                    {unreadCount > 0 && (
-                      <span style={{ position: 'absolute', top: 6, right: 10, background: 'var(--coral)', color: 'white', borderRadius: '50%', width: 17, height: 17, fontSize: '.65rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{unreadCount}</span>
-                    )}
-                  </button>
-                  {notifOpen && (
-                    <div style={{ position: 'absolute', left: '105%', top: 0, background: 'white', border: '1.5px solid var(--line)', borderRadius: 12, boxShadow: '0 4px 24px rgba(0,0,0,.1)', width: 280, zIndex: 200, padding: '.8rem' }}>
-                      <div style={{ fontWeight: 700, fontSize: '.82rem', color: 'var(--ink)', marginBottom: '.6rem' }}>{t('Notificaciones', 'Notifications')}</div>
-                      {notifStatuses.size === 0 ? (
-                        <div style={{ fontSize: '.78rem', color: 'var(--ink-45)' }}>{t('Sin notificaciones', 'No notifications')}</div>
-                      ) : (
-                        [...notifStatuses.entries()].filter(([, v]) => ['contacted','reviewed','rejected'].includes(v.status)).map(([jobId, v]) => {
-                          const job = jobs.find(j => j.id === jobId)
-                          const seen = JSON.parse(localStorage.getItem('candidato_seen_statuses') || '{}') as Record<string, string>
-                          const isNew = seen[jobId] !== v.status
-                          return (
-                            <div key={jobId} style={{ padding: '.5rem .4rem', borderBottom: '1px solid var(--line)', cursor: 'pointer', background: isNew ? '#f0fdf4' : 'transparent', borderRadius: 6, marginBottom: '.2rem' }}
-                              onClick={() => { setCandView('jobs'); setNotifOpen(false) }}>
-                              <div style={{ fontSize: '.78rem', fontWeight: isNew ? 700 : 400, color: 'var(--ink)' }}>{job?.title || t('Vacante', 'Job')}</div>
-                              <div style={{ fontSize: '.72rem', color: v.status === 'contacted' ? '#15803d' : v.status === 'rejected' ? '#b91c1c' : '#1d4ed8', marginTop: '2px' }}>
-                                {v.status === 'contacted' ? t('🚀 ¡La empresa quiere contactarte!', '🚀 Company wants to contact you!') :
-                                 v.status === 'reviewed' ? t('👀 Tu postulación fue revisada', '👀 Application reviewed') :
-                                 t('Tu postulación no avanzó', 'Application not selected')}
-                              </div>
-                            </div>
-                          )
-                        })
-                      )}
-                    </div>
-                  )}
-                </div>
                 <button className="nav-item nav-item-logout" onClick={logout}>{t('Salir', 'Log out')}</button>
               </>
             ) : (
@@ -1585,15 +1600,6 @@ export default function AppPage() {
                 t={t}
                 onRetryProfile={() => currentUser && loadProfile(currentUser.email)}
                 showToast={showToast}
-                onAppStatusesLoaded={(statuses) => {
-                  setNotifStatuses(statuses)
-                  const seen = JSON.parse(localStorage.getItem('candidato_seen_statuses') || '{}') as Record<string, string>
-                  let count = 0
-                  statuses.forEach((v, jobId) => {
-                    if (['contacted', 'reviewed', 'rejected'].includes(v.status) && seen[jobId] !== v.status) count++
-                  })
-                  setUnreadCount(count)
-                }}
               />
             ) : (
               <CompanyView
@@ -1623,13 +1629,6 @@ export default function AppPage() {
             </button>
             <button className={`mobile-nav-btn${candView === 'settings' ? ' active' : ''}`} onClick={() => setCandView('settings')}>
               <span className="mobile-nav-ico">⚙</span>{t('Config.', 'Settings')}
-            </button>
-            <button className={`mobile-nav-btn`} onClick={() => { setNotifOpen(o => !o); if (unreadCount > 0) markNotifsRead() }} style={{ position: 'relative' }}>
-              <span className="mobile-nav-ico">🔔</span>
-              {t('Alerts', 'Alerts')}
-              {unreadCount > 0 && (
-                <span style={{ position: 'absolute', top: 4, right: 8, background: 'var(--coral)', color: 'white', borderRadius: '50%', width: 16, height: 16, fontSize: '.6rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{unreadCount}</span>
-              )}
             </button>
             <button className="mobile-nav-btn" onClick={logout}>
               <span className="mobile-nav-ico">←</span>{t('Salir', 'Out')}
@@ -1682,7 +1681,7 @@ export default function AppPage() {
 }
 
 function CandidateView({
-  view, firstName, skills, user, candProfile, onProfileUpdate, jobs, dataLoading, loadJobs, setView, t, onRetryProfile, showToast, onAppStatusesLoaded,
+  view, firstName, skills, user, candProfile, onProfileUpdate, jobs, dataLoading, loadJobs, setView, t, onRetryProfile, showToast,
 }: {
   view: CandView
   firstName: string
@@ -1697,7 +1696,6 @@ function CandidateView({
   onRetryProfile: () => void
   showToast: (title: string, sub: string, ico?: string) => void
   t: (es: string, en: string) => string
-  onAppStatusesLoaded?: (statuses: Map<string, { status: string; match_score?: number }>) => void
 }) {
   const [query, setQuery] = useState('')
   const [filterArea, setFilterArea] = useState('')
@@ -1707,7 +1705,6 @@ function CandidateView({
 
   // Applications state — Map<jobId, applied_at>
   const [myApplied, setMyApplied] = useState<Map<string, string>>(new Map())
-  const [myAppStatuses, setMyAppStatuses] = useState<Map<string, { status: string; match_score?: number }>>(new Map())
   const [applying, setApplying] = useState<string | null>(null)
   const [withdrawing, setWithdrawing] = useState<string | null>(null)
   const [appliedJob, setAppliedJob] = useState<Job | null>(null)
@@ -1722,18 +1719,14 @@ function CandidateView({
   const [notifUpdates, setNotifUpdates] = useState(true)
   const [profileVisible, setProfileVisible] = useState(true)
   const [suggestions, setSuggestions] = useState<Suggestion[]>([])
-  const [acceptedMatches, setAcceptedMatches] = useState<Suggestion[]>([])
   const [respondingSugg, setRespondingSugg] = useState<string | null>(null)
   const [selectedJobScore, setSelectedJobScore] = useState<number | null>(null)
-  const [extraJobs, setExtraJobs] = useState<Job[]>([])
-  const [moreJobsLoading, setMoreJobsLoading] = useState(false)
-  const [noMoreJobs, setNoMoreJobs] = useState(false)
 
   useEffect(() => {
     if (!selectedJob || !candProfile?.id) { setSelectedJobScore(null); return }
     createClient()
       .rpc('score_candidate_job', { p_candidate_id: candProfile.id as string, p_job_id: selectedJob.id })
-      .then(({ data }) => setSelectedJobScore(typeof data === 'number' ? data : null))
+      .then(({ data }: { data: unknown }) => setSelectedJobScore(typeof data === 'number' ? data : null))
   }, [selectedJob?.id, candProfile?.id])
 
   useEffect(() => {
@@ -1744,14 +1737,7 @@ function CandidateView({
       .eq('candidate_id', candProfile.id as string)
       .eq('status', 'pending')
       .order('match_score', { ascending: false })
-      .then(({ data }) => setSuggestions((data as unknown as Suggestion[]) || []))
-    createClient()
-      .from('suggestions')
-      .select('id,job_id,match_score,status,created_at,jobs(id,title,area,city,modality,companies(company_name))')
-      .eq('candidate_id', candProfile.id as string)
-      .eq('status', 'accepted')
-      .order('created_at', { ascending: false })
-      .then(({ data }) => setAcceptedMatches((data as unknown as Suggestion[]) || []))
+      .then(({ data }: { data: unknown }) => setSuggestions((data as unknown as Suggestion[]) || []))
   }, [candProfile?.id])
 
   async function respondToSuggestion(suggId: string, jobId: string, accept: boolean) {
@@ -1760,9 +1746,7 @@ function CandidateView({
     const sb = createClient()
     const status = accept ? 'accepted' : 'dismissed'
     await sb.from('suggestions').update({ status }).eq('id', suggId)
-    const accepted = suggestions.find(s => s.id === suggId)
     setSuggestions(prev => prev.filter(s => s.id !== suggId))
-    if (accept && accepted) setAcceptedMatches(prev => [{ ...accepted, status: 'accepted' }, ...prev])
     if (accept && candProfile?.id) {
       await sb.from('matches').upsert({ candidate_id: candProfile.id as string, job_id: jobId, path: 2 }, { onConflict: 'candidate_id,job_id', ignoreDuplicates: true })
       showToast(t('¡Match confirmado!', 'Match confirmed!'), t('La empresa recibirá tu perfil pronto.', 'The company will receive your profile soon.'), '🎉')
@@ -1800,25 +1784,11 @@ function CandidateView({
   useEffect(() => {
     if (candProfile?.notify_matches !== undefined)
       setNotifMatches(candProfile.notify_matches as boolean)
-    if ((candProfile as Record<string,unknown>)?.notify_updates !== undefined)
-      setNotifUpdates((candProfile as Record<string,unknown>).notify_updates as boolean)
-    if ((candProfile as Record<string,unknown>)?.profile_visible !== undefined)
-      setProfileVisible((candProfile as Record<string,unknown>).profile_visible as boolean)
   }, [candProfile])
 
   async function saveNotifMatches(val: boolean) {
     if (!user?.email) return
     await createClient().from('candidates').update({ notify_matches: val }).ilike('email', user.email)
-  }
-
-  async function saveNotifUpdates(val: boolean) {
-    if (!user?.email) return
-    await createClient().from('candidates').update({ notify_updates: val }).ilike('email', user.email)
-  }
-
-  async function saveProfileVisible(val: boolean) {
-    if (!user?.email) return
-    await createClient().from('candidates').update({ profile_visible: val }).ilike('email', user.email)
   }
 
   // Show a retry banner if profile still null after 5 seconds
@@ -1841,15 +1811,11 @@ function CandidateView({
     if (!candidateId) return
     createClient()
       .from('applications')
-      .select('job_id, applied_at, status, match_score')
+      .select('job_id, applied_at')
       .eq('candidate_id', candidateId)
-      .then(({ data }) => {
-        if (data) {
-          const m = new Map(data.map((a: { job_id: string; applied_at: string }) => [a.job_id, a.applied_at] as [string, string]))
-          setMyApplied(m)
-          const s = new Map(data.map((a: { job_id: string; status: string; match_score?: number }) => [a.job_id, { status: a.status, match_score: a.match_score }] as [string, { status: string; match_score?: number }]))
-          setMyAppStatuses(s)
-        }
+      .then(({ data }: { data: unknown }) => {
+        const rows = data as Array<{ job_id: string; applied_at: string }> | null
+        if (rows) setMyApplied(new Map(rows.map(a => [a.job_id, a.applied_at] as [string, string])))
       })
   }, [candProfile])
 
@@ -1857,14 +1823,11 @@ function CandidateView({
     const candidateId = candProfile?.id as string | undefined
     if (!candidateId) return
     createClient().from('saved_jobs').select('job_id, created_at').eq('candidate_id', candidateId)
-      .then(({ data }) => {
-        if (data) setMySavedJobs(new Map(data.map((s: { job_id: string; created_at: string }) => [s.job_id, s.created_at] as [string, string])))
+      .then(({ data }: { data: unknown }) => {
+        const rows = data as Array<{ job_id: string; created_at: string }> | null
+        if (rows) setMySavedJobs(new Map(rows.map(s => [s.job_id, s.created_at] as [string, string])))
       })
   }, [candProfile])
-
-  useEffect(() => {
-    if (onAppStatusesLoaded) onAppStatusesLoaded(myAppStatuses)
-  }, [myAppStatuses])
 
   useEffect(() => {
     if (!selectedJob?.id) return
@@ -1897,12 +1860,11 @@ function CandidateView({
       const { error } = await sb.from('applications').insert({ job_id: job.id, candidate_id: candidateId, status: 'pending' })
       if (!error) {
         setMyApplied(prev => new Map([...prev, [job.id, now]]))
-        setMyAppStatuses(prev => new Map([...prev, [job.id, { status: 'pending' }]]))
         setAppliedJob(job)
         setSelectedJob(null)
         // Score the application asynchronously
         sb.rpc('score_candidate_job', { p_candidate_id: candidateId, p_job_id: job.id })
-          .then(({ data: score }) => {
+          .then(({ data: score }: { data: unknown }) => {
             if (typeof score === 'number') {
               sb.from('applications').update({ match_score: score }).eq('job_id', job.id).eq('candidate_id', candidateId).then(() => {})
             }
@@ -1923,7 +1885,6 @@ function CandidateView({
       const { error } = await sb.from('applications').delete().eq('job_id', job.id).eq('candidate_id', candidateId)
       if (!error) {
         setMyApplied(prev => { const m = new Map(prev); m.delete(job.id); return m })
-        setMyAppStatuses(prev => { const m = new Map(prev); m.delete(job.id); return m })
         setSelectedJob(null)
       }
     } catch (e) { console.warn(e) }
@@ -1941,27 +1902,7 @@ function CandidateView({
 
   const setEdit = (k: string, v: string) => setEditData(prev => ({ ...prev, [k]: v }))
 
-  const doSearch = () => { setExtraJobs([]); setNoMoreJobs(false); loadJobs(query, filterArea, filterCity, filterMod, filterSal) }
-
-  async function loadMoreJobs() {
-    if (moreJobsLoading || noMoreJobs) return
-    setMoreJobsLoading(true)
-    try {
-      const sb = createClient()
-      const nowIso = new Date().toISOString()
-      let q = sb.from('jobs').select('*, companies(company_name)').eq('active', true).or(`closes_at.is.null,closes_at.gte.${nowIso}`)
-      if (query) q = q.ilike('title', `%${query}%`)
-      if (filterArea) q = q.eq('area', filterArea)
-      if (filterCity) q = q.eq('city', filterCity)
-      if (filterMod) q = q.eq('modality', filterMod)
-      if (filterSal) q = q.ilike('salary_range', `%${filterSal}%`)
-      const offset = jobs.length + extraJobs.length
-      const { data } = await q.order('created_at', { ascending: false }).range(offset, offset + 49)
-      if (!data || data.length === 0) { setNoMoreJobs(true) }
-      else { setExtraJobs(prev => [...prev, ...data]) }
-    } catch { /* ignore */ }
-    setMoreJobsLoading(false)
-  }
+  const doSearch = () => loadJobs(query, filterArea, filterCity, filterMod, filterSal)
 
   // ── JOB DETAIL MODAL ──
   const jobDetailModal = selectedJob && (
@@ -2034,18 +1975,8 @@ function CandidateView({
         <div style={{ borderTop: '1px solid var(--line)', paddingTop: '1.1rem', display: 'flex', flexDirection: 'column', gap: '.6rem' }}>
           {myApplied.has(selectedJob.id) ? (
             <>
-              <div style={{ borderRadius: 8, padding: '.65rem .9rem', border: '1px solid var(--mist)', background: 'var(--pale)' }}>
-                {(() => {
-                  const st = myAppStatuses.get(selectedJob.id)?.status || 'pending'
-                  const badge = st === 'contacted' ? { label: t('🚀 ¡La empresa quiere contactarte!', '🚀 Company wants to contact you!'), bg: '#dcfce7', color: '#15803d' }
-                    : st === 'reviewed' ? { label: t('👀 Tu postulación fue revisada', '👀 Your application was reviewed'), bg: '#dbeafe', color: '#1d4ed8' }
-                    : st === 'rejected' ? { label: t('Tu postulación no avanzó en esta oportunidad', 'Your application was not selected'), bg: '#fef2f2', color: '#b91c1c' }
-                    : { label: t('⏳ Postulación enviada — en espera de revisión', '⏳ Application sent — awaiting review'), bg: 'var(--pale)', color: 'var(--forest)' }
-                  return (
-                    <div style={{ background: badge.bg, color: badge.color, borderRadius: 6, padding: '.45rem .7rem', fontSize: '.81rem', fontWeight: 600, marginBottom: '.4rem', textAlign: 'center' }}>{badge.label}</div>
-                  )
-                })()}
-                <div style={{ fontSize: '.75rem', color: 'var(--ink-45)', textAlign: 'center' }}>{appliedAgo(myApplied.get(selectedJob.id)!, t)}</div>
+              <div style={{ textAlign: 'center', fontSize: '.82rem', color: 'var(--forest)', background: 'var(--pale)', borderRadius: 8, padding: '.6rem', border: '1px solid var(--mist)' }}>
+                ✓ {t('Ya te postulaste', 'You applied')} · {appliedAgo(myApplied.get(selectedJob.id)!, t)}
               </div>
               <button
                 className="btn btn-sm"
@@ -2134,17 +2065,6 @@ function CandidateView({
     const profileFields = [p?.whatsapp, p?.area, p?.city, p?.modality, p?.experience, p?.linkedin, (p?.skills as string[] | undefined)?.length ? true : false, !!p?.cv_url]
     const profilePct = Math.round((profileFields.filter(Boolean).length / profileFields.length) * 100)
 
-    // Top job recommendations (scored, un-applied, not in suggestions)
-    const suggJobIds = new Set(suggestions.map(s => s.job_id))
-    const recommendedJobs = candProfile
-      ? jobs
-          .filter(j => !myApplied.has(j.id) && !suggJobIds.has(j.id))
-          .map(j => ({ ...j, _score: scoreJobForCandidate(j, candProfile) }))
-          .filter(j => j._score >= 40)
-          .sort((a, b) => b._score - a._score)
-          .slice(0, 4)
-      : []
-
     // Recent applications (last 3)
     const recentApplied = jobs
       .filter(j => myApplied.has(j.id))
@@ -2231,40 +2151,6 @@ function CandidateView({
           )
         })()}
 
-        {/* Job Recommendations */}
-        {recommendedJobs.length > 0 && (
-          <div className="card" style={{ padding: '0', marginBottom: '1rem', borderLeft: '3px solid var(--forest)' }}>
-            <div style={{ padding: '1rem 1.1rem .6rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div>
-                <div className="card-section-title">✦ {t('Para vos', 'Top picks for you')}</div>
-                <div style={{ fontSize: '.73rem', color: 'var(--ink-45)', marginTop: '1px' }}>{t('Vacantes que encajan con tu perfil', 'Jobs matching your profile')}</div>
-              </div>
-              <span style={{ fontSize: '.72rem', background: 'var(--forest)', color: 'white', borderRadius: 5, padding: '2px 8px', fontWeight: 700 }}>{recommendedJobs.length}</span>
-            </div>
-            <div style={{ padding: '0 .7rem .7rem', display: 'flex', flexDirection: 'column', gap: '.5rem' }}>
-              {recommendedJobs.map(j => (
-                <div key={j.id} style={{ display: 'flex', alignItems: 'center', gap: '.75rem', padding: '.65rem .5rem', borderRadius: 8, background: 'var(--off)', cursor: 'pointer' }} onClick={() => setSelectedJob(j)}>
-                  <div className="jc-ava" style={{ width: 36, height: 36, fontSize: '.7rem', flexShrink: 0 }}>
-                    {initials(j.companies?.company_name || '—')}
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontWeight: 600, fontSize: '.82rem', color: 'var(--ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{j.title}</div>
-                    <div style={{ fontSize: '.72rem', color: 'var(--ink-45)', marginTop: '1px' }}>
-                      {j.companies?.company_name || '—'}{j.city ? ` · ${j.city}` : ''}
-                    </div>
-                  </div>
-                  <span style={{ fontSize: '.72rem', background: '#E4F0F1', color: 'var(--forest)', borderRadius: 5, padding: '2px 7px', fontWeight: 700, flexShrink: 0 }}>{j._score}% fit</span>
-                  <button
-                    className="btn btn-forest btn-sm"
-                    style={{ borderRadius: 6, padding: '4px 12px', fontSize: '.75rem', flexShrink: 0 }}
-                    onClick={e => { e.stopPropagation(); applyToJob(j) }}
-                  >{t('Postular →', 'Apply →')}</button>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
         {/* Suggestions (Path 2 — proactive matches) */}
         {suggestions.length > 0 && (
           <div className="card" style={{ padding: '0', marginBottom: '1rem', borderLeft: '3px solid var(--coral)' }}>
@@ -2328,70 +2214,15 @@ function CandidateView({
                     <div style={{ fontSize: '.73rem', color: 'var(--ink-45)', marginTop: '1px' }}>{j.companies?.company_name || '—'}{j.city ? ` · ${j.city}` : ''}</div>
                   </div>
                   <span style={{ fontSize: '.7rem', color: 'var(--ink-45)', flexShrink: 0 }}>{appliedAgo(myApplied.get(j.id)!, t)}</span>
-                  {(() => {
-                    const st = myAppStatuses.get(j.id)?.status || 'pending'
-                    const badge = st === 'contacted' ? { label: t('🚀 Contactado', '🚀 Contacted'), bg: '#dcfce7', color: '#15803d' }
-                      : st === 'reviewed' ? { label: t('👀 Vista', '👀 Reviewed'), bg: '#dbeafe', color: '#1d4ed8' }
-                      : st === 'rejected' ? { label: t('No avanzó', 'Not selected'), bg: '#fef2f2', color: '#b91c1c' }
-                      : { label: t('⏳ Enviada', '⏳ Sent'), bg: 'var(--pale)', color: 'var(--forest)' }
-                    return <span style={{ fontSize: '.68rem', background: badge.bg, color: badge.color, borderRadius: 5, padding: '2px 7px', fontWeight: 600, flexShrink: 0 }}>{badge.label}</span>
-                  })()}
+                  <span style={{ fontSize: '.68rem', background: 'var(--pale)', color: 'var(--forest)', borderRadius: 5, padding: '2px 7px', fontWeight: 600, flexShrink: 0 }}>✓ {t('Enviada', 'Sent')}</span>
                 </div>
               ))}
             </div>
           </div>
         )}
 
-        {/* Match history */}
-        {acceptedMatches.length > 0 && (
-          <div className="card" style={{ padding: '0', marginBottom: '1rem', borderLeft: '3px solid #16a34a' }}>
-            <div style={{ padding: '1rem 1.1rem .6rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div>
-                <div className="card-section-title" style={{ color: '#16a34a' }}>🤝 {t('Mis matches confirmados', 'My confirmed matches')}</div>
-                <div style={{ fontSize: '.73rem', color: 'var(--ink-45)', marginTop: '1px' }}>{t('Vacantes donde aceptaste el match — la empresa tiene tu contacto', 'Listings where you accepted — the company has your contact')}</div>
-              </div>
-              <span style={{ fontSize: '.72rem', background: '#16a34a', color: 'white', borderRadius: 5, padding: '2px 8px', fontWeight: 700 }}>{acceptedMatches.length}</span>
-            </div>
-            <div style={{ padding: '0 .7rem .7rem' }}>
-              {acceptedMatches.map(s => {
-                const job = s.jobs as { title?: string; area?: string; city?: string; modality?: string; companies?: { company_name?: string } } | undefined
-                return (
-                  <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: '.75rem', padding: '.55rem .4rem', borderBottom: '1px solid var(--line)' }}>
-                    <div className="jc-ava" style={{ width: 34, height: 34, fontSize: '.72rem', flexShrink: 0, background: 'linear-gradient(135deg,#16a34a,#22c55e)' }}>
-                      {initials(job?.companies?.company_name || '—')}
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontWeight: 600, fontSize: '.82rem', color: 'var(--ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{job?.title || '—'}</div>
-                      <div style={{ fontSize: '.73rem', color: 'var(--ink-45)', marginTop: '1px' }}>{job?.companies?.company_name || '—'}{job?.city ? ` · ${job.city}` : ''}</div>
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px' }}>
-                      <span style={{ fontSize: '.68rem', background: '#dcfce7', color: '#16a34a', borderRadius: 5, padding: '2px 7px', fontWeight: 700 }}>✓ Match</span>
-                      <span style={{ fontSize: '.65rem', color: 'var(--ink-45)' }}>{s.match_score}% fit</span>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        )}
-
         {/* Job list */}
-        {dataLoading && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '.6rem' }}>
-            {[1,2,3].map(i => (
-              <div key={i} className="skeleton-card">
-                <div style={{ display: 'flex', gap: '.75rem', alignItems: 'center' }}>
-                  <div className="skeleton skeleton-avatar" />
-                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '.4rem' }}>
-                    <div className="skeleton skeleton-line medium" />
-                    <div className="skeleton skeleton-line short" />
-                  </div>
-                </div>
-                <div className="skeleton skeleton-line full" style={{ height: 10 }} />
-              </div>
-            ))}
-          </div>
-        )}
+        {dataLoading && <div className="loading-state">{t('Cargando vacantes…', 'Loading listings…')}</div>}
 
         {!dataLoading && jobs.length === 0 && (
           <div className="empty-state">
@@ -2410,7 +2241,7 @@ function CandidateView({
             </div>
             <div className="jobs-list" style={{ padding: '0 .7rem .7rem' }}>
               {jobs.slice(0, 8).map((j) => (
-                <JobRow key={j.id} job={j} applied={myApplied.has(j.id)} appliedAt={myApplied.get(j.id)} appStatus={myAppStatuses.get(j.id)?.status} saved={mySavedJobs.has(j.id)} onApply={applyToJob} onWithdraw={withdrawApplication} onSave={saveJob} onUnsave={unsaveJob} onSelect={setSelectedJob} fitScore={candProfile ? scoreJobForCandidate(j, candProfile) : undefined} t={t} />
+                <JobRow key={j.id} job={j} applied={myApplied.has(j.id)} appliedAt={myApplied.get(j.id)} saved={mySavedJobs.has(j.id)} onApply={applyToJob} onWithdraw={withdrawApplication} onSave={saveJob} onUnsave={unsaveJob} onSelect={setSelectedJob} t={t} />
               ))}
             </div>
           </div>
@@ -2449,7 +2280,7 @@ function CandidateView({
             </button>
           </div>
           <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
-            <select className="filter-select" value={filterArea} onChange={e => { setFilterArea(e.target.value); setExtraJobs([]); setNoMoreJobs(false); loadJobs(query, e.target.value, filterCity, filterMod, filterSal) }}>
+            <select className="filter-select" value={filterArea} onChange={e => { setFilterArea(e.target.value); loadJobs(query, e.target.value, filterCity, filterMod, filterSal) }}>
               <option value="">{t('Área', 'Area')}</option>
               <option>{t('Tecnología / IT', 'Technology / IT')}</option>
               <option>{t('Diseño UX/UI', 'UX/UI Design')}</option>
@@ -2461,21 +2292,18 @@ function CandidateView({
               <option>{t('Producto / Product', 'Product')}</option>
               <option>{t('Legal', 'Legal')}</option>
             </select>
-            <select className="filter-select" value={filterCity} onChange={e => { setFilterCity(e.target.value); setExtraJobs([]); setNoMoreJobs(false); loadJobs(query, filterArea, e.target.value, filterMod, filterSal) }}>
+            <select className="filter-select" value={filterCity} onChange={e => { setFilterCity(e.target.value); loadJobs(query, filterArea, e.target.value, filterMod, filterSal) }}>
               <option value="">{t('Ciudad', 'City')}</option>
-              <option>Bogotá</option><option>Medellín</option><option>Cali</option>
+              <option>Cali</option><option>Bogotá</option><option>Medellín</option>
               <option>Barranquilla</option><option>Cartagena</option><option>Bucaramanga</option>
-              <option>Cúcuta</option><option>Manizales</option><option>Pereira</option>
-              <option>Santa Marta</option><option>Ibagué</option><option>Pasto</option>
-              <option>Montería</option><option>Villavicencio</option>
             </select>
-            <select className="filter-select" value={filterMod} onChange={e => { setFilterMod(e.target.value); setExtraJobs([]); setNoMoreJobs(false); loadJobs(query, filterArea, filterCity, e.target.value, filterSal) }}>
+            <select className="filter-select" value={filterMod} onChange={e => { setFilterMod(e.target.value); loadJobs(query, filterArea, filterCity, e.target.value, filterSal) }}>
               <option value="">{t('Modalidad', 'Mode')}</option>
               <option>{t('Presencial', 'On-site')}</option>
               <option>{t('Remoto', 'Remote')}</option>
               <option>{t('Híbrido', 'Hybrid')}</option>
             </select>
-            <select className="filter-select" value={filterSal} onChange={e => { setFilterSal(e.target.value); setExtraJobs([]); setNoMoreJobs(false); loadJobs(query, filterArea, filterCity, filterMod, e.target.value) }}>
+            <select className="filter-select" value={filterSal} onChange={e => { setFilterSal(e.target.value); loadJobs(query, filterArea, filterCity, filterMod, e.target.value) }}>
               <option value="">{t('Salario', 'Salary')}</option>
               <option>Hasta $2M</option>
               <option>$2M – $4M</option>
@@ -2487,7 +2315,7 @@ function CandidateView({
               <button
                 className="btn btn-outline btn-sm"
                 style={{ flexShrink: 0 }}
-                onClick={() => { setQuery(''); setFilterArea(''); setFilterCity(''); setFilterMod(''); setFilterSal(''); setExtraJobs([]); setNoMoreJobs(false); loadJobs() }}
+                onClick={() => { setQuery(''); setFilterArea(''); setFilterCity(''); setFilterMod(''); setFilterSal(''); loadJobs() }}
               >
                 {t('Limpiar todo ✕', 'Clear all ✕')}
               </button>
@@ -2509,52 +2337,22 @@ function CandidateView({
           </div>
         )}
 
-        {dataLoading && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '.6rem' }}>
-            {[1,2,3,4,5].map(i => (
-              <div key={i} className="skeleton-card">
-                <div style={{ display: 'flex', gap: '.75rem', alignItems: 'center' }}>
-                  <div className="skeleton skeleton-avatar" style={{ borderRadius: 8 }} />
-                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '.4rem' }}>
-                    <div className="skeleton skeleton-line medium" />
-                    <div className="skeleton skeleton-line short" />
-                  </div>
-                  <div className="skeleton skeleton-line" style={{ width: 52, height: 22, borderRadius: 20 }} />
-                </div>
-                <div className="skeleton skeleton-line" style={{ width: '80%', height: 10 }} />
-              </div>
-            ))}
-          </div>
-        )}
+        {dataLoading && <div className="loading-state">{t('Cargando vacantes…', 'Loading listings…')}</div>}
 
         {!dataLoading && (() => {
-          const allJobs = showSavedOnly ? jobs.filter(j => mySavedJobs.has(j.id)) : [...jobs, ...extraJobs]
-          if (allJobs.length === 0) return (
+          const displayJobs = showSavedOnly ? jobs.filter(j => mySavedJobs.has(j.id)) : jobs
+          if (displayJobs.length === 0) return (
             <div className="empty-state">
               <div className="empty-title">{showSavedOnly ? t('Sin guardadas', 'No saved jobs') : t('Sin resultados', 'No results')}</div>
               <div className="empty-sub">{showSavedOnly ? t('Guardá vacantes con ★ para verlas aquí.', 'Bookmark jobs with ★ to see them here.') : t('Intentá con otros filtros.', 'Try different filters.')}</div>
             </div>
           )
           return (
-            <>
-              <div className="jobs-list">
-                {allJobs.map((j) => (
-                  <JobRow key={j.id} job={j} applied={myApplied.has(j.id)} appliedAt={myApplied.get(j.id)} appStatus={myAppStatuses.get(j.id)?.status} saved={mySavedJobs.has(j.id)} onApply={applyToJob} onWithdraw={withdrawApplication} onSave={saveJob} onUnsave={unsaveJob} onSelect={setSelectedJob} fitScore={candProfile ? scoreJobForCandidate(j, candProfile) : undefined} t={t} />
-                ))}
-              </div>
-              {!showSavedOnly && !noMoreJobs && (
-                <div style={{ textAlign: 'center', padding: '1rem 0' }}>
-                  <button
-                    className="btn btn-outline"
-                    onClick={loadMoreJobs}
-                    disabled={moreJobsLoading}
-                    style={{ borderRadius: 8, padding: '8px 24px', fontSize: '.82rem' }}
-                  >
-                    {moreJobsLoading ? t('Cargando…', 'Loading…') : t('Cargar más →', 'Load more →')}
-                  </button>
-                </div>
-              )}
-            </>
+            <div className="jobs-list">
+              {displayJobs.map((j) => (
+                <JobRow key={j.id} job={j} applied={myApplied.has(j.id)} appliedAt={myApplied.get(j.id)} saved={mySavedJobs.has(j.id)} onApply={applyToJob} onWithdraw={withdrawApplication} onSave={saveJob} onUnsave={unsaveJob} onSelect={setSelectedJob} t={t} />
+              ))}
+            </div>
           )
         })()}
         {jobDetailModal}
@@ -2812,7 +2610,7 @@ function CandidateView({
                 {isEditing
                   ? <select style={sel} value={editData.city} onChange={e => setEdit('city', e.target.value)}>
                       <option value="">{t('Seleccioná', 'Select')}</option>
-                      {['Bogotá','Medellín','Cali','Barranquilla','Cartagena','Bucaramanga','Cúcuta','Manizales','Pereira','Santa Marta','Ibagué','Pasto','Montería','Villavicencio'].map(o => <option key={o}>{o}</option>)}
+                      {['Cali','Bogotá','Medellín','Barranquilla','Cartagena','Bucaramanga'].map(o => <option key={o}>{o}</option>)}
                     </select>
                   : <span style={{ fontSize: '.82rem' }}>{city || <span style={{ color: 'var(--ink-45)' }}>—</span>}</span>}
               </div>
@@ -2932,7 +2730,7 @@ function CandidateView({
             <span className="profile-lbl" style={{ display: 'block' }}>{t('Actualizaciones de plataforma', 'Platform updates')}</span>
             <span style={{ fontSize: '.72rem', color: 'var(--ink-45)' }}>{t('Novedades y mejoras de Candidato®', 'News and improvements from Candidato®')}</span>
           </div>
-          <Toggle on={notifUpdates} onToggle={() => { const v = !notifUpdates; setNotifUpdates(v); saveNotifUpdates(v) }} />
+          <Toggle on={notifUpdates} onToggle={() => setNotifUpdates(v => !v)} />
         </div>
         <div className="settings-section-title" style={{ marginTop: '1.4rem' }}>{t('Privacidad', 'Privacy')}</div>
         <div className="profile-row" style={{ justifyContent: 'space-between' }}>
@@ -2940,72 +2738,23 @@ function CandidateView({
             <span className="profile-lbl" style={{ display: 'block' }}>{t('Perfil visible para empresas', 'Profile visible to companies')}</span>
             <span style={{ fontSize: '.72rem', color: 'var(--ink-45)' }}>{t('Las empresas pueden encontrarte en búsquedas', 'Companies can discover you in searches')}</span>
           </div>
-          <Toggle on={profileVisible} onToggle={() => { const v = !profileVisible; setProfileVisible(v); saveProfileVisible(v) }} />
-        </div>
-        <div className="settings-section-title" style={{ marginTop: '1.4rem' }}>{t('Referidos', 'Referrals')}</div>
-        <div style={{ padding: '.75rem', background: 'var(--pale)', borderRadius: 10, display: 'flex', flexDirection: 'column', gap: '.5rem' }}>
-          <div style={{ fontSize: '.82rem', color: 'var(--ink)', fontWeight: 600 }}>{t('Invitá a un amigo', 'Invite a friend')}</div>
-          <div style={{ fontSize: '.74rem', color: 'var(--ink-45)', lineHeight: 1.5 }}>{t('Compartí tu link único. Cada candidato que se registre con tu link suma a tu red.', 'Share your unique link. Every candidate who signs up with it joins your network.')}</div>
-          {user?.email && (() => {
-            const refCode = btoa(user.email).replace(/[^a-zA-Z0-9]/g, '').slice(0, 12)
-            const refUrl = `https://candidato.com.co/app?ref=${refCode}`
-            return (
-              <div style={{ display: 'flex', gap: '.5rem', alignItems: 'center', marginTop: '.25rem' }}>
-                <input readOnly value={refUrl} style={{ flex: 1, fontSize: '.73rem', padding: '6px 9px', border: '1px solid var(--line)', borderRadius: 7, background: 'white', color: 'var(--ink-70)' }} onClick={e => (e.target as HTMLInputElement).select()} />
-                <button className="btn btn-forest btn-sm" onClick={() => { navigator.clipboard.writeText(refUrl).then(() => {}) }}>{t('Copiar', 'Copy')}</button>
-              </div>
-            )
-          })()}
+          <Toggle on={profileVisible} onToggle={() => setProfileVisible(v => !v)} />
         </div>
       </div>
     </>
   )
 }
 
-function scoreJobForCandidate(job: Job, cand: Record<string, unknown>): number {
-  let score = 0
-  const expRank = (e: string) => {
-    if (e === 'Sin experiencia') return 0
-    if (e === '1-2 años' || e === '1–2 años') return 1
-    if (e === '3-5 años' || e === '3–5 años') return 2
-    if (['5-10 años','5–10 años','6+ años','10+ años'].includes(e)) return 3
-    return -1
-  }
-  if (cand.area && job.area && cand.area === job.area) score += 40
-  if (cand.modality && job.modality) {
-    if (cand.modality === job.modality) score += 20
-    else if (job.modality === 'Remoto' || cand.modality === 'Remoto') score += 12
-    else if (job.modality === 'Híbrido' || cand.modality === 'Híbrido') score += 8
-  }
-  if (job.modality === 'Remoto') score += 15
-  else if (cand.city && job.city && cand.city === job.city) score += 15
-  if (!job.required_experience) score += 15
-  else if (cand.experience) {
-    const cr = expRank(cand.experience as string), jr = expRank(job.required_experience)
-    if (cr >= jr) score += 15
-    else if (cr === jr - 1) score += 8
-  }
-  const js = job.skills || [], cs = (cand.skills as string[]) || []
-  if (!js.length) score += 10
-  else if (cs.length) {
-    const m = js.filter(s => cs.some(c => c.toLowerCase() === s.toLowerCase())).length
-    score += Math.round((m / js.length) * 10)
-  }
-  return Math.min(score, 100)
-}
-
-function JobRow({ job, applied, appliedAt, appStatus, saved, onApply, onWithdraw, onSave, onUnsave, onSelect, fitScore, t }: {
+function JobRow({ job, applied, appliedAt, saved, onApply, onWithdraw, onSave, onUnsave, onSelect, t }: {
   job: Job
   applied?: boolean
   appliedAt?: string
-  appStatus?: string
   saved?: boolean
   onApply?: (job: Job) => void
   onWithdraw?: (job: Job) => void
   onSave?: (job: Job) => void
   onUnsave?: (job: Job) => void
   onSelect?: (job: Job) => void
-  fitScore?: number
   t?: (es: string, en: string) => string
 }) {
   const tr = t || ((es: string) => es)
@@ -3034,9 +2783,6 @@ function JobRow({ job, applied, appliedAt, appStatus, saved, onApply, onWithdraw
         )}
       </div>
       <div className="jc-right" onClick={e => e.stopPropagation()}>
-        {fitScore !== undefined && (
-          <span style={{ fontSize: '.7rem', background: fitScore >= 70 ? '#E4F0F1' : 'var(--off)', color: fitScore >= 70 ? 'var(--forest)' : 'var(--ink-45)', borderRadius: 5, padding: '2px 7px', fontWeight: 700, marginBottom: '.2rem', display: 'block', textAlign: 'right' }}>{fitScore}% fit</span>
-        )}
         {(onSave || onUnsave) && (
           <button
             title={saved ? tr('Quitar guardado', 'Remove bookmark') : tr('Guardar para después', 'Save for later')}
@@ -3049,14 +2795,9 @@ function JobRow({ job, applied, appliedAt, appStatus, saved, onApply, onWithdraw
         <span className="jc-time">{timeAgo(job.created_at)}</span>
         {applied ? (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '.2rem', marginTop: '.35rem' }}>
-            {(() => {
-              const st = appStatus || 'pending'
-              const badge = st === 'contacted' ? { label: tr('🚀 Contactado', '🚀 Contacted'), bg: '#dcfce7', color: '#15803d', border: '#bbf7d0' }
-                : st === 'reviewed' ? { label: tr('👀 Vista', '👀 Reviewed'), bg: '#dbeafe', color: '#1d4ed8', border: '#bfdbfe' }
-                : st === 'rejected' ? { label: tr('No avanzó', 'Not selected'), bg: '#fef2f2', color: '#b91c1c', border: '#fecaca' }
-                : { label: tr('⏳ Enviada', '⏳ Sent'), bg: 'var(--pale)', color: 'var(--forest)', border: 'var(--mist)' }
-              return <span style={{ background: badge.bg, color: badge.color, border: `1.5px solid ${badge.border}`, borderRadius: 7, padding: '3px 10px', fontSize: '.75rem', fontWeight: 600 }}>{badge.label}</span>
-            })()}
+            <span style={{ background: 'var(--pale)', color: 'var(--forest)', border: '1.5px solid var(--mist)', borderRadius: 7, padding: '3px 10px', fontSize: '.75rem', fontWeight: 600 }}>
+              {tr('Postulado ✓', 'Applied ✓')}
+            </span>
             {appliedAt && (
               <span style={{ fontSize: '.68rem', color: 'var(--ink-45)' }}>
                 {appliedAgo(appliedAt, tr)}
@@ -3085,14 +2826,10 @@ function JobRow({ job, applied, appliedAt, appStatus, saved, onApply, onWithdraw
   )
 }
 
-function RecommendedCandCard({ c, coName, coIndustry, jobTitle, lookingForAreas, lookingForExperience, lookingForModality, t }: {
+function RecommendedCandCard({ c, coName, coIndustry, t }: {
   c: Candidate & { score: number }
   coName: string
   coIndustry: string
-  jobTitle: string
-  lookingForAreas: string
-  lookingForExperience: string
-  lookingForModality: string
   t: (es: string, en: string) => string
 }) {
   const [open, setOpen] = useState(false)
@@ -3114,10 +2851,6 @@ function RecommendedCandCard({ c, coName, coIndustry, jobTitle, lookingForAreas,
             companyName: coName,
             companyIndustry: coIndustry,
             candidateArea: c.area || '',
-            jobTitle,
-            lookingForAreas,
-            lookingForExperience,
-            lookingForModality,
           },
         }),
       })
@@ -3180,23 +2913,16 @@ function CompanyView({
   coName: string
   userEmail: string
   candidates: Candidate[]
-  loadCandidates: (q?: string, area?: string, city?: string, modality?: string, salary?: string, experience?: string) => void
+  loadCandidates: (q?: string, area?: string, city?: string, modality?: string, salary?: string) => void
   setView: (v: CompView) => void
   t: (es: string, en: string) => string
 }) {
   const [coProfile, setCoProfile] = useState<CompanyProfile | null>(null)
-  const [coJobs, setCoJobs] = useState<{ id: string; title: string }[]>([])
 
   useEffect(() => {
     if (!userEmail) return
     createClient().from('companies').select('*').ilike('email', userEmail).maybeSingle()
-      .then(({ data }) => {
-        if (data) {
-          setCoProfile(data)
-          createClient().from('jobs').select('id,title').eq('company_id', data.id).order('created_at', { ascending: false })
-            .then(({ data: jobs }) => { if (jobs) setCoJobs(jobs) })
-        }
-      })
+      .then(({ data }: { data: unknown }) => { if (data) setCoProfile(data as Record<string, unknown>) })
   }, [userEmail])
 
   // Simple skill/area-based candidate matching
@@ -3288,7 +3014,7 @@ function CompanyView({
               </button>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(300px,1fr))', gap: '.85rem' }}>
-              {matches.map(c => <RecommendedCandCard key={c.id} c={c} coName={(coProfile?.company_name as string) || coName} coIndustry={(coProfile?.industry as string) || ''} jobTitle={coJobs[0]?.title || ''} lookingForAreas={((coProfile?.looking_for_areas as string[]) || []).join(', ')} lookingForExperience={(coProfile?.looking_for_experience as string) || ''} lookingForModality={(coProfile?.looking_for_modality as string) || ''} t={t} />)}
+              {matches.map(c => <RecommendedCandCard key={c.id} c={c} coName={(coProfile?.company_name as string) || coName} coIndustry={(coProfile?.industry as string) || ''} t={t} />)}
             </div>
           </div>
         )}
@@ -3596,12 +3322,7 @@ function MyCompanyView({ userEmail, coProfile, onUpdate, t }: {
                 <div><label style={lbl}>{t('Ciudad', 'City')}</label>
                   <select style={inp} value={form.city} onChange={e => f('city', e.target.value)}>
                     <option value="">{t('Seleccioná', 'Select')}</option>
-                    <option>Bogotá</option><option>Medellín</option><option>Cali</option>
-                    <option>Barranquilla</option><option>Cartagena</option><option>Bucaramanga</option>
-                    <option>Cúcuta</option><option>Manizales</option><option>Pereira</option>
-                    <option>Santa Marta</option><option>Ibagué</option><option>Pasto</option>
-                    <option>Montería</option><option>Villavicencio</option>
-                    <option>{t('Otra', 'Other')}</option>
+                    <option>Cali</option><option>Bogotá</option><option>Medellín</option><option>Barranquilla</option><option>Cartagena</option>
                   </select>
                 </div>
                 <div><label style={lbl}>Website</label><input style={inp} value={form.website} onChange={e => f('website', e.target.value)} placeholder="www.tuempresa.com" /></div>
@@ -3779,11 +3500,8 @@ function TalentView({ candidates, loadCandidates, t }: {
           </select>
           <select className="filter-select" value={filterCity} onChange={e => { setFilterCity(e.target.value); setSearchErr(''); loadCandidates(query, filterArea, e.target.value, filterMod, filterSal) }}>
             <option value="">{t('Ciudad', 'City')}</option>
-            <option>Bogotá</option><option>Medellín</option><option>Cali</option>
+            <option>Cali</option><option>Bogotá</option><option>Medellín</option>
             <option>Barranquilla</option><option>Cartagena</option><option>Bucaramanga</option>
-            <option>Cúcuta</option><option>Manizales</option><option>Pereira</option>
-            <option>Santa Marta</option><option>Ibagué</option><option>Pasto</option>
-            <option>Montería</option><option>Villavicencio</option>
           </select>
           <select className="filter-select" value={filterMod} onChange={e => { setFilterMod(e.target.value); setSearchErr(''); loadCandidates(query, filterArea, filterCity, e.target.value, filterSal, filterExp) }}>
             <option value="">{t('Modalidad', 'Mode')}</option>
@@ -3934,7 +3652,6 @@ function MyJobsView({ userEmail, coName, onPost, t }: {
   const [editArea, setEditArea] = useState('')
   const [saving, setSaving] = useState(false)
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
-  const [dragOverCol, setDragOverCol] = useState<string | null>(null)
   // applicant counts per job_id
   const [appCounts, setAppCounts] = useState<Record<string, number>>({})
   const [firstApplyAt, setFirstApplyAt] = useState<Record<string, string>>({})
@@ -3944,7 +3661,6 @@ function MyJobsView({ userEmail, coName, onPost, t }: {
   const [appsLoading, setAppsLoading] = useState(false)
   const [pushingJobId, setPushingJobId] = useState<string | null>(null)
   const [pushResult, setPushResult] = useState<Record<string, number>>({})
-  const [savedCounts, setSavedCounts] = useState<Record<string, number>>({})
 
   useEffect(() => { loadMyJobs() }, [])
 
@@ -3970,12 +3686,6 @@ function MyJobsView({ userEmail, coName, onPost, t }: {
           })
           setAppCounts(counts)
           setFirstApplyAt(firstApply)
-        }
-        const { data: saves } = await sb.from('saved_jobs').select('job_id').in('job_id', ids)
-        if (saves) {
-          const sc: Record<string, number> = {}
-          saves.forEach((s: { job_id: string }) => { sc[s.job_id] = (sc[s.job_id] || 0) + 1 })
-          setSavedCounts(sc)
         }
       }
     } catch (e) { console.warn(e) }
@@ -4065,6 +3775,16 @@ function MyJobsView({ userEmail, coName, onPost, t }: {
     setSaving(false)
   }
 
+  async function renewJob(id: string, currentClosesAt: string | null | undefined) {
+    try {
+      const sb = createClient()
+      const base = currentClosesAt ? new Date(currentClosesAt) : new Date()
+      base.setMonth(base.getMonth() + 1)
+      await sb.from('jobs').update({ closes_at: base.toISOString(), active: true }).eq('id', id)
+      await loadMyJobs()
+    } catch (e) { console.warn(e) }
+  }
+
   async function deleteJob(id: string) {
     try {
       const sb = createClient()
@@ -4111,70 +3831,61 @@ function MyJobsView({ userEmail, coName, onPost, t }: {
             <div className="empty-sub">{t('Los candidatos que se postulen aparecerán aquí.', 'Candidates who apply will appear here.')}</div>
           </div>
         )}
-        {(() => {
-          const STAGES = [
-            { id: 'pending', label: t('Recibidas', 'Received'), color: '#f5f5f0', border: 'var(--line)' },
-            { id: 'reviewed', label: t('En revisión', 'Reviewing'), color: '#eff6ff', border: '#bfdbfe' },
-            { id: 'contacted', label: t('Contactados', 'Contacted'), color: '#f0fdf4', border: '#bbf7d0' },
-            { id: 'rejected', label: t('No avanzó', 'Rejected'), color: '#fef2f2', border: '#fecaca' },
-          ]
-          return (
-            <div style={{ overflowX: 'auto' }}>
-              <div style={{ display: 'flex', gap: '1rem', minWidth: 700, padding: '.5rem 0 1rem' }}>
-                {STAGES.map(stage => {
-                  const stageApps = applications.filter(a => a.status === stage.id)
-                  return (
-                    <div key={stage.id}
-                      style={{ flex: 1, minWidth: 160, background: dragOverCol === stage.id ? stage.color : stage.color, border: `1.5px solid ${stage.border}`, borderRadius: 12, padding: '.8rem .7rem' }}
-                      onDragOver={e => { e.preventDefault(); setDragOverCol(stage.id) }}
-                      onDrop={e => { e.preventDefault(); const appId = e.dataTransfer.getData('appId'); if (appId) updateAppStatus(appId, stage.id); setDragOverCol(null) }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '.6rem' }}>
-                        <span style={{ fontSize: '.75rem', fontWeight: 700, color: 'var(--ink-70)' }}>{stage.label}</span>
-                        <span style={{ fontSize: '.7rem', background: 'rgba(0,0,0,.08)', borderRadius: 10, padding: '1px 7px', fontWeight: 700, color: 'var(--ink-45)' }}>{stageApps.length}</span>
-                      </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '.5rem' }}>
-                        {stageApps.map(app => {
-                          const c = app.candidates
-                          if (!c) return null
-                          return (
-                            <div key={app.id}
-                              draggable
-                              onDragStart={e => e.dataTransfer.setData('appId', app.id)}
-                              style={{ background: 'white', border: '1px solid var(--line)', borderRadius: 9, padding: '.65rem .7rem', cursor: 'grab', boxShadow: '0 1px 3px rgba(0,0,0,.06)' }}
-                            >
-                              <div style={{ fontWeight: 600, fontSize: '.8rem', color: 'var(--ink)' }}>{c.name}</div>
-                              <div style={{ fontSize: '.72rem', color: 'var(--ink-45)', marginTop: '2px' }}>{c.area || '—'}{c.experience ? ` · ${c.experience}` : ''}</div>
-                              {app.match_score !== undefined && app.match_score !== null && (
-                                <div style={{ marginTop: '.35rem', fontSize: '.7rem', background: app.match_score >= 70 ? '#E4F0F1' : 'var(--off)', color: app.match_score >= 70 ? 'var(--forest)' : 'var(--ink-45)', borderRadius: 5, padding: '1px 6px', display: 'inline-block', fontWeight: 700 }}>{app.match_score}% fit</div>
-                              )}
-                              <div style={{ marginTop: '.5rem', display: 'flex', gap: '.3rem', flexWrap: 'wrap' }}>
-                                {c.cv_url && <a href={c.cv_url} target="_blank" rel="noopener" style={{ fontSize: '.68rem', color: 'var(--forest)', textDecoration: 'underline' }}>CV</a>}
-                                {c.linkedin && <a href={c.linkedin} target="_blank" rel="noopener" style={{ fontSize: '.68rem', color: 'var(--forest)', textDecoration: 'underline' }}>LinkedIn</a>}
-                                {c.whatsapp && <a href={`https://wa.me/${c.whatsapp.replace(/\D/g,'')}`} target="_blank" rel="noopener" style={{ fontSize: '.68rem', color: '#25D366', textDecoration: 'underline' }}>WhatsApp</a>}
-                              </div>
-                              <div style={{ marginTop: '.5rem', display: 'flex', gap: '.25rem' }}>
-                                {stage.id !== 'contacted' && (
-                                  <button onClick={() => updateAppStatus(app.id, 'contacted')} style={{ flex: 1, fontSize: '.65rem', background: '#f0fdf4', color: '#15803d', border: '1px solid #bbf7d0', borderRadius: 5, padding: '3px 0', cursor: 'pointer', fontWeight: 600 }}>✓ {t('Contactar', 'Contact')}</button>
-                                )}
-                                {stage.id !== 'rejected' && (
-                                  <button onClick={() => updateAppStatus(app.id, 'rejected')} style={{ flex: 1, fontSize: '.65rem', background: '#fef2f2', color: '#b91c1c', border: '1px solid #fecaca', borderRadius: 5, padding: '3px 0', cursor: 'pointer', fontWeight: 600 }}>✕</button>
-                                )}
-                              </div>
-                            </div>
-                          )
-                        })}
-                        {stageApps.length === 0 && (
-                          <div style={{ fontSize: '.73rem', color: 'var(--ink-45)', textAlign: 'center', padding: '.75rem 0' }}>—</div>
-                        )}
-                      </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          {applications.map(app => {
+            const c = app.candidates
+            if (!c) return null
+            return (
+              <div key={app.id} className="card">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '.75rem', marginBottom: '.75rem' }}>
+                  <div style={{ width: 42, height: 42, borderRadius: '50%', background: 'linear-gradient(135deg,var(--forest),var(--forest-lt))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--head)', fontSize: '.85rem', fontWeight: 700, color: 'white', flexShrink: 0 }}>
+                    {initials(c.name)}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem', flexWrap: 'wrap' }}>
+                      <div style={{ fontFamily: 'var(--head)', fontWeight: 700, fontSize: '.88rem' }}>{c.name}</div>
+                      {app.match_score != null && (
+                        <span style={{ fontSize: '.68rem', fontWeight: 700, borderRadius: 5, padding: '2px 7px', background: app.match_score >= 70 ? '#E4F0F1' : 'var(--off)', color: app.match_score >= 70 ? 'var(--forest)' : 'var(--ink-45)' }}>
+                          {app.match_score >= 70 ? '✦ ' : ''}{app.match_score}% fit
+                        </span>
+                      )}
                     </div>
-                  )
-                })}
+                    <div style={{ fontSize: '.74rem', color: 'var(--forest)', fontWeight: 600 }}>{tv(c.area, t)}</div>
+                  </div>
+                  <select
+                    value={app.status}
+                    onChange={e => updateAppStatus(app.id, e.target.value)}
+                    style={{ fontSize: '.75rem', fontWeight: 700, padding: '4px 8px', borderRadius: '6px', border: '1.5px solid var(--line)', background: 'var(--off)', color: statusColor[app.status] || 'var(--ink)', cursor: 'pointer', outline: 'none' }}
+                  >
+                    <option value="pending">{t('Pendiente', 'Pending')}</option>
+                    <option value="reviewed">{t('Revisado', 'Reviewed')}</option>
+                    <option value="contacted">{t('Contactado', 'Contacted')}</option>
+                    <option value="rejected">{t('Descartado', 'Rejected')}</option>
+                  </select>
+                </div>
+                {[tv(c.experience, t), c.city, tv(c.modality, t)].filter(Boolean).length > 0 && (
+                  <div className="jc-tags" style={{ margin: '0 0 .65rem' }}>
+                    {[tv(c.experience, t), c.city, tv(c.modality, t)].filter(Boolean).map(tag => <span key={tag} className="jc-tag">{tag}</span>)}
+                  </div>
+                )}
+                {c.skills && c.skills.length > 0 && (
+                  <div className="jc-tags" style={{ margin: '0 0 .65rem' }}>
+                    {c.skills.slice(0, 5).map(s => <span key={s} className="jc-tag jc-tag-skill">{s}</span>)}
+                  </div>
+                )}
+                <div style={{ background: 'var(--off)', borderRadius: '8px', padding: '.65rem .9rem', fontSize: '.8rem', lineHeight: 1.9, marginBottom: '.75rem' }}>
+                  {c.email && <div><span style={{ color: 'var(--ink-45)', fontSize: '.72rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.04em' }}>Email</span><br /><a href={`mailto:${c.email}`} style={{ color: 'var(--forest)', fontWeight: 600 }}>{c.email}</a></div>}
+                  {c.whatsapp && <div style={{ marginTop: '.3rem' }}><span style={{ color: 'var(--ink-45)', fontSize: '.72rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.04em' }}>WhatsApp</span><br /><a href={`https://wa.me/${c.whatsapp.replace(/\D/g,'')}`} target="_blank" rel="noreferrer" style={{ color: 'var(--forest)', fontWeight: 600 }}>{c.whatsapp}</a></div>}
+                </div>
+                <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap' }}>
+                  {c.linkedin && <a href={c.linkedin.startsWith('http') ? c.linkedin : `https://${c.linkedin}`} target="_blank" rel="noreferrer" className="btn btn-outline btn-sm">LinkedIn →</a>}
+                  {c.cv_url && <a href={c.cv_url} target="_blank" rel="noreferrer" className="btn btn-outline btn-sm">{t('Descargar CV', 'Download CV')}</a>}
+                  <span style={{ marginLeft: 'auto', fontSize: '.72rem', color: 'var(--ink-45)', alignSelf: 'center' }}>{timeAgo(app.applied_at)}</span>
+                </div>
               </div>
-            </div>
-          )
-        })()}
+            )
+          })}
+        </div>
       </>
     )
   }
@@ -4193,10 +3904,21 @@ function MyJobsView({ userEmail, coName, onPost, t }: {
       {loading && <div className="loading-state">{t('Cargando…', 'Loading…')}</div>}
 
       {!loading && myJobs.length === 0 && (
-        <div className="empty-state">
-          <div className="empty-title">{t('Aún no publicaste vacantes', 'No listings yet')}</div>
-          <div className="empty-sub">{t('Publicá tu primera vacante para encontrar candidatos.', 'Post your first listing to find candidates.')}</div>
-          <button className="btn btn-forest" style={{ marginTop: '1rem' }} onClick={onPost}>{t('Publicar vacante →', 'Post a listing →')}</button>
+        <div style={{ textAlign: 'center', padding: '3.5rem 1rem 2rem' }}>
+          <div style={{ fontSize: '3rem', marginBottom: '1rem', lineHeight: 1 }}>📋</div>
+          <div style={{ fontFamily: 'var(--head)', fontSize: '1.25rem', fontWeight: 800, color: 'var(--ink)', letterSpacing: '-.02em', marginBottom: '.45rem' }}>
+            {t('Publicá tu primera vacante', 'Post your first listing')}
+          </div>
+          <p style={{ fontSize: '.84rem', color: 'var(--ink-45)', maxWidth: 320, margin: '0 auto 1.5rem', lineHeight: 1.6 }}>
+            {t('El algoritmo encontrará los candidatos más compatibles automáticamente.', 'The algorithm will automatically find the most compatible candidates.')}
+          </p>
+          <button className="btn btn-forest" style={{ fontSize: '.9rem', padding: '.75rem 1.6rem' }} onClick={onPost}>
+            {t('Publicar vacante →', 'Post a listing →')}
+          </button>
+          <div style={{ marginTop: '1rem', fontSize: '.72rem', color: 'var(--ink-45)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '.35rem' }}>
+            <span>💳</span>
+            {t('$300.000 COP · Sin suscripción · Pago único', '$300,000 COP · No subscription · One-time payment')}
+          </div>
         </div>
       )}
 
@@ -4215,11 +3937,7 @@ function MyJobsView({ userEmail, coName, onPost, t }: {
                   </select>
                   <select style={{ ...inp, flex: 1 }} value={editCity} onChange={e => setEditCity(e.target.value)}>
                     <option value="">{t('Ciudad', 'City')}</option>
-                    <option>Bogotá</option><option>Medellín</option><option>Cali</option>
-                    <option>Barranquilla</option><option>Cartagena</option><option>Bucaramanga</option>
-                    <option>Cúcuta</option><option>Manizales</option><option>Pereira</option>
-                    <option>Santa Marta</option><option>Ibagué</option><option>Pasto</option>
-                    <option>Montería</option><option>Villavicencio</option>
+                    <option>Cali</option><option>Bogotá</option><option>Medellín</option><option>Barranquilla</option>
                   </select>
                 </div>
                 <div style={{ display: 'flex', gap: '.5rem' }}>
@@ -4227,10 +3945,10 @@ function MyJobsView({ userEmail, coName, onPost, t }: {
                     <option value="">{t('Área', 'Area')}</option>
                     <option>{t('Tecnología / IT', 'Technology / IT')}</option>
                     <option>{t('Diseño UX/UI', 'UX/UI Design')}</option>
-                    <option>Marketing y Comunicaciones</option>
+                    <option>Marketing</option>
                     <option>{t('Ventas y Comercial', 'Sales')}</option>
-                    <option>{t('Finanzas y Contabilidad', 'Finance & Accounting')}</option>
-                    <option>{t('Recursos Humanos', 'Human Resources')}</option>
+                    <option>{t('Finanzas', 'Finance')}</option>
+                    <option>{t('Recursos Humanos', 'HR')}</option>
                     <option>{t('Operaciones', 'Operations')}</option>
                   </select>
                   <select style={{ ...inp, flex: 1 }} value={editSal} onChange={e => setEditSal(e.target.value)}>
@@ -4276,12 +3994,22 @@ function MyJobsView({ userEmail, coName, onPost, t }: {
                 <div style={{ display: 'flex', gap: '1rem', marginBottom: '.8rem', fontSize: '.74rem', color: 'var(--ink-45)' }}>
                   <span title={t('Vistas por candidatos', 'Views by candidates')}>👁 {j.views || 0} {t('vistas', 'views')}</span>
                   <span title={t('Postulaciones recibidas', 'Applications received')}>📋 {appCounts[j.id] || 0} {t('postulaciones', 'applications')}</span>
-                  {savedCounts[j.id] ? <span title={t('Candidatos que guardaron esta vacante', 'Candidates who saved this listing')}>★ {savedCounts[j.id]} {t('guardadas', 'saved')}</span> : null}
                   {(j.views || 0) > 0 && <span title={t('Tasa de conversión', 'Conversion rate')}>⚡ {Math.round(((appCounts[j.id] || 0) / (j.views || 1)) * 100)}% {t('conversión', 'conversion')}</span>}
                   {firstApplyAt[j.id] && <span title={t('Primera postulación', 'First application')}>🕐 {t('1ra en', '1st in')} {Math.round((Date.now() - new Date(j.created_at || 0).getTime()) > 0 ? (new Date(firstApplyAt[j.id]).getTime() - new Date(j.created_at || 0).getTime()) / 3600000 : 0)}h</span>}
                 </div>
                 <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap', paddingTop: '.75rem', borderTop: '1px solid var(--line)', alignItems: 'center' }}>
                   <button className="btn btn-outline btn-sm" onClick={() => startEdit(j)}>{t('Editar', 'Edit')}</button>
+                  <button className="btn btn-outline btn-sm" onClick={() => renewJob(j.id, j.closes_at)} title={t('Extender cierre +1 mes', 'Extend close date +1 month')}>📅 +1 {t('mes', 'month')}</button>
+                  <a
+                    href={`https://wa.me/?text=${encodeURIComponent(`${t('Estamos contratando', 'We\'re hiring')}: ${j.title}${j.city ? ` · ${j.city}` : ''}${j.modality ? ` · ${j.modality}` : ''} — ${t('Postulate en', 'Apply at')} https://candidato.com.co/jobs/${j.id}`)}`}
+                    target="_blank" rel="noopener noreferrer"
+                    className="btn btn-sm"
+                    style={{ background: '#25D366', border: 'none', color: 'white', borderRadius: 7, padding: '4px 11px', fontSize: '.77rem', fontWeight: 600, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                    title={t('Compartir por WhatsApp', 'Share via WhatsApp')}
+                  >
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                    {t('Compartir', 'Share')}
+                  </a>
                   {confirmDeleteId === j.id ? (
                     <>
                       <span style={{ fontSize: '.76rem', color: 'var(--coral)', fontWeight: 600 }}>{t('¿Confirmar?', 'Confirm delete?')}</span>
@@ -4342,7 +4070,8 @@ function PostJobView({ userEmail, onSuccess, t }: {
   const [desc, setDesc] = useState('')
   const [skills, setSkills] = useState<string[]>([])
   const [skillInput, setSkillInput] = useState('')
-  const [closesAt, setClosesAt] = useState('')
+  const defaultCloses = (() => { const d = new Date(); d.setMonth(d.getMonth() + 1); return d.toISOString().split('T')[0] })()
+  const [closesAt, setClosesAt] = useState(defaultCloses)
   const [saving, setSaving] = useState(false)
   const [payErr, setPayErr] = useState('')
   const [qty, setQty] = useState(1)
@@ -4351,13 +4080,13 @@ function PostJobView({ userEmail, onSuccess, t }: {
   useEffect(() => {
     const sb = createClient()
     sb.from('companies').select('job_credits').ilike('email', userEmail).maybeSingle()
-      .then(({ data }) => setJobCredits((data as { job_credits?: number } | null)?.job_credits ?? 0))
+      .then(({ data }: { data: unknown }) => setJobCredits((data as { job_credits?: number } | null)?.job_credits ?? 0))
   }, [userEmail])
 
   const PLANS = [
     { qty: 1, price: 300000, label: t('1 vacante', '1 listing'), badge: '' },
-    { qty: 2, price: 500000, label: t('2 vacantes', '2 listings'), badge: t('Ahorrás $100K', 'Save $100K') },
-    { qty: 3, price: 700000, label: t('3 vacantes', '3 listings'), badge: t('Ahorrás $200K', 'Save $200K') },
+    { qty: 2, price: 500000, label: t('2 vacantes', '2 listings'), badge: t('Ahorrás $100.000', 'Save $100K') },
+    { qty: 3, price: 700000, label: t('3 vacantes', '3 listings'), badge: t('Ahorrás $200.000', 'Save $200K') },
   ]
   const activePlan = PLANS.find(p => p.qty === qty)!
 
@@ -4441,12 +4170,7 @@ function PostJobView({ userEmail, onSuccess, t }: {
             <label>{t('Ciudad', 'City')}</label>
             <select value={city} onChange={e => setCity(e.target.value)}>
               <option value="" disabled>{t('Ciudad', 'City')}</option>
-              <option>Bogotá</option><option>Medellín</option><option>Cali</option>
-              <option>Barranquilla</option><option>Cartagena</option><option>Bucaramanga</option>
-              <option>Cúcuta</option><option>Manizales</option><option>Pereira</option>
-              <option>Santa Marta</option><option>Ibagué</option><option>Pasto</option>
-              <option>Montería</option><option>Villavicencio</option>
-              <option>{t('Otra', 'Other')}</option>
+              <option>Cali</option><option>Bogotá</option><option>Medellín</option><option>Barranquilla</option><option>{t('Otra', 'Other')}</option>
             </select>
           </div>
           <div className="fg">
@@ -4455,10 +4179,10 @@ function PostJobView({ userEmail, onSuccess, t }: {
               <option value="" disabled>{t('Área', 'Area')}</option>
               <option>{t('Tecnología / IT', 'Technology / IT')}</option>
               <option>{t('Diseño UX/UI', 'UX/UI Design')}</option>
-              <option>Marketing y Comunicaciones</option>
+              <option>Marketing</option>
               <option>{t('Ventas y Comercial', 'Sales')}</option>
-              <option>{t('Finanzas y Contabilidad', 'Finance & Accounting')}</option>
-              <option>{t('Recursos Humanos', 'Human Resources')}</option>
+              <option>{t('Finanzas', 'Finance')}</option>
+              <option>{t('Recursos Humanos', 'HR')}</option>
               <option>{t('Operaciones', 'Operations')}</option>
               <option>{t('Otra', 'Other')}</option>
             </select>
@@ -4481,7 +4205,7 @@ function PostJobView({ userEmail, onSuccess, t }: {
             </select>
           </div>
           <div className="fg">
-            <label>{t('Fecha de cierre', 'Closing date')} <span style={{color:'var(--ink-45)',fontWeight:400,textTransform:'none',letterSpacing:0}}>{t('(opcional)', '(optional)')}</span></label>
+            <label>{t('Disponible hasta', 'Available until')} <span style={{color:'var(--ink-45)',fontWeight:400,textTransform:'none',letterSpacing:0}}>{t('(1 mes por defecto)', '(1 month default)')}</span></label>
             <input type="date" value={closesAt} onChange={e => setClosesAt(e.target.value)} min={new Date().toISOString().split('T')[0]} />
           </div>
           <div className="fg fg-full">
@@ -4517,31 +4241,38 @@ function PostJobView({ userEmail, onSuccess, t }: {
             ) : (
               /* Bundle picker */
               <div style={{ marginBottom: '.9rem' }}>
-                <div style={{ fontSize: '.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--ink-45)', marginBottom: '.55rem' }}>
+                <div style={{ fontSize: '.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--ink-45)', marginBottom: '.7rem' }}>
                   {t('¿Cuántas vacantes necesitás?', 'How many listings do you need?')}
                 </div>
-                <div style={{ display: 'flex', gap: '.6rem' }}>
-                  {PLANS.map(p => (
-                    <button key={p.qty} type="button" onClick={() => setQty(p.qty)} style={{
-                      flex: 1, border: `2px solid ${qty === p.qty ? 'var(--forest)' : 'var(--line)'}`,
-                      borderRadius: 12, padding: '.7rem .5rem', background: qty === p.qty ? 'var(--pale)' : 'white',
-                      cursor: 'pointer', textAlign: 'center', transition: 'all .15s',
-                    }}>
-                      <div style={{ fontWeight: 800, fontSize: '1rem', color: 'var(--ink)', lineHeight: 1 }}>
-                        ${(p.price / 1000).toFixed(0)}K
-                      </div>
-                      <div style={{ fontSize: '.72rem', color: 'var(--ink-45)', marginTop: 3 }}>{p.label}</div>
-                      {p.badge && (
-                        <div style={{ marginTop: 4, fontSize: '.63rem', fontWeight: 700, color: 'var(--forest)', background: 'rgba(27,59,62,.1)', borderRadius: 4, padding: '2px 5px', display: 'inline-block' }}>
-                          {p.badge}
+                <div style={{ display: 'flex', gap: '.7rem' }}>
+                  {PLANS.map(p => {
+                    const selected = qty === p.qty
+                    return (
+                      <button key={p.qty} type="button" onClick={() => setQty(p.qty)} style={{
+                        flex: 1, border: `2px solid ${selected ? 'var(--forest)' : 'var(--line)'}`,
+                        borderRadius: 14, padding: '1rem .6rem .85rem',
+                        background: selected ? 'var(--pale)' : '#fafafa',
+                        cursor: 'pointer', textAlign: 'center', transition: 'all .15s',
+                        boxShadow: selected ? '0 0 0 3px rgba(27,59,62,.1)' : 'none',
+                        position: 'relative',
+                      }}>
+                        {p.badge && (
+                          <div style={{ position: 'absolute', top: -10, left: '50%', transform: 'translateX(-50%)', whiteSpace: 'nowrap', fontSize: '.6rem', fontWeight: 700, color: 'var(--white)', background: 'var(--forest)', borderRadius: 20, padding: '2px 8px', letterSpacing: '.04em' }}>
+                            {p.badge}
+                          </div>
+                        )}
+                        <div style={{ fontWeight: 900, fontSize: '1.15rem', color: selected ? 'var(--forest)' : 'var(--ink)', lineHeight: 1, letterSpacing: '-.02em' }}>
+                          ${p.price.toLocaleString('es-CO')}
                         </div>
-                      )}
-                    </button>
-                  ))}
+                        <div style={{ fontSize: '.65rem', color: 'var(--ink-45)', marginTop: 2, fontWeight: 500 }}>COP</div>
+                        <div style={{ fontSize: '.75rem', fontWeight: 600, color: selected ? 'var(--forest)' : 'var(--ink-70)', marginTop: 5 }}>{p.label}</div>
+                      </button>
+                    )
+                  })}
                 </div>
-                <div style={{ marginTop: '.6rem', fontSize: '.74rem', color: 'var(--ink-45)', display: 'flex', alignItems: 'center', gap: '.4rem' }}>
+                <div style={{ marginTop: '.65rem', fontSize: '.73rem', color: 'var(--ink-45)', display: 'flex', alignItems: 'center', gap: '.45rem' }}>
                   <span>💳</span>
-                  {t('PSE, Nequi, tarjeta · Activa en segundos · Pago único', 'PSE, Nequi, card · Active in seconds · One-time')}
+                  {t('PSE, Nequi, tarjeta · Se activa al instante · Pago único', 'PSE, Nequi, card · Active instantly · One-time')}
                 </div>
               </div>
             )}
@@ -4551,7 +4282,7 @@ function PostJobView({ userEmail, onSuccess, t }: {
                 ? t('Publicando…', 'Publishing…')
                 : (jobCredits ?? 0) > 0
                   ? t('Publicar vacante →', 'Publish listing →')
-                  : t(`Continuar al pago $${(activePlan.price / 1000).toFixed(0)}K →`, `Continue to payment $${(activePlan.price / 1000).toFixed(0)}K →`)}
+                  : t(`Continuar al pago · $${activePlan.price.toLocaleString('es-CO')} COP →`, `Continue to payment · $${activePlan.price.toLocaleString('es-CO')} COP →`)}
             </button>
           </div>
         </div>

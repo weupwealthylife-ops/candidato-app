@@ -1319,13 +1319,15 @@ footer{
 
 /* Welcome screen */
 .ob-welcome-avatar{
-  width:68px;height:68px;border-radius:50%;
-  background:linear-gradient(135deg,var(--forest),var(--forest-lt));
+  width:80px;height:80px;border-radius:50%;
+  background:linear-gradient(135deg,var(--forest) 0%,#2e8b6e 100%);
   display:flex;align-items:center;justify-content:center;
-  font-family:var(--head);font-size:1.7rem;font-weight:700;color:var(--white);
+  font-family:var(--head);font-size:2rem;font-weight:800;color:var(--white);
+  box-shadow:0 4px 20px rgba(27,59,62,.25);
+  margin-bottom:.1rem;
 }
 .ob-welcome-label{
-  margin-top:.8rem;font-size:.68rem;font-weight:700;letter-spacing:.1em;
+  margin-top:.9rem;font-size:.65rem;font-weight:700;letter-spacing:.12em;
   text-transform:uppercase;color:var(--coral);
 }
 .ob-notme-btn{
@@ -1527,6 +1529,15 @@ footer{
   /* Company section for companies */
   .for-co-grid{grid-template-columns:1fr!important}
   .for-co-card{padding:1.8rem 1.4rem!important}
+
+  /* Pricing grid on mobile — stack cards */
+  .pgrid{grid-template-columns:1fr;max-width:380px}
+  .pc.feat{transform:none}
+  .pc{animation:none}
+
+  /* Bundle picker — smaller text on small screens */
+  .bundle-plan-price{font-size:.95rem!important}
+  .bundle-plan-label{font-size:.65rem!important}
 }
 
 @media(max-width:380px){
@@ -1535,6 +1546,8 @@ footer{
   .sec-h2{font-size:1.7rem}
   .stats-row{grid-template-columns:1fr}
   .apply-modal{padding:1.2rem 1rem 1.8rem}
+  /* Bundle picker — 3 cards very tight, reduce padding */
+  .fg .bundle-plans{gap:.4rem!important}
 }
 
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}

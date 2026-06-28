@@ -3,15 +3,16 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 
 interface Props {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const sb = createClient()
+  const { id } = await params
+  const sb = await createClient()
   const { data } = await sb
     .from('jobs')
     .select('title, area, city, modality, companies(company_name)')
-    .eq('id', params.id)
+    .eq('id', id)
     .maybeSingle()
   if (!data) return { title: 'Vacante — Candidato®' }
   const co = (data.companies as { company_name?: string })?.company_name || ''
@@ -23,11 +24,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function PublicJobPage({ params }: Props) {
-  const sb = createClient()
+  const { id } = await params
+  const sb = await createClient()
   const { data: job } = await sb
     .from('jobs')
     .select('*, companies(company_name)')
-    .eq('id', params.id)
+    .eq('id', id)
     .eq('active', true)
     .maybeSingle()
 
