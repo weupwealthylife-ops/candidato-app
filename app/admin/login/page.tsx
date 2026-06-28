@@ -33,7 +33,7 @@ export default function AdminLogin() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f4f7f7' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '1rem', background: '#f4f7f7' }}>
       <div style={{ background: 'white', border: '1px solid #e8eded', borderRadius: 14, padding: '2rem 2.2rem', width: 320 }}>
         <div style={{ fontFamily: 'var(--head)', fontSize: '1.1rem', fontWeight: 700, color: '#1B3B3E', marginBottom: '.3rem' }}>Candidato® Admin</div>
         <div style={{ fontSize: '.8rem', color: '#9aacac', marginBottom: '1.4rem' }}>Sólo acceso autorizado</div>
@@ -64,6 +64,7 @@ export default function AdminLogin() {
           {loading ? 'Verificando…' : 'Ingresar →'}
         </button>
       </div>
+      <a href="/" style={{ fontSize: '.75rem', color: '#9aacac', textDecoration: 'none' }}>← Volver al sitio</a>
     </div>
   )
 }
