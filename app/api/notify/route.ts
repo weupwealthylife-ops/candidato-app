@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 // Supported notification types
-type NotifyType = 'application_submitted' | 'company_contacted' | 'match_found' | 'application_status_changed' | 'match_confirmed' | 'payment_confirmed' | 'expiry_reminder'
+type NotifyType = 'application_submitted' | 'company_contacted' | 'match_found' | 'application_status_changed' | 'match_confirmed' | 'payment_confirmed' | 'expiry_reminder' | 'welcome_candidate' | 'welcome_company' | 'profile_incomplete'
 
 interface NotifyPayload {
   type: NotifyType
@@ -150,6 +150,66 @@ function buildHtml(type: NotifyType, name: string, extra: Record<string, string>
       ${waBtn}
       <a href="https://candidato.com.co/app" style="display:inline-block;background:#1B3B3E;color:white;border-radius:8px;padding:10px 22px;font-size:.85rem;font-weight:600;text-decoration:none">Ver todos mis matches →</a>
       <p style="color:#9aacac;font-size:.73rem;margin-top:14px">Coordina la entrevista directamente — toda la información de contacto está arriba.</p>
+    `
+    return { subject, html: base.replace('CONTENT', content) }
+  }
+
+  if (type === 'welcome_candidate') {
+    const subject = `¡Bienvenido/a a Candidato®, ${name}! 🎉`
+    const content = `
+      <h2 style="color:#0E1E20;font-size:1.15rem;margin:0 0 12px">¡Hola ${name}, ya sos parte de Candidato®! 🎉</h2>
+      <p style="color:#4a6a6a;font-size:.88rem;line-height:1.65;margin:0 0 16px">
+        Tu perfil fue creado exitosamente. El algoritmo ya está analizando las vacantes disponibles para encontrar tu match ideal.
+      </p>
+      <div style="background:#E4F0F1;border-radius:8px;padding:14px 18px;margin-bottom:16px">
+        <p style="color:#1B3B3E;font-size:.83rem;font-weight:600;margin:0 0 8px">3 pasos para conseguir tu próximo trabajo:</p>
+        <ol style="color:#264D51;font-size:.82rem;line-height:1.8;margin:0;padding-left:18px">
+          <li><strong>Completá tu perfil</strong> — cuanto más completo, mejores matches.</li>
+          <li><strong>Revisá tus sugerencias</strong> — el algoritmo te notifica cuando hay un match real.</li>
+          <li><strong>Postulate en 1 clic</strong> — sin CV genérico, sin carta de presentación.</li>
+        </ol>
+      </div>
+      <a href="https://candidato.com.co/app" style="display:inline-block;background:#EA6440;color:white;border-radius:8px;padding:12px 26px;font-size:.88rem;font-weight:700;text-decoration:none">Ir a mi perfil →</a>
+      <p style="color:#9aacac;font-size:.75rem;margin-top:16px">Solo te contactamos cuando hay matches reales. Sin spam.</p>
+    `
+    return { subject, html: base.replace('CONTENT', content) }
+  }
+
+  if (type === 'welcome_company') {
+    const subject = `Bienvenido/a a Candidato® — Tu primera vacante en minutos`
+    const content = `
+      <h2 style="color:#0E1E20;font-size:1.15rem;margin:0 0 12px">¡Hola ${name}, gracias por unirte a Candidato®!</h2>
+      <p style="color:#4a6a6a;font-size:.88rem;line-height:1.65;margin:0 0 16px">
+        Candidato® conecta empresas con el top 1% del talento colombiano mediante matching inteligente. Sin CV genéricos ni pérdida de tiempo.
+      </p>
+      <div style="background:#E4F0F1;border-radius:8px;padding:14px 18px;margin-bottom:16px">
+        <p style="color:#1B3B3E;font-size:.83rem;font-weight:600;margin:0 0 8px">Publicar tu primera vacante es simple:</p>
+        <ol style="color:#264D51;font-size:.82rem;line-height:1.8;margin:0;padding-left:18px">
+          <li>Describí el perfil que buscás (2 minutos).</li>
+          <li>El algoritmo analiza +2.400 candidatos automáticamente.</li>
+          <li>Recibís solo los perfiles que realmente encajan.</li>
+        </ol>
+      </div>
+      <a href="https://candidato.com.co/app" style="display:inline-block;background:#1B3B3E;color:white;border-radius:8px;padding:12px 26px;font-size:.88rem;font-weight:700;text-decoration:none">Publicar mi primera vacante →</a>
+    `
+    return { subject, html: base.replace('CONTENT', content) }
+  }
+
+  if (type === 'profile_incomplete') {
+    const pct = extra.profilePct || '50'
+    const missing = extra.missingFields || 'algunos campos'
+    const subject = `${name}, tu perfil está al ${pct}% — completalo para mejores matches`
+    const content = `
+      <h2 style="color:#0E1E20;font-size:1.15rem;margin:0 0 12px">Tu perfil necesita un poco más, ${name} 💪</h2>
+      <p style="color:#4a6a6a;font-size:.88rem;line-height:1.65;margin:0 0 16px">
+        Tu perfil en Candidato® está al <strong style="color:#EA6440">${pct}%</strong>. Los perfiles completos reciben <strong>3× más matches</strong> que los incompletos.
+      </p>
+      <div style="background:#FFF8E1;border:1px solid #FDE68A;border-radius:8px;padding:14px 18px;margin-bottom:16px">
+        <p style="color:#B45309;font-size:.83rem;font-weight:600;margin:0 0 6px">Falta completar:</p>
+        <p style="color:#92400e;font-size:.82rem;line-height:1.6;margin:0">${missing}</p>
+      </div>
+      <a href="https://candidato.com.co/app" style="display:inline-block;background:#EA6440;color:white;border-radius:8px;padding:12px 26px;font-size:.88rem;font-weight:700;text-decoration:none">Completar mi perfil ahora →</a>
+      <p style="color:#9aacac;font-size:.75rem;margin-top:16px">Solo te enviamos este recordatorio una vez. Sin spam.</p>
     `
     return { subject, html: base.replace('CONTENT', content) }
   }

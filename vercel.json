@@ -8,6 +8,10 @@
     {
       "path": "/api/cron/job-expiry",
       "schedule": "0 9 * * *"
+    },
+    {
+      "path": "/api/cron/profile-followup",
+      "schedule": "0 10 * * *"
     }
   ]
 }

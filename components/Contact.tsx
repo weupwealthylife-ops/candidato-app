@@ -18,7 +18,7 @@ export default function Contact() {
         <p className="sec-sub wh">{t('Agendemos una asesoría personalizada.', "Let's schedule a personalised consultation.")}</p>
         <div className="contact-row">
           <div className="cc-btn-wrap">
-            <a href="https://wa.me/573205046723" className="cc-btn" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp">
+            <a href="https://wa.me/573205046723?text=Hola%2C%20vengo%20de%20candidato.com.co%20y%20quisiera%20m%C3%A1s%20informaci%C3%B3n" className="cc-btn" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp">
               <svg viewBox="0 0 48 48" fill="none">
                 <defs>
                   <radialGradient id="wg" cx="38%" cy="32%" r="68%">

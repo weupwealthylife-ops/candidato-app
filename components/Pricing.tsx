@@ -92,7 +92,7 @@ export default function Pricing() {
           'More than 3 listings or need an enterprise plan? ',
         )}
         <a
-          href="https://wa.me/573205046723"
+          href="https://wa.me/573205046723?text=Hola%2C%20vengo%20de%20candidato.com.co%20y%20me%20interesa%20un%20plan%20enterprise"
           style={{ color: 'var(--forest)', fontWeight: 600, textDecoration: 'underline', textUnderlineOffset: 3 }}
           target="_blank"
           rel="noopener noreferrer"

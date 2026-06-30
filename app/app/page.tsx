@@ -467,6 +467,8 @@ export default function AppPage() {
     if (dbOk) {
       setCurrentUser({ name, email, type: 'candidate' })
       setPhase('verify')
+      // Welcome email — best effort
+      fetch('/api/notify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: 'welcome_candidate', to: email, name: name.split(' ')[0] }) }).catch(() => {})
     }
   }
 
@@ -559,8 +561,12 @@ export default function AppPage() {
     setSubmitting(false)
 
     if (dbOk) {
-      setCurrentUser({ name: `${cofn} ${coln}`.trim(), email: coem.trim().toLowerCase(), type: 'company', companyName: coname.trim() })
+      const coFullName = `${cofn} ${coln}`.trim()
+      const coEmail = coem.trim().toLowerCase()
+      setCurrentUser({ name: coFullName, email: coEmail, type: 'company', companyName: coname.trim() })
       setPhase('verify')
+      // Welcome email — best effort
+      fetch('/api/notify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: 'welcome_company', to: coEmail, name: cofn.trim() || coFullName.split(' ')[0] }) }).catch(() => {})
     }
   }
 
@@ -3891,6 +3897,10 @@ function MyJobsView({ userEmail, coName, onPost, t }: {
   }
 
   // ── JOB LIST ──
+  const totalViews = myJobs.reduce((s, j) => s + (Number(j.views) || 0), 0)
+  const totalApps = Object.values(appCounts).reduce((s, n) => s + n, 0)
+  const activeJobs = myJobs.filter(j => j.active).length
+
   return (
     <>
       <div className="page-head">
@@ -3900,6 +3910,31 @@ function MyJobsView({ userEmail, coName, onPost, t }: {
           <button className="btn btn-forest btn-sm" onClick={onPost}>{t('+ Nueva vacante', '+ New listing')}</button>
         </div>
       </div>
+
+      {myJobs.length > 0 && (
+        <div className="stats-row" style={{ marginBottom: '1.4rem' }}>
+          <div className="stat-card">
+            <div className="stat-tag">{t('Activas', 'Active')}</div>
+            <div className="stat-num" style={{ color: 'var(--forest)' }}>{activeJobs}</div>
+            <div className="stat-label">{t('de', 'of')} {myJobs.length} {t('totales', 'total')}</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-tag">{t('Vistas totales', 'Total views')}</div>
+            <div className="stat-num">{totalViews.toLocaleString('es-CO')}</div>
+            <div className="stat-label">{t('por candidatos', 'by candidates')}</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-tag">{t('Postulaciones', 'Applications')}</div>
+            <div className="stat-num coral">{totalApps}</div>
+            <div className="stat-label">{t('en total', 'total received')}</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-tag">{t('Conversión', 'Conversion')}</div>
+            <div className="stat-num" style={{ color: '#e6a817' }}>{totalViews > 0 ? Math.round((totalApps / totalViews) * 100) : 0}%</div>
+            <div className="stat-label">{t('vista → postulación', 'view → apply')}</div>
+          </div>
+        </div>
+      )}
 
       {loading && <div className="loading-state">{t('Cargando…', 'Loading…')}</div>}
 

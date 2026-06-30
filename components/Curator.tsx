@@ -74,7 +74,7 @@ export default function Curator() {
                 )}
               </div>
               <a
-                href="https://wa.me/573205046723"
+                href="https://wa.me/573205046723?text=Hola%2C%20vengo%20de%20candidato.com.co%20y%20quiero%20publicar%20una%20vacante"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="btn btn-forest btn-lg"
