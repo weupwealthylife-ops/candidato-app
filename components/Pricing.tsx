@@ -185,57 +185,102 @@ export default function Pricing() {
         </div>
       </div>
 
-      {/* Contextual description */}
-      {tab === 'preseleccion' && (
-        <div style={{ maxWidth: 720, margin: '0 auto 2rem', background: 'rgba(27,59,62,.04)', border: '1.5px solid rgba(27,59,62,.12)', borderRadius: 14, padding: '1.2rem 1.6rem', display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
-          <span style={{ fontSize: '1.5rem', flexShrink: 0 }}>🔍</span>
-          <div>
-            <div style={{ fontFamily: 'var(--head)', fontWeight: 700, fontSize: '.95rem', color: 'var(--ink)', marginBottom: '.35rem' }}>
-              {t('Nosotros validamos, vos decidís.', 'We validate, you decide.')}
+      {/* Contextual info card — consistent structure for both tabs */}
+      <div style={{ maxWidth: 900, margin: '0 auto 2rem' }}>
+        {tab === 'matching' ? (
+          /* Free tier card */
+          <div style={{
+            borderRadius: 18, padding: '1.6rem 2rem',
+            background: 'linear-gradient(135deg, rgba(27,59,62,.04) 0%, rgba(27,59,62,.08) 100%)',
+            border: '1.5px solid rgba(27,59,62,.18)',
+            display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '1.5rem', justifyContent: 'space-between',
+          }}>
+            <div style={{ flex: 1, minWidth: 280 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '.55rem', marginBottom: '.55rem' }}>
+                <span style={{ fontSize: '.63rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.12em', color: 'white', background: 'var(--forest)', borderRadius: 20, padding: '3px 10px' }}>
+                  {t('Gratis', 'Free')}
+                </span>
+                <span style={{ fontFamily: 'var(--head)', fontWeight: 800, fontSize: '1.15rem', color: 'var(--forest)', letterSpacing: '-.02em' }}>
+                  {t('Vacante gratuita', 'Free listing')}
+                </span>
+              </div>
+              <p style={{ fontSize: '.84rem', color: 'var(--ink-70)', margin: '0 0 .75rem', lineHeight: 1.6, maxWidth: 500 }}>
+                {t(
+                  'Publicá tu vacante en el feed público sin costo. Los candidatos pueden verla y postularse directamente.',
+                  'Post your listing in the public feed at no cost. Candidates can view and apply directly.',
+                )}
+              </p>
+              <div style={{ display: 'flex', gap: '1.1rem', flexWrap: 'wrap' }}>
+                {[
+                  t('✓ Feed público', '✓ Public feed'),
+                  t('✓ Postulaciones directas', '✓ Direct applications'),
+                  t('✓ Sin tarjeta', '✓ No card needed'),
+                  t('✓ Sin límite de tiempo', '✓ No time limit'),
+                ].map(f => (
+                  <span key={f} style={{ fontSize: '.77rem', color: 'var(--forest)', fontWeight: 700 }}>{f}</span>
+                ))}
+              </div>
             </div>
-            <p style={{ fontSize: '.82rem', color: 'var(--ink-70)', margin: 0, lineHeight: 1.6 }}>
-              {t(
-                'Nuestro equipo revisa y valida a cada candidato: perfil, experiencia laboral, conocimientos del área y entorno. Te entregamos los top 5 más compatibles con tu vacante, listos para entrevistar. Sin perder tiempo revisando cientos de CVs.',
-                'Our team reviews and validates each candidate: profile, work experience, area knowledge, and background. We deliver the top 5 most compatible candidates for your role, ready to interview. No time lost reviewing hundreds of CVs.',
-              )}
-            </p>
+            <a href="/app" style={{
+              whiteSpace: 'nowrap', fontWeight: 700, fontSize: '.84rem',
+              background: 'var(--forest)', color: 'white',
+              borderRadius: 10, padding: '11px 22px', textDecoration: 'none',
+              boxShadow: '0 2px 8px rgba(27,59,62,.2)',
+              transition: 'opacity .15s',
+            }}>
+              {t('Publicar vacante gratis →', 'Post free listing →')}
+            </a>
           </div>
-        </div>
-      )}
-
-      {/* Free tier banner — only on matching tab */}
-      {tab === 'matching' && (
-        <div style={{ maxWidth: 900, margin: '0 auto 2rem', border: '2px dashed var(--forest)', borderRadius: 16, padding: '1.6rem 2rem', background: 'rgba(27,59,62,.03)', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '1.5rem', justifyContent: 'space-between' }}>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '.6rem', marginBottom: '.4rem' }}>
-              <span style={{ fontSize: '.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: 'var(--forest)', background: 'rgba(27,59,62,.08)', borderRadius: 20, padding: '2px 10px' }}>
-                {t('Gratis', 'Free')}
-              </span>
-              <span style={{ fontFamily: 'var(--head)', fontWeight: 800, fontSize: '1.1rem', color: 'var(--ink)' }}>
-                {t('Vacante gratuita', 'Free listing')}
-              </span>
+        ) : (
+          /* Preselección info card */
+          <div style={{
+            borderRadius: 18, padding: '1.6rem 2rem',
+            background: 'linear-gradient(135deg, rgba(90,62,138,.04) 0%, rgba(90,62,138,.09) 100%)',
+            border: '1.5px solid rgba(90,62,138,.2)',
+            display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '1.5rem', justifyContent: 'space-between',
+          }}>
+            <div style={{ flex: 1, minWidth: 280 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '.55rem', marginBottom: '.55rem' }}>
+                <span style={{ fontSize: '.63rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.12em', color: 'white', background: '#5a3e8a', borderRadius: 20, padding: '3px 10px' }}>
+                  {t('Servicio premium', 'Premium')}
+                </span>
+                <span style={{ fontFamily: 'var(--head)', fontWeight: 800, fontSize: '1.15rem', color: '#5a3e8a', letterSpacing: '-.02em' }}>
+                  {t('Nosotros validamos, vos decidís.', 'We validate, you decide.')}
+                </span>
+              </div>
+              <p style={{ fontSize: '.84rem', color: 'var(--ink-70)', margin: '0 0 .75rem', lineHeight: 1.6, maxWidth: 500 }}>
+                {t(
+                  'Nuestro equipo valida candidatos: perfil, experiencia, conocimientos y entorno. Te entregamos los top 5 listos para entrevistar. Sin revisar cientos de CVs.',
+                  'Our team validates candidates: profile, experience, knowledge, and background. We deliver the top 5 ready to interview. No CV overload.',
+                )}
+              </p>
+              <div style={{ display: 'flex', gap: '1.1rem', flexWrap: 'wrap' }}>
+                {[
+                  t('✓ Validación completa', '✓ Full validation'),
+                  t('✓ Top 5 candidatos', '✓ Top 5 candidates'),
+                  t('✓ Entrega en 48h', '✓ 48h delivery'),
+                  t('✓ Reemplazo sin costo', '✓ Free replacement'),
+                ].map(f => (
+                  <span key={f} style={{ fontSize: '.77rem', color: '#5a3e8a', fontWeight: 700 }}>{f}</span>
+                ))}
+              </div>
             </div>
-            <p style={{ fontSize: '.84rem', color: 'var(--ink-70)', margin: 0, lineHeight: 1.55, maxWidth: 480 }}>
-              {t(
-                'Publicá tu vacante en el feed público sin costo. Los candidatos pueden verla y postularse. Sin matching automático con IA.',
-                'Post your listing in the public feed at no cost. Candidates can view and apply directly. No automatic AI matching.',
-              )}
-            </p>
-            <div style={{ display: 'flex', gap: '1.2rem', flexWrap: 'wrap', marginTop: '.7rem' }}>
-              {[
-                t('✓ Aparece en el feed público', '✓ Appears in the public feed'),
-                t('✓ Candidatos pueden postularse', '✓ Candidates can apply'),
-                t('✓ Sin tarjeta de crédito', '✓ No credit card'),
-              ].map(f => (
-                <span key={f} style={{ fontSize: '.78rem', color: 'var(--forest)', fontWeight: 600 }}>{f}</span>
-              ))}
-            </div>
+            <a
+              href="https://wa.me/573205046723?text=Hola%2C%20me%20interesa%20el%20servicio%20de%20Preselección%20y%20Validación%20de%20candidato.com.co"
+              target="_blank" rel="noopener noreferrer"
+              style={{
+                whiteSpace: 'nowrap', fontWeight: 700, fontSize: '.84rem',
+                background: '#5a3e8a', color: 'white',
+                borderRadius: 10, padding: '11px 22px', textDecoration: 'none',
+                boxShadow: '0 2px 8px rgba(90,62,138,.25)',
+                transition: 'opacity .15s',
+              }}
+            >
+              {t('Consultar servicio →', 'Inquire about service →')}
+            </a>
           </div>
-          <a href="/app" className="btn btn-outline" style={{ whiteSpace: 'nowrap', fontWeight: 700, borderColor: 'var(--forest)', color: 'var(--forest)' }}>
-            {t('Publicar vacante gratis →', 'Post free listing →')}
-          </a>
-        </div>
-      )}
+        )}
+      </div>
 
       <div className="pgrid">
         {plans.map(plan => (

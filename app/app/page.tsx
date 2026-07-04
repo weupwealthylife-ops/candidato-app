@@ -4179,11 +4179,21 @@ function PostJobView({ userEmail, onSuccess, t }: {
   const [payErr, setPayErr] = useState('')
   const [qty, setQty] = useState(1)
   const [jobCredits, setJobCredits] = useState<number | null>(null)
+  const [existingJobCount, setExistingJobCount] = useState<number | null>(null)
 
   useEffect(() => {
     const sb = createClient()
-    sb.from('companies').select('job_credits').ilike('email', userEmail).maybeSingle()
-      .then(({ data }: { data: unknown }) => setJobCredits((data as { job_credits?: number } | null)?.job_credits ?? 0))
+    sb.from('companies').select('id, job_credits').ilike('email', userEmail).maybeSingle()
+      .then(async ({ data }: { data: unknown }) => {
+        const co = data as { id?: string; job_credits?: number } | null
+        setJobCredits(co?.job_credits ?? 0)
+        if (co?.id) {
+          const { count } = await sb.from('jobs').select('id', { count: 'exact', head: true }).eq('company_id', co.id)
+          setExistingJobCount(count ?? 0)
+        } else {
+          setExistingJobCount(0)
+        }
+      })
   }, [userEmail])
 
   const PLANS = [
@@ -4275,6 +4285,21 @@ function PostJobView({ userEmail, onSuccess, t }: {
         <div className="page-title">{t('Publicar vacante', 'Post a listing')}</div>
         <div className="page-sub">{t('Elegí cómo querés publicar tu vacante.', 'Choose how you want to post your listing.')}</div>
       </div>
+
+      {/* First-job welcome banner */}
+      {existingJobCount === 0 && (
+        <div style={{ maxWidth: 800, marginBottom: '1rem', background: 'linear-gradient(135deg,rgba(27,59,62,.06),rgba(27,59,62,.1))', border: '1.5px solid rgba(27,59,62,.2)', borderRadius: 14, padding: '1rem 1.2rem', display: 'flex', alignItems: 'center', gap: '.75rem' }}>
+          <span style={{ fontSize: '1.4rem' }}>🎉</span>
+          <div>
+            <div style={{ fontWeight: 700, fontSize: '.88rem', color: 'var(--forest)', marginBottom: '.15rem' }}>
+              {t('Tu primera vacante es gratis', 'Your first listing is free')}
+            </div>
+            <div style={{ fontSize: '.78rem', color: 'var(--ink-70)' }}>
+              {t('Publicá tu primera vacante sin costo. Aparece en el feed público.', 'Post your first listing at no cost. It appears in the public feed.')}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Mode toggle */}
       <div style={{ display: 'flex', gap: '.6rem', marginBottom: '1.2rem', maxWidth: 800 }}>
