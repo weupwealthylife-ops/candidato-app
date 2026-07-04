@@ -48,13 +48,45 @@ export default function Pricing() {
     <section id="pricing">
       <div className="pricing-head">
         <span className="sec-eye">{t('Para empresas', 'For companies')}</span>
-        <h2 className="sec-h2">{t('Pago único. Sin suscripción.', 'One-time payment. No subscription.')}</h2>
+        <h2 className="sec-h2">{t('Empezá gratis. Escalá cuando estés listo.', 'Start free. Scale when you\'re ready.')}</h2>
         <p className="sec-sub" style={{ margin: '.5rem auto 0' }}>
           {t(
-            'Publicá una o varias vacantes y el algoritmo identificará los candidatos más compatibles automáticamente.',
-            'Post one or more listings and our algorithm automatically identifies the most compatible candidates.',
+            'Publicá una señal gratuita o activá el matching automático con IA para encontrar los candidatos más compatibles.',
+            'Post a free signal or activate AI automatic matching to find the most compatible candidates.',
           )}
         </p>
+      </div>
+
+      {/* Free tier banner */}
+      <div style={{ maxWidth: 900, margin: '0 auto 2rem', border: '2px dashed var(--forest)', borderRadius: 16, padding: '1.6rem 2rem', background: 'rgba(27,59,62,.03)', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '1.5rem', justifyContent: 'space-between' }}>
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '.6rem', marginBottom: '.4rem' }}>
+            <span style={{ fontSize: '.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: 'var(--forest)', background: 'rgba(27,59,62,.08)', borderRadius: 20, padding: '2px 10px' }}>
+              {t('Gratis', 'Free')}
+            </span>
+            <span style={{ fontFamily: 'var(--head)', fontWeight: 800, fontSize: '1.1rem', color: 'var(--ink)' }}>
+              {t('Señal gratuita', 'Free signal')}
+            </span>
+          </div>
+          <p style={{ fontSize: '.84rem', color: 'var(--ink-70)', margin: 0, lineHeight: 1.55, maxWidth: 480 }}>
+            {t(
+              'Publicá tu vacante en el feed público sin costo. Los candidatos pueden verla y postularse. Sin matching automático por IA.',
+              'Post your listing in the public feed at no cost. Candidates can view and apply. No automatic AI matching.',
+            )}
+          </p>
+          <div style={{ display: 'flex', gap: '1.2rem', flexWrap: 'wrap', marginTop: '.7rem' }}>
+            {[
+              t('✓ Aparece en el feed público', '✓ Appears in the public feed'),
+              t('✓ Candidatos pueden postularse', '✓ Candidates can apply'),
+              t('✓ Sin tarjeta de crédito', '✓ No credit card'),
+            ].map(f => (
+              <span key={f} style={{ fontSize: '.78rem', color: 'var(--forest)', fontWeight: 600 }}>{f}</span>
+            ))}
+          </div>
+        </div>
+        <a href="/app" className="btn btn-outline" style={{ whiteSpace: 'nowrap', fontWeight: 700, borderColor: 'var(--forest)', color: 'var(--forest)' }}>
+          {t('Publicar señal gratis →', 'Post free signal →')}
+        </a>
       </div>
 
       <div className="pgrid">

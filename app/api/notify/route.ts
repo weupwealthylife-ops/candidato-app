@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 // Supported notification types
-type NotifyType = 'application_submitted' | 'company_contacted' | 'match_found' | 'application_status_changed' | 'match_confirmed' | 'payment_confirmed' | 'expiry_reminder' | 'welcome_candidate' | 'welcome_company' | 'profile_incomplete'
+type NotifyType = 'application_submitted' | 'company_contacted' | 'match_found' | 'application_status_changed' | 'match_confirmed' | 'payment_confirmed' | 'expiry_reminder' | 'welcome_candidate' | 'welcome_company' | 'profile_incomplete' | 'free_job_upsell'
 
 interface NotifyPayload {
   type: NotifyType
@@ -210,6 +210,31 @@ function buildHtml(type: NotifyType, name: string, extra: Record<string, string>
       </div>
       <a href="https://candidato.com.co/app" style="display:inline-block;background:#EA6440;color:white;border-radius:8px;padding:12px 26px;font-size:.88rem;font-weight:700;text-decoration:none">Completar mi perfil ahora →</a>
       <p style="color:#9aacac;font-size:.75rem;margin-top:16px">Solo te enviamos este recordatorio una vez. Sin spam.</p>
+    `
+    return { subject, html: base.replace('CONTENT', content) }
+  }
+
+  if (type === 'free_job_upsell') {
+    const jobTitle = extra.jobTitle || 'tu vacante'
+    const views = extra.views || '5'
+    const subject = `Tu señal "${jobTitle}" tiene ${views} visitas — activá el matching con IA`
+    const content = `
+      <h2 style="color:#0E1E20;font-size:1.15rem;margin:0 0 12px">¡Tu señal está generando interés, ${name}! 🚀</h2>
+      <p style="color:#4a6a6a;font-size:.88rem;line-height:1.65;margin:0 0 16px">
+        Tu publicación gratuita <strong style="color:#1B3B3E">${jobTitle}</strong> ya tiene
+        <strong style="color:#EA6440"> ${views} visitas</strong>. Hay candidatos mirándola.
+      </p>
+      <div style="background:#E4F0F1;border-radius:8px;padding:14px 18px;margin-bottom:16px">
+        <p style="color:#1B3B3E;font-size:.83rem;font-weight:700;margin:0 0 8px">¿Qué ganás activando el matching automático?</p>
+        <ul style="color:#264D51;font-size:.82rem;line-height:1.9;margin:0;padding-left:18px">
+          <li>El algoritmo identifica candidatos con score ≥70% de compatibilidad</li>
+          <li>Los candidatos reciben una notificación personalizada de tu vacante</li>
+          <li>Recibís el CV + WhatsApp + LinkedIn de cada match directo en tu email</li>
+          <li>Resultados en menos de 24 horas</li>
+        </ul>
+      </div>
+      <a href="https://candidato.com.co/app" style="display:inline-block;background:#EA6440;color:white;border-radius:8px;padding:12px 26px;font-size:.88rem;font-weight:700;text-decoration:none">Activar matching por $300.000 COP →</a>
+      <p style="color:#9aacac;font-size:.75rem;margin-top:16px">Pago único. Sin suscripción. Se activa al instante.</p>
     `
     return { subject, html: base.replace('CONTENT', content) }
   }

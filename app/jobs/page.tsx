@@ -28,6 +28,7 @@ interface JobRow {
   description?: string
   closes_at?: string
   created_at: string
+  plan?: string
   companies?: { company_name: string } | null
 }
 
@@ -39,7 +40,7 @@ async function fetchJobs(q?: string): Promise<JobRow[]> {
   const sb = createClient(url, key)
   let query = sb
     .from('jobs')
-    .select('id, title, area, city, modality, salary_range, description, closes_at, created_at, companies(company_name)')
+    .select('id, title, area, city, modality, salary_range, description, closes_at, created_at, plan, companies(company_name)')
     .eq('active', true)
     .order('created_at', { ascending: false })
     .limit(100)
@@ -63,7 +64,12 @@ export default async function JobsPage({
 }) {
   const { q: rawQ } = await searchParams
   const q = rawQ?.trim() || undefined
-  const jobs = await fetchJobs(q)
+  const rawJobs = await fetchJobs(q)
+  // Paid listings first, free signals after (within each group sorted by created_at desc already)
+  const jobs = [
+    ...rawJobs.filter(j => j.plan !== 'free'),
+    ...rawJobs.filter(j => j.plan === 'free'),
+  ]
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: offWhite, fontFamily: "'Inter', system-ui, sans-serif" }}>
@@ -144,11 +150,22 @@ export default async function JobsPage({
                   }}>
                     <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px', marginBottom: '10px' }}>
                       <div>
-                        {company && (
-                          <div style={{ fontSize: '12px', color: coral, fontWeight: 600, marginBottom: '4px', letterSpacing: '0.02em' }}>
-                            {company}
-                          </div>
-                        )}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                          {company && (
+                            <span style={{ fontSize: '12px', color: coral, fontWeight: 600, letterSpacing: '0.02em' }}>
+                              {company}
+                            </span>
+                          )}
+                          {job.plan === 'free' ? (
+                            <span style={{ fontSize: '10px', fontWeight: 700, color: '#666', background: '#f0f0f0', borderRadius: '4px', padding: '1px 6px', letterSpacing: '0.04em' }}>
+                              SEÑAL
+                            </span>
+                          ) : (
+                            <span style={{ fontSize: '10px', fontWeight: 700, color: forest, background: 'rgba(27,59,62,.1)', borderRadius: '4px', padding: '1px 6px', letterSpacing: '0.04em' }}>
+                              ✦ DESTACADA
+                            </span>
+                          )}
+                        </div>
                         <div style={{ fontSize: '17px', fontWeight: 700, color: forest, lineHeight: 1.3 }}>
                           {job.title}
                         </div>

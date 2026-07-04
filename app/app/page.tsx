@@ -29,6 +29,7 @@ interface Job {
   closes_at?: string
   views?: number
   push_sent_at?: string
+  plan?: string
   companies?: { company_name: string }
 }
 
@@ -4001,7 +4002,14 @@ function MyJobsView({ userEmail, coName, onPost, t }: {
               <div>
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: '.75rem', marginBottom: '.6rem' }}>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontFamily: 'var(--head)', fontWeight: 700, fontSize: '.95rem', color: 'var(--ink)' }}>{j.title}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '.45rem', flexWrap: 'wrap' }}>
+                      <div style={{ fontFamily: 'var(--head)', fontWeight: 700, fontSize: '.95rem', color: 'var(--ink)' }}>{j.title}</div>
+                      {j.plan === 'free' ? (
+                        <span style={{ fontSize: '.63rem', fontWeight: 700, color: '#666', background: '#f0f0f0', borderRadius: 4, padding: '1px 6px', letterSpacing: '.04em', flexShrink: 0 }}>SEÑAL</span>
+                      ) : (
+                        <span style={{ fontSize: '.63rem', fontWeight: 700, color: 'var(--forest)', background: 'rgba(27,59,62,.1)', borderRadius: 4, padding: '1px 6px', letterSpacing: '.04em', flexShrink: 0 }}>✦ DESTACADA</span>
+                      )}
+                    </div>
                     <div style={{ fontSize: '.74rem', color: 'var(--ink-45)', marginTop: '2px' }}>{timeAgo(j.created_at)}</div>
                   </div>
                   {!j.active && (j as Job & { payment_pending?: boolean }).payment_pending ? (
@@ -4032,6 +4040,26 @@ function MyJobsView({ userEmail, coName, onPost, t }: {
                   {(j.views || 0) > 0 && <span title={t('Tasa de conversión', 'Conversion rate')}>⚡ {Math.round(((appCounts[j.id] || 0) / (j.views || 1)) * 100)}% {t('conversión', 'conversion')}</span>}
                   {firstApplyAt[j.id] && <span title={t('Primera postulación', 'First application')}>🕐 {t('1ra en', '1st in')} {Math.round((Date.now() - new Date(j.created_at || 0).getTime()) > 0 ? (new Date(firstApplyAt[j.id]).getTime() - new Date(j.created_at || 0).getTime()) / 3600000 : 0)}h</span>}
                 </div>
+                {j.plan === 'free' && (j.views || 0) >= 5 && (
+                  <div style={{ background: 'linear-gradient(135deg,#fff5f3,#fff8f0)', border: '1.5px solid var(--coral)', borderRadius: 10, padding: '.75rem 1rem', marginBottom: '.75rem', display: 'flex', alignItems: 'center', gap: '.75rem', flexWrap: 'wrap' }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 700, fontSize: '.82rem', color: 'var(--coral)' }}>
+                        🚀 {t(`¡${j.views} visitas! Activá el matching con IA`, `${j.views} views! Activate AI matching`)}
+                      </div>
+                      <div style={{ fontSize: '.74rem', color: 'var(--ink-45)', marginTop: 2 }}>
+                        {t('Notificá candidatos compatibles automáticamente.', 'Automatically notify compatible candidates.')}
+                      </div>
+                    </div>
+                    <a
+                      href={`https://wa.me/573205046723?text=${encodeURIComponent(`Hola, vengo de candidato.com.co y quiero destacar mi vacante "${j.title}" por $300.000 COP`)}`}
+                      target="_blank" rel="noopener noreferrer"
+                      className="btn btn-sm"
+                      style={{ background: 'var(--coral)', border: 'none', color: 'white', borderRadius: 7, padding: '6px 14px', fontSize: '.78rem', fontWeight: 700, textDecoration: 'none', whiteSpace: 'nowrap' }}
+                    >
+                      {t('Destacar por $300.000 →', 'Feature for $300,000 →')}
+                    </a>
+                  </div>
+                )}
                 <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap', paddingTop: '.75rem', borderTop: '1px solid var(--line)', alignItems: 'center' }}>
                   <button className="btn btn-outline btn-sm" onClick={() => startEdit(j)}>{t('Editar', 'Edit')}</button>
                   <button className="btn btn-outline btn-sm" onClick={() => renewJob(j.id, j.closes_at)} title={t('Extender cierre +1 mes', 'Extend close date +1 month')}>📅 +1 {t('mes', 'month')}</button>
@@ -4078,6 +4106,7 @@ function MyJobsView({ userEmail, coName, onPost, t }: {
                         ✓ {t('Push enviado', 'Push sent')}
                       </span>
                     )}
+                    {j.plan !== 'free' && (
                     <button
                       className="btn btn-sm"
                       style={{ background: 'var(--coral)', border: 'none', color: 'white', borderRadius: 7, padding: '5px 12px', fontSize: '.77rem', fontWeight: 600, cursor: pushingJobId === j.id ? 'not-allowed' : 'pointer', opacity: pushingJobId === j.id ? .7 : 1 }}
@@ -4087,6 +4116,7 @@ function MyJobsView({ userEmail, coName, onPost, t }: {
                     >
                       {pushingJobId === j.id ? t('Buscando…', 'Searching…') : '✦ ' + t('Buscar matches', 'Find matches')}
                     </button>
+                    )}
                     <button
                       className="btn btn-forest btn-sm"
                       onClick={() => viewApplicants(j.id)}
@@ -4109,6 +4139,7 @@ function PostJobView({ userEmail, onSuccess, t }: {
   onSuccess: () => void
   t: (es: string, en: string) => string
 }) {
+  const [postMode, setPostMode] = useState<'free' | 'paid'>('free')
   const [title, setTitle] = useState('')
   const [mod, setMod] = useState('')
   const [city, setCity] = useState('')
@@ -4142,6 +4173,27 @@ function PostJobView({ userEmail, onSuccess, t }: {
     const v = skillInput.trim()
     if (v && !skills.includes(v)) setSkills([...skills, v])
     setSkillInput('')
+  }
+
+  async function handleFreePost() {
+    if (!title.trim()) return
+    setSaving(true)
+    setPayErr('')
+    try {
+      const sb = createClient()
+      const { data: co } = await sb.from('companies').select('id').ilike('email', userEmail).maybeSingle()
+      if (!co?.id) { setPayErr(t('No se encontró la empresa.', 'Company not found.')); setSaving(false); return }
+      await sb.from('jobs').insert([{
+        company_id: co.id,
+        title: title.trim(), modality: mod || null, city: city || null, area: area || null,
+        active: true, plan: 'free',
+      }])
+      setSaving(false)
+      onSuccess()
+    } catch {
+      setPayErr(t('Error al publicar. Intentá de nuevo.', 'Error publishing. Please try again.'))
+      setSaving(false)
+    }
   }
 
   async function handlePay() {
@@ -4197,8 +4249,46 @@ function PostJobView({ userEmail, onSuccess, t }: {
     <>
       <div className="page-head">
         <div className="page-title">{t('Publicar vacante', 'Post a listing')}</div>
-        <div className="page-sub">{t('El algoritmo identificará los candidatos más compatibles automáticamente.', 'The algorithm will identify the most compatible candidates automatically.')}</div>
+        <div className="page-sub">{t('Elegí cómo querés publicar tu vacante.', 'Choose how you want to post your listing.')}</div>
       </div>
+
+      {/* Mode toggle */}
+      <div style={{ display: 'flex', gap: '.6rem', marginBottom: '1.2rem', maxWidth: 800 }}>
+        <button
+          type="button"
+          onClick={() => setPostMode('free')}
+          style={{ flex: 1, padding: '.9rem 1rem', borderRadius: 12, border: `2px solid ${postMode === 'free' ? 'var(--forest)' : 'var(--line)'}`, background: postMode === 'free' ? 'var(--pale)' : '#fafafa', cursor: 'pointer', textAlign: 'left', transition: 'all .15s' }}
+        >
+          <div style={{ fontWeight: 700, fontSize: '.88rem', color: postMode === 'free' ? 'var(--forest)' : 'var(--ink)', marginBottom: '.2rem' }}>
+            {t('Señal gratuita', 'Free signal')}
+          </div>
+          <div style={{ fontSize: '.75rem', color: 'var(--ink-45)', lineHeight: 1.45 }}>
+            {t('Aparece en el feed público. Sin matching automático.', 'Appears in the public feed. No automatic matching.')}
+          </div>
+          <div style={{ marginTop: '.4rem', fontSize: '.72rem', fontWeight: 700, color: 'var(--forest)' }}>
+            {t('$0 — Gratis', '$0 — Free')}
+          </div>
+        </button>
+        <button
+          type="button"
+          onClick={() => setPostMode('paid')}
+          style={{ flex: 1, padding: '.9rem 1rem', borderRadius: 12, border: `2px solid ${postMode === 'paid' ? 'var(--coral)' : 'var(--line)'}`, background: postMode === 'paid' ? '#fff5f3' : '#fafafa', cursor: 'pointer', textAlign: 'left', transition: 'all .15s', position: 'relative' }}
+        >
+          <div style={{ position: 'absolute', top: -10, right: 12, fontSize: '.62rem', fontWeight: 700, color: 'white', background: 'var(--coral)', borderRadius: 20, padding: '2px 9px', letterSpacing: '.04em' }}>
+            {t('RECOMENDADO', 'RECOMMENDED')}
+          </div>
+          <div style={{ fontWeight: 700, fontSize: '.88rem', color: postMode === 'paid' ? 'var(--coral)' : 'var(--ink)', marginBottom: '.2rem' }}>
+            {t('Vacante destacada', 'Featured listing')}
+          </div>
+          <div style={{ fontSize: '.75rem', color: 'var(--ink-45)', lineHeight: 1.45 }}>
+            {t('Matching automático con IA. Candidatos notificados en 2h.', 'Automatic AI matching. Candidates notified in 2h.')}
+          </div>
+          <div style={{ marginTop: '.4rem', fontSize: '.72rem', fontWeight: 700, color: 'var(--coral)' }}>
+            {t('Desde $300.000 COP', 'From $300,000 COP')}
+          </div>
+        </button>
+      </div>
+
       <div className="card" style={{ maxWidth: 800 }}>
         <div className="form-grid">
           <div className="fg fg-full">
@@ -4235,6 +4325,7 @@ function PostJobView({ userEmail, onSuccess, t }: {
               <option>{t('Otra', 'Other')}</option>
             </select>
           </div>
+          {postMode === 'paid' && <>
           <div className="fg">
             <label>{t('Salario mensual', 'Monthly salary')} <span style={{color:'var(--ink-45)',fontWeight:400,textTransform:'none',letterSpacing:0}}>{t('(opcional)', '(optional)')}</span></label>
             <select value={sal} onChange={e => setSal(e.target.value)}>
@@ -4272,6 +4363,14 @@ function PostJobView({ userEmail, onSuccess, t }: {
             <label>{t('Descripción', 'Description')} <span style={{color:'var(--ink-45)',fontWeight:400,textTransform:'none',letterSpacing:0}}>{t('(opcional)', '(optional)')}</span></label>
             <textarea value={desc} onChange={e => setDesc(e.target.value)} placeholder={t('¿Qué hace este rol? ¿Qué buscás en el candidato ideal?', 'What does this role do? What are you looking for?')} rows={4} />
           </div>
+          </>}
+          {postMode === 'free' && (
+            <div className="fg fg-full">
+              <div style={{ background: 'rgba(27,59,62,.05)', borderRadius: 10, padding: '.9rem 1rem', fontSize: '.8rem', color: 'var(--ink-70)', lineHeight: 1.6 }}>
+                💡 {t('La señal gratuita aparece en el feed público. Los candidatos pueden verla y postularse directamente. Para activar el matching automático con IA, podés destacarla después.', 'The free signal appears in the public feed. Candidates can view and apply directly. To activate automatic AI matching, you can feature it later.')}
+              </div>
+            </div>
+          )}
           <div className="fg fg-full">
             {(jobCredits ?? 0) > 0 ? (
               /* Has credits — skip payment */
@@ -4325,13 +4424,19 @@ function PostJobView({ userEmail, onSuccess, t }: {
               </div>
             )}
             {payErr && <div style={{ color: '#c0392b', fontSize: '.82rem', marginBottom: '.5rem' }}>{payErr}</div>}
-            <button className="submit-btn" disabled={saving || !title.trim()} onClick={handlePay}>
-              {saving
-                ? t('Publicando…', 'Publishing…')
-                : (jobCredits ?? 0) > 0
-                  ? t('Publicar vacante →', 'Publish listing →')
-                  : t(`Continuar al pago · $${activePlan.price.toLocaleString('es-CO')} COP →`, `Continue to payment · $${activePlan.price.toLocaleString('es-CO')} COP →`)}
-            </button>
+            {postMode === 'free' ? (
+              <button className="submit-btn" disabled={saving || !title.trim()} onClick={handleFreePost} style={{ background: 'var(--forest)' }}>
+                {saving ? t('Publicando…', 'Publishing…') : t('Publicar señal gratis →', 'Post free signal →')}
+              </button>
+            ) : (
+              <button className="submit-btn" disabled={saving || !title.trim()} onClick={handlePay}>
+                {saving
+                  ? t('Publicando…', 'Publishing…')
+                  : (jobCredits ?? 0) > 0
+                    ? t('Publicar vacante →', 'Publish listing →')
+                    : t(`Continuar al pago · $${activePlan.price.toLocaleString('es-CO')} COP →`, `Continue to payment · $${activePlan.price.toLocaleString('es-CO')} COP →`)}
+              </button>
+            )}
           </div>
         </div>
       </div>

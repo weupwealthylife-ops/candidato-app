@@ -48,8 +48,8 @@ export default function Hero() {
           <div className="hero-cta-divider">{t('o', 'or')}</div>
           <div className="hero-cta-group">
             <div className="hero-cta-label">{t('Soy empresa', "I'm a company")}</div>
-            <a href="#for-companies" className="btn btn-outline btn-xl">
-              {t('Publicar vacante →', 'Post a listing →')}
+            <a href="/app" className="btn btn-outline btn-xl">
+              {t('Publicar señal gratis →', 'Post free signal →')}
             </a>
           </div>
         </div>
