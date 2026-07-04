@@ -64,10 +64,27 @@ export async function POST(req: NextRequest) {
 
   if (action === 'create_engagement') {
     const { title, company_name, client_email, job_area, city } = body
+    const normalizedEmail = (client_email || '').toLowerCase().trim()
     const { data, error } = await client.from('matchgraph_engagements').insert([{
-      title, company_name, client_email: (client_email || '').toLowerCase().trim(), job_area, city,
+      title, company_name, client_email: normalizedEmail, job_area, city,
     }]).select().maybeSingle()
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+    // Notify client that their evaluation is ready (fire-and-forget)
+    if (normalizedEmail) {
+      const origin = req.nextUrl.origin
+      fetch(`${origin}/api/notify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'matchgraph_engagement_opened',
+          to: normalizedEmail,
+          name: company_name || normalizedEmail.split('@')[0],
+          extra: { jobTitle: title, companyName: company_name, to: normalizedEmail },
+        }),
+      }).catch(() => {})
+    }
+
     return NextResponse.json({ engagement: data })
   }
 

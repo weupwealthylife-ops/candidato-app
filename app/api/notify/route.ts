@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 // Supported notification types
-type NotifyType = 'application_submitted' | 'company_contacted' | 'match_found' | 'application_status_changed' | 'match_confirmed' | 'payment_confirmed' | 'expiry_reminder' | 'welcome_candidate' | 'welcome_company' | 'profile_incomplete' | 'free_job_upsell' | 'free_job_published'
+type NotifyType = 'application_submitted' | 'company_contacted' | 'match_found' | 'application_status_changed' | 'match_confirmed' | 'payment_confirmed' | 'expiry_reminder' | 'welcome_candidate' | 'welcome_company' | 'profile_incomplete' | 'free_job_upsell' | 'free_job_published' | 'matchgraph_engagement_opened'
 
 interface NotifyPayload {
   type: NotifyType
@@ -240,6 +240,30 @@ function buildHtml(type: NotifyType, name: string, extra: Record<string, string>
         </p>
       </div>
       <a href="https://candidato.com.co/app" style="display:inline-block;background:#1B3B3E;color:white;border-radius:8px;padding:10px 22px;font-size:.85rem;font-weight:600;text-decoration:none">Ver mi vacante →</a>
+    `
+    return { subject, html: base.replace('CONTENT', content) }
+  }
+
+  if (type === 'matchgraph_engagement_opened') {
+    const jobTitle = extra.jobTitle || 'tu proceso de selección'
+    const subject = `⬡ Tu Match Graph está listo — "${jobTitle}"`
+    const content = `
+      <h2 style="color:#0E1E20;font-size:1.15rem;margin:0 0 12px">¡Tu evaluación de candidatos está lista! 🎉</h2>
+      <p style="color:#4a6a6a;font-size:.88rem;line-height:1.65;margin:0 0 16px">
+        Hola <strong style="color:#1B3B3E">${name}</strong>, el equipo de Candidato® abrió una evaluación de Preselección & Validación para
+        <strong style="color:#1B3B3E"> "${jobTitle}"</strong>. Ya podés acceder al panel con los perfiles preseleccionados y validados.
+      </p>
+      <div style="background:#E4F0F1;border-radius:8px;padding:14px 18px;margin-bottom:16px">
+        <p style="color:#1B3B3E;font-size:.83rem;font-weight:600;margin:0 0 8px">¿Qué encontrás en el Match Graph?</p>
+        <ul style="color:#264D51;font-size:.82rem;line-height:1.8;margin:0;padding-left:18px">
+          <li>Perfiles validados con scores de compatibilidad</li>
+          <li>Radar chart comparativo por candidato</li>
+          <li>CVs descargables + fortalezas técnicas</li>
+          <li>Espacio para tus notas privadas por perfil</li>
+        </ul>
+      </div>
+      <a href="https://candidato.com.co/app/matchgraph" style="display:inline-block;background:#1B3B3E;color:white;border-radius:8px;padding:12px 26px;font-size:.88rem;font-weight:700;text-decoration:none">Acceder al Match Graph →</a>
+      <p style="color:#9aacac;font-size:.75rem;margin-top:14px">Ingresá con el email con el que coordinaste el servicio: <strong>${extra.to || name}</strong></p>
     `
     return { subject, html: base.replace('CONTENT', content) }
   }

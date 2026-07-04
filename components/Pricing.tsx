@@ -264,28 +264,36 @@ export default function Pricing() {
                   <span key={f} style={{ fontSize: '.77rem', color: 'var(--forest)', fontWeight: 700 }}>{f}</span>
                 ))}
               </div>
-              {/* Match Graph link */}
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '.6rem', flexShrink: 0 }}>
               <a
-                href="https://www.candidato.com.co/app/matchgraph"
-                style={{ display: 'inline-flex', alignItems: 'center', gap: '.35rem', fontSize: '.75rem', fontWeight: 700, color: 'var(--forest)', textDecoration: 'none', borderBottom: '1.5px solid rgba(27,59,62,.25)', paddingBottom: '1px' }}
+                href="https://wa.me/573205046723?text=Hola%2C%20me%20interesa%20el%20servicio%20de%20Preselección%20y%20Validación%20de%20candidato.com.co"
+                target="_blank" rel="noopener noreferrer"
+                style={{
+                  whiteSpace: 'nowrap', fontWeight: 700, fontSize: '.84rem',
+                  background: 'var(--forest)', color: 'white',
+                  borderRadius: 10, padding: '11px 22px', textDecoration: 'none',
+                  boxShadow: '0 2px 8px rgba(27,59,62,.2)',
+                  transition: 'opacity .15s', textAlign: 'center',
+                }}
               >
-                <span style={{ fontSize: '.8rem' }}>⬡</span>
-                {t('Ver Candidato Match Graph →', 'View Candidato Match Graph →')}
+                {t('Consultar servicio →', 'Inquire about service →')}
+              </a>
+              <a
+                href="/app/matchgraph"
+                style={{
+                  whiteSpace: 'nowrap', fontWeight: 700, fontSize: '.82rem',
+                  background: 'transparent', color: 'var(--forest)',
+                  borderRadius: 10, padding: '10px 22px', textDecoration: 'none',
+                  border: '1.5px solid rgba(27,59,62,.3)',
+                  transition: 'all .15s', textAlign: 'center',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '.4rem',
+                }}
+              >
+                <span style={{ fontSize: '.85rem' }}>⬡</span>
+                {t('Ver Match Graph →', 'View Match Graph →')}
               </a>
             </div>
-            <a
-              href="https://wa.me/573205046723?text=Hola%2C%20me%20interesa%20el%20servicio%20de%20Preselección%20y%20Validación%20de%20candidato.com.co"
-              target="_blank" rel="noopener noreferrer"
-              style={{
-                whiteSpace: 'nowrap', fontWeight: 700, fontSize: '.84rem',
-                background: 'var(--forest)', color: 'white',
-                borderRadius: 10, padding: '11px 22px', textDecoration: 'none',
-                boxShadow: '0 2px 8px rgba(27,59,62,.2)',
-                transition: 'opacity .15s',
-              }}
-            >
-              {t('Consultar servicio →', 'Inquire about service →')}
-            </a>
           </div>
         )}
       </div>
