@@ -30,7 +30,7 @@ export default async function PublicJobPage({ params }: Props) {
   const sb = await createClient()
   const { data: job } = await sb
     .from('jobs')
-    .select('*, companies(company_name)')
+    .select('*, company_id, companies(company_name)')
     .eq('id', id)
     .eq('active', true)
     .maybeSingle()
@@ -38,6 +38,7 @@ export default async function PublicJobPage({ params }: Props) {
   if (!job) notFound()
 
   const co = (job.companies as { company_name?: string })?.company_name || ''
+  const companyId = (job as Record<string, unknown>).company_id as string | null
   const tags = [job.modality, job.city, job.salary_range].filter(Boolean) as string[]
 
   const jsonLd = {
@@ -82,7 +83,14 @@ export default async function PublicJobPage({ params }: Props) {
           </div>
           <div>
             <h1 style={{ margin: 0, fontFamily: 'Georgia,serif', fontWeight: 700, fontSize: '1.2rem', color: 'var(--ink)', lineHeight: 1.25 }}>{job.title}</h1>
-            <div style={{ fontSize: '.83rem', color: 'var(--ink-70)', marginTop: '.15rem' }}>{co || 'Empresa en Candidato®'}{job.area ? ` · ${job.area}` : ''}</div>
+            <div style={{ fontSize: '.83rem', color: 'var(--ink-70)', marginTop: '.15rem', display: 'flex', alignItems: 'center', gap: '.5rem', flexWrap: 'wrap' }}>
+              {co || 'Empresa en Candidato®'}{job.area ? ` · ${job.area}` : ''}
+              {companyId && (
+                <Link href={`/empresas/${companyId}`} style={{ fontSize: '.73rem', color: 'var(--forest)', fontWeight: 700, textDecoration: 'none', background: 'var(--pale)', borderRadius: 5, padding: '1px 7px', whiteSpace: 'nowrap' }}>
+                  Ver empresa →
+                </Link>
+              )}
+            </div>
           </div>
         </div>
 

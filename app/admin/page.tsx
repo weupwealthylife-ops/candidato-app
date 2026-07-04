@@ -52,6 +52,10 @@ export default function AdminPage() {
   const [preselStatus, setPreselStatus] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(false)
   const [tab, setTab] = useState<'overview' | 'candidates' | 'companies' | 'jobs' | 'applications' | 'preseleccion'>('overview')
+  const [candSearch, setCandSearch] = useState('')
+  const [coSearch, setCoSearch] = useState('')
+  const [jobSearch, setJobSearch] = useState('')
+  const [appSearch, setAppSearch] = useState('')
 
   async function load() {
     setLoading(true)
@@ -91,6 +95,16 @@ export default function AdminPage() {
   const activeJobs = jobs.filter(j => j.active).length
   const pendingApps = applications.filter(a => a.status === 'pending').length
   const totalViews = jobs.reduce((sum, j) => sum + (Number(j.views) || 0), 0)
+
+  function filterRows(rows: Row[], q: string, keys: string[]) {
+    if (!q.trim()) return rows
+    const lq = q.toLowerCase()
+    return rows.filter(r => keys.some(k => String(r[k] ?? '').toLowerCase().includes(lq)))
+  }
+  const filteredCands = filterRows(candidates, candSearch, ['name', 'email', 'area', 'city', 'modality', 'experience', 'skills'])
+  const filteredCos = filterRows(companies, coSearch, ['company_name', 'email', 'industry', 'city', 'looking_for_areas'])
+  const filteredJobs = filterRows(jobs, jobSearch, ['title', 'company', 'area', 'city', 'modality', 'salary_range'])
+  const filteredApps = filterRows(applications, appSearch, ['candidate', 'candidateEmail', 'job', 'status'])
 
   const tabs = [
     { id: 'overview', label: 'Resumen' },
@@ -153,29 +167,53 @@ export default function AdminPage() {
 
         {tab === 'candidates' && (
           <div style={{ background: 'white', border: '1px solid var(--line)', borderRadius: 12, padding: '1.2rem' }}>
-            <div style={{ fontWeight: 700, fontSize: '.88rem', marginBottom: '.85rem', color: 'var(--ink)' }}>Todos los candidatos ({candidates.length})</div>
-            <DataTable rows={candidates} cols={['name','email','area','city','modality','experience','skills','created_at']} />
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '.85rem', gap: '.75rem', flexWrap: 'wrap' }}>
+              <div style={{ fontWeight: 700, fontSize: '.88rem', color: 'var(--ink)' }}>
+                Candidatos ({filteredCands.length}{filteredCands.length !== candidates.length ? ` de ${candidates.length}` : ''})
+              </div>
+              <input type="search" placeholder="Nombre, email, área, ciudad…" value={candSearch} onChange={e => setCandSearch(e.target.value)}
+                style={{ padding: '6px 12px', borderRadius: 7, border: '1.5px solid var(--line)', fontSize: '.78rem', fontFamily: 'inherit', outline: 'none', minWidth: 220 }} />
+            </div>
+            <DataTable rows={filteredCands} cols={['name','email','area','city','modality','experience','skills','created_at']} />
           </div>
         )}
 
         {tab === 'companies' && (
           <div style={{ background: 'white', border: '1px solid var(--line)', borderRadius: 12, padding: '1.2rem' }}>
-            <div style={{ fontWeight: 700, fontSize: '.88rem', marginBottom: '.85rem', color: 'var(--ink)' }}>Todas las empresas ({companies.length})</div>
-            <DataTable rows={companies} cols={['company_name','email','industry','city','looking_for_areas','created_at']} />
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '.85rem', gap: '.75rem', flexWrap: 'wrap' }}>
+              <div style={{ fontWeight: 700, fontSize: '.88rem', color: 'var(--ink)' }}>
+                Empresas ({filteredCos.length}{filteredCos.length !== companies.length ? ` de ${companies.length}` : ''})
+              </div>
+              <input type="search" placeholder="Empresa, email, industria, ciudad…" value={coSearch} onChange={e => setCoSearch(e.target.value)}
+                style={{ padding: '6px 12px', borderRadius: 7, border: '1.5px solid var(--line)', fontSize: '.78rem', fontFamily: 'inherit', outline: 'none', minWidth: 220 }} />
+            </div>
+            <DataTable rows={filteredCos} cols={['company_name','email','industry','city','looking_for_areas','created_at']} />
           </div>
         )}
 
         {tab === 'jobs' && (
           <div style={{ background: 'white', border: '1px solid var(--line)', borderRadius: 12, padding: '1.2rem' }}>
-            <div style={{ fontWeight: 700, fontSize: '.88rem', marginBottom: '.85rem', color: 'var(--ink)' }}>Todas las vacantes ({jobs.length})</div>
-            <DataTable rows={jobs} cols={['title','company','area','city','modality','salary_range','active','views','closes_at','created_at']} />
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '.85rem', gap: '.75rem', flexWrap: 'wrap' }}>
+              <div style={{ fontWeight: 700, fontSize: '.88rem', color: 'var(--ink)' }}>
+                Vacantes ({filteredJobs.length}{filteredJobs.length !== jobs.length ? ` de ${jobs.length}` : ''})
+              </div>
+              <input type="search" placeholder="Título, empresa, área, ciudad…" value={jobSearch} onChange={e => setJobSearch(e.target.value)}
+                style={{ padding: '6px 12px', borderRadius: 7, border: '1.5px solid var(--line)', fontSize: '.78rem', fontFamily: 'inherit', outline: 'none', minWidth: 220 }} />
+            </div>
+            <DataTable rows={filteredJobs} cols={['title','company','area','city','modality','salary_range','active','views','closes_at','created_at']} />
           </div>
         )}
 
         {tab === 'applications' && (
           <div style={{ background: 'white', border: '1px solid var(--line)', borderRadius: 12, padding: '1.2rem' }}>
-            <div style={{ fontWeight: 700, fontSize: '.88rem', marginBottom: '.85rem', color: 'var(--ink)' }}>Todas las postulaciones ({applications.length})</div>
-            <DataTable rows={applications} cols={['candidate','candidateEmail','job','status','applied_at']} />
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '.85rem', gap: '.75rem', flexWrap: 'wrap' }}>
+              <div style={{ fontWeight: 700, fontSize: '.88rem', color: 'var(--ink)' }}>
+                Postulaciones ({filteredApps.length}{filteredApps.length !== applications.length ? ` de ${applications.length}` : ''})
+              </div>
+              <input type="search" placeholder="Candidato, email, vacante, estado…" value={appSearch} onChange={e => setAppSearch(e.target.value)}
+                style={{ padding: '6px 12px', borderRadius: 7, border: '1.5px solid var(--line)', fontSize: '.78rem', fontFamily: 'inherit', outline: 'none', minWidth: 220 }} />
+            </div>
+            <DataTable rows={filteredApps} cols={['candidate','candidateEmail','job','status','applied_at']} />
           </div>
         )}
 

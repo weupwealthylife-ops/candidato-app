@@ -46,8 +46,8 @@ export async function GET(req: NextRequest) {
   const supabase = createClient(baseUrl(supabaseUrl), serviceRoleKey)
 
   const now = new Date()
-  const from = new Date(now); from.setDate(from.getDate() + 2)
-  const to = new Date(now); to.setDate(to.getDate() + 4)
+  const from = new Date(now); from.setDate(from.getDate() + 6)
+  const to = new Date(now); to.setDate(to.getDate() + 8)
 
   const { data: jobs, error } = await supabase
     .from('jobs')

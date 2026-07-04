@@ -29,6 +29,7 @@ interface JobRow {
   closes_at?: string
   created_at: string
   plan?: string
+  company_id?: string
   companies?: { company_name: string } | null
 }
 
@@ -40,7 +41,7 @@ async function fetchJobs(q?: string): Promise<JobRow[]> {
   const sb = createClient(url, key)
   let query = sb
     .from('jobs')
-    .select('id, title, area, city, modality, salary_range, description, closes_at, created_at, plan, companies(company_name)')
+    .select('id, title, area, city, modality, salary_range, description, closes_at, created_at, plan, company_id, companies(company_name)')
     .eq('active', true)
     .or(`closes_at.is.null,closes_at.gte.${new Date().toISOString()}`)
     .order('created_at', { ascending: false })
@@ -136,6 +137,7 @@ export default async function JobsPage({
               const company = job.companies && typeof job.companies === 'object' && 'company_name' in job.companies
                 ? (job.companies as { company_name: string }).company_name
                 : null
+              const companyProfileUrl = job.company_id ? `/empresas/${job.company_id}` : null
               const tags = [job.modality, job.city, job.area, job.salary_range].filter(Boolean) as string[]
 
               return (
@@ -153,9 +155,19 @@ export default async function JobsPage({
                       <div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
                           {company && (
-                            <span style={{ fontSize: '12px', color: coral, fontWeight: 600, letterSpacing: '0.02em' }}>
-                              {company}
-                            </span>
+                            companyProfileUrl ? (
+                              <a
+                                href={companyProfileUrl}
+                                onClick={e => e.stopPropagation()}
+                                style={{ fontSize: '12px', color: coral, fontWeight: 600, letterSpacing: '0.02em', textDecoration: 'none' }}
+                              >
+                                {company}
+                              </a>
+                            ) : (
+                              <span style={{ fontSize: '12px', color: coral, fontWeight: 600, letterSpacing: '0.02em' }}>
+                                {company}
+                              </span>
+                            )
                           )}
                           {job.plan === 'free' ? (
                             <span style={{ fontSize: '10px', fontWeight: 700, color: '#666', background: '#f0f0f0', borderRadius: '4px', padding: '1px 6px', letterSpacing: '0.04em' }}>
