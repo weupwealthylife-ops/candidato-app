@@ -102,11 +102,11 @@ export default function ForCompanies() {
         {/* CTA */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem', textAlign: 'center' }}>
           <a href="/app" className="btn btn-coral btn-xl" style={{ fontSize: '1rem', padding: '14px 36px' }}>
-            {t('Publicar señal gratis →', 'Post free signal →')}
+            {t('Publicar vacante gratis →', 'Post free listing →')}
           </a>
           <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap', justifyContent: 'center' }}>
             <span style={{ color: 'rgba(255,255,255,.5)', fontSize: '.78rem' }}>✓ {t('Sin tarjeta de crédito', 'No credit card')}</span>
-            <span style={{ color: 'rgba(255,255,255,.5)', fontSize: '.78rem' }}>✓ {t('Señal gratuita para empezar', 'Free signal to start')}</span>
+            <span style={{ color: 'rgba(255,255,255,.5)', fontSize: '.78rem' }}>✓ {t('Vacante gratuita para empezar', 'Free listing to start')}</span>
             <span style={{ color: 'rgba(255,255,255,.5)', fontSize: '.78rem' }}>✓ {t('Soporte por WhatsApp', 'WhatsApp support')}</span>
           </div>
         </div>

@@ -147,8 +147,8 @@ export default function Pricing() {
         <h2 className="sec-h2">{t('Empezá gratis. Escalá cuando estés listo.', 'Start free. Scale when you\'re ready.')}</h2>
         <p className="sec-sub" style={{ margin: '.5rem auto 0' }}>
           {t(
-            'Publicá una señal gratuita, activá el matching con IA o delegá la preselección completa a nuestro equipo.',
-            'Post a free signal, activate AI matching, or delegate full candidate screening to our team.',
+            'Publicá una vacante gratuita, activá el matching con IA o delegá la preselección completa a nuestro equipo.',
+            'Post a free listing, activate AI matching, or delegate full candidate screening to our team.',
           )}
         </p>
       </div>
@@ -212,13 +212,13 @@ export default function Pricing() {
                 {t('Gratis', 'Free')}
               </span>
               <span style={{ fontFamily: 'var(--head)', fontWeight: 800, fontSize: '1.1rem', color: 'var(--ink)' }}>
-                {t('Señal gratuita', 'Free signal')}
+                {t('Vacante gratuita', 'Free listing')}
               </span>
             </div>
             <p style={{ fontSize: '.84rem', color: 'var(--ink-70)', margin: 0, lineHeight: 1.55, maxWidth: 480 }}>
               {t(
-                'Publicá tu vacante en el feed público sin costo. Los candidatos pueden verla y postularse. Sin matching automático por IA.',
-                'Post your listing in the public feed at no cost. Candidates can view and apply. No automatic AI matching.',
+                'Publicá tu vacante en el feed público sin costo. Los candidatos pueden verla y postularse. Sin matching automático con IA.',
+                'Post your listing in the public feed at no cost. Candidates can view and apply directly. No automatic AI matching.',
               )}
             </p>
             <div style={{ display: 'flex', gap: '1.2rem', flexWrap: 'wrap', marginTop: '.7rem' }}>
@@ -232,7 +232,7 @@ export default function Pricing() {
             </div>
           </div>
           <a href="/app" className="btn btn-outline" style={{ whiteSpace: 'nowrap', fontWeight: 700, borderColor: 'var(--forest)', color: 'var(--forest)' }}>
-            {t('Publicar señal gratis →', 'Post free signal →')}
+            {t('Publicar vacante gratis →', 'Post free listing →')}
           </a>
         </div>
       )}

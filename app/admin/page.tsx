@@ -48,17 +48,19 @@ export default function AdminPage() {
   const [companies, setCompanies] = useState<Row[]>([])
   const [jobs, setJobs] = useState<Row[]>([])
   const [applications, setApplications] = useState<Row[]>([])
+  const [preselQueue, setPreselQueue] = useState<Row[]>([])
   const [loading, setLoading] = useState(false)
-  const [tab, setTab] = useState<'overview' | 'candidates' | 'companies' | 'jobs' | 'applications'>('overview')
+  const [tab, setTab] = useState<'overview' | 'candidates' | 'companies' | 'jobs' | 'applications' | 'preseleccion'>('overview')
 
   async function load() {
     setLoading(true)
     const sb = createClient()
-    const [c, co, j, a] = await Promise.all([
+    const [c, co, j, a, pq] = await Promise.all([
       sb.from('candidates').select('id,name,email,area,city,modality,experience,skills,cv_url,created_at').order('created_at', { ascending: false }).limit(200),
       sb.from('companies').select('id,company_name,email,industry,city,looking_for_areas,created_at').order('created_at', { ascending: false }).limit(200),
-      sb.from('jobs').select('id,title,area,city,modality,salary_range,active,views,closes_at,created_at,companies(company_name)').order('created_at', { ascending: false }).limit(200),
+      sb.from('jobs').select('id,title,area,city,modality,salary_range,active,plan,views,closes_at,created_at,companies(company_name)').order('created_at', { ascending: false }).limit(200),
       sb.from('applications').select('id,status,applied_at,candidates(name,email),jobs(title)').order('applied_at', { ascending: false }).limit(200),
+      sb.from('jobs').select('id,title,area,city,description,active,created_at,companies(company_name,email)').eq('plan', 'preseleccion').order('created_at', { ascending: false }),
     ])
     setCandidates(c.data || [])
     setCompanies(co.data || [])
@@ -68,6 +70,11 @@ export default function AdminPage() {
       candidate: (r.candidates as { name?: string; email?: string })?.name || '—',
       candidateEmail: (r.candidates as { email?: string })?.email || '—',
       job: (r.jobs as { title?: string })?.title || '—',
+    })))
+    setPreselQueue((pq.data || []).map((r: Row) => ({
+      ...r,
+      company: (r.companies as { company_name?: string })?.company_name || '—',
+      company_email: (r.companies as { email?: string })?.email || '—',
     })))
     setLoading(false)
   }
@@ -90,6 +97,7 @@ export default function AdminPage() {
     { id: 'companies', label: `Empresas (${companies.length})` },
     { id: 'jobs', label: `Vacantes (${jobs.length})` },
     { id: 'applications', label: `Postulaciones (${applications.length})` },
+    { id: 'preseleccion', label: `⬡ Preselección (${preselQueue.length})` },
   ] as const
 
   return (
@@ -167,6 +175,54 @@ export default function AdminPage() {
           <div style={{ background: 'white', border: '1px solid var(--line)', borderRadius: 12, padding: '1.2rem' }}>
             <div style={{ fontWeight: 700, fontSize: '.88rem', marginBottom: '.85rem', color: 'var(--ink)' }}>Todas las postulaciones ({applications.length})</div>
             <DataTable rows={applications} cols={['candidate','candidateEmail','job','status','applied_at']} />
+          </div>
+        )}
+
+        {tab === 'preseleccion' && (
+          <div style={{ background: 'white', border: '1px solid var(--line)', borderRadius: 12, padding: '1.2rem' }}>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '.75rem', marginBottom: '.85rem' }}>
+              <div style={{ fontWeight: 700, fontSize: '.88rem', color: 'var(--ink)' }}>⬡ Cola de Preselección & Validación</div>
+              <span style={{ fontSize: '.72rem', color: 'var(--ink-45)' }}>{preselQueue.length} vacante{preselQueue.length !== 1 ? 's' : ''} pendiente{preselQueue.length !== 1 ? 's' : ''}</span>
+            </div>
+            {preselQueue.length === 0 ? (
+              <p style={{ color: 'var(--ink-45)', fontSize: '.82rem' }}>No hay vacantes de preselección activas.</p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '.75rem' }}>
+                {preselQueue.map((job, i) => (
+                  <div key={i} style={{ border: '1px solid var(--line)', borderRadius: 10, padding: '1rem 1.2rem', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: '.88rem', color: 'var(--ink)', marginBottom: '.2rem' }}>{String(job.title || '—')}</div>
+                      <div style={{ fontSize: '.76rem', color: 'var(--ink-45)' }}>
+                        {String(job.company || '—')} · {String(job.area || '—')} · {String(job.city || '—')}
+                      </div>
+                      <div style={{ fontSize: '.74rem', color: 'var(--ink-45)', marginTop: '.2rem' }}>
+                        📧 {String(job.company_email || '—')}
+                      </div>
+                      {job.description ? (
+                        <div style={{ fontSize: '.75rem', color: 'var(--ink-70)', marginTop: '.4rem', maxWidth: 500, lineHeight: 1.5 }}>
+                          {String(job.description).slice(0, 200)}{String(job.description).length > 200 ? '…' : ''}
+                        </div>
+                      ) : null}
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '.4rem', flexShrink: 0 }}>
+                      <a
+                        href={`https://wa.me/${String(job.company_email || '').replace(/\D/g, '')}?text=${encodeURIComponent(`Hola, somos el equipo de Candidato®. Recibimos tu solicitud de Preselección para "${String(job.title || '')}" y ya estamos trabajando en ello.`)}`}
+                        target="_blank" rel="noopener noreferrer"
+                        style={{ fontSize: '.75rem', fontWeight: 700, color: 'white', background: '#25D366', borderRadius: 7, padding: '5px 12px', textDecoration: 'none', whiteSpace: 'nowrap' }}
+                      >
+                        WhatsApp →
+                      </a>
+                      <a
+                        href={`mailto:${String(job.company_email || '')}?subject=Tu solicitud de Preselección — ${String(job.title || '')}&body=Hola, somos el equipo de Candidato®...`}
+                        style={{ fontSize: '.75rem', fontWeight: 700, color: 'var(--forest)', background: 'rgba(27,59,62,.08)', borderRadius: 7, padding: '5px 12px', textDecoration: 'none', whiteSpace: 'nowrap' }}
+                      >
+                        Email →
+                      </a>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>

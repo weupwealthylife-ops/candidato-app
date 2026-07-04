@@ -1,8 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createSupabaseClient } from '@supabase/supabase-js'
+import { createHmac } from 'crypto'
 
 const MP_ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN!
+const MP_WEBHOOK_SECRET = process.env.MP_WEBHOOK_SECRET
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://candidato.com.co'
+
+function verifyMpSignature(req: NextRequest, rawBody: string): boolean {
+  if (!MP_WEBHOOK_SECRET) return true // skip if not configured
+  const xSig = req.headers.get('x-signature') || ''
+  const xReqId = req.headers.get('x-request-id') || ''
+  const tsMatch = xSig.match(/ts=(\d+)/)
+  const v1Match = xSig.match(/v1=([a-f0-9]+)/)
+  if (!tsMatch || !v1Match) return false
+  const ts = tsMatch[1]
+  const v1 = v1Match[1]
+  // MP manifest: id:<data.id>;request-id:<x-request-id>;ts:<ts>
+  // Extract id from body for manifest
+  let dataId = ''
+  try { dataId = String((JSON.parse(rawBody) as { data?: { id?: unknown } }).data?.id ?? '') } catch { /* ignore */ }
+  const manifest = `id:${dataId};request-id:${xReqId};ts:${ts}`
+  const expected = createHmac('sha256', MP_WEBHOOK_SECRET).update(manifest).digest('hex')
+  return expected === v1
+}
 
 function baseUrl(raw: string): string {
   try { const u = new URL(raw); return `${u.protocol}//${u.host}` } catch { return raw }
@@ -29,8 +49,14 @@ async function sendReceipt(to: string, name: string, jobTitle: string, amount: s
 }
 
 export async function POST(req: NextRequest) {
+  const rawBody = await req.text()
+  if (!verifyMpSignature(req, rawBody)) {
+    console.warn('[mp-webhook] Invalid signature — rejected')
+    return NextResponse.json({ ok: true }) // always 200 to MP
+  }
+
   let body: Record<string, unknown>
-  try { body = await req.json() } catch { return NextResponse.json({ ok: true }) }
+  try { body = JSON.parse(rawBody) } catch { return NextResponse.json({ ok: true }) }
 
   const { type, data } = body as { type?: string; data?: { id?: string | number } }
 

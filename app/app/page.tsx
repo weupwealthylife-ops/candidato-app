@@ -603,6 +603,11 @@ export default function AppPage() {
     setFoundName('')
     setCStep(1)
     setCoStep(1)
+    // Clear registration form state so the next user on this device starts clean
+    setCfn(''); setCln(''); setCem(''); setCph(''); setCcy(''); setCmo('')
+    setCar(''); setCex(''); setCsal(''); setCli(''); setCnote(''); setCSkills([])
+    setCofn(''); setColn(''); setCoem(''); setConame(''); setCoind('')
+    setCosize(''); setCocity(''); setCowp('')
   }
 
   const onSkKey =
@@ -1788,13 +1793,25 @@ function CandidateView({
   }
 
   useEffect(() => {
-    if (candProfile?.notify_matches !== undefined)
-      setNotifMatches(candProfile.notify_matches as boolean)
+    if (!candProfile) return
+    if (candProfile.notify_matches !== undefined) setNotifMatches(candProfile.notify_matches as boolean)
+    if ((candProfile as Record<string, unknown>).notify_updates !== undefined) setNotifUpdates((candProfile as Record<string, unknown>).notify_updates as boolean)
+    if ((candProfile as Record<string, unknown>).profile_visible !== undefined) setProfileVisible((candProfile as Record<string, unknown>).profile_visible as boolean)
   }, [candProfile])
 
   async function saveNotifMatches(val: boolean) {
     if (!user?.email) return
     await createClient().from('candidates').update({ notify_matches: val }).ilike('email', user.email)
+  }
+
+  async function saveNotifUpdates(val: boolean) {
+    if (!user?.email) return
+    await createClient().from('candidates').update({ notify_updates: val }).ilike('email', user.email)
+  }
+
+  async function saveProfileVisible(val: boolean) {
+    if (!user?.email) return
+    await createClient().from('candidates').update({ profile_visible: val }).ilike('email', user.email)
   }
 
   // Show a retry banner if profile still null after 5 seconds
@@ -2742,7 +2759,7 @@ function CandidateView({
             <span className="profile-lbl" style={{ display: 'block' }}>{t('Actualizaciones de plataforma', 'Platform updates')}</span>
             <span style={{ fontSize: '.72rem', color: 'var(--ink-45)' }}>{t('Novedades y mejoras de Candidato®', 'News and improvements from Candidato®')}</span>
           </div>
-          <Toggle on={notifUpdates} onToggle={() => setNotifUpdates(v => !v)} />
+          <Toggle on={notifUpdates} onToggle={() => { const v = !notifUpdates; setNotifUpdates(v); saveNotifUpdates(v) }} />
         </div>
         <div className="settings-section-title" style={{ marginTop: '1.4rem' }}>{t('Privacidad', 'Privacy')}</div>
         <div className="profile-row" style={{ justifyContent: 'space-between' }}>
@@ -2750,7 +2767,7 @@ function CandidateView({
             <span className="profile-lbl" style={{ display: 'block' }}>{t('Perfil visible para empresas', 'Profile visible to companies')}</span>
             <span style={{ fontSize: '.72rem', color: 'var(--ink-45)' }}>{t('Las empresas pueden encontrarte en búsquedas', 'Companies can discover you in searches')}</span>
           </div>
-          <Toggle on={profileVisible} onToggle={() => setProfileVisible(v => !v)} />
+          <Toggle on={profileVisible} onToggle={() => { const v = !profileVisible; setProfileVisible(v); saveProfileVisible(v) }} />
         </div>
       </div>
     </>
@@ -4012,7 +4029,7 @@ function MyJobsView({ userEmail, coName, onPost, t }: {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '.45rem', flexWrap: 'wrap' }}>
                       <div style={{ fontFamily: 'var(--head)', fontWeight: 700, fontSize: '.95rem', color: 'var(--ink)' }}>{j.title}</div>
                       {j.plan === 'free' ? (
-                        <span style={{ fontSize: '.63rem', fontWeight: 700, color: '#666', background: '#f0f0f0', borderRadius: 4, padding: '1px 6px', letterSpacing: '.04em', flexShrink: 0 }}>SEÑAL</span>
+                        <span style={{ fontSize: '.63rem', fontWeight: 700, color: '#666', background: '#f0f0f0', borderRadius: 4, padding: '1px 6px', letterSpacing: '.04em', flexShrink: 0 }}>GRATIS</span>
                       ) : j.plan === 'paid' ? (
                         <span style={{ fontSize: '.63rem', fontWeight: 700, color: 'var(--forest)', background: 'rgba(27,59,62,.1)', borderRadius: 4, padding: '1px 6px', letterSpacing: '.04em', flexShrink: 0 }}>✦ DESTACADA</span>
                       ) : null}
@@ -4146,7 +4163,7 @@ function PostJobView({ userEmail, onSuccess, t }: {
   onSuccess: () => void
   t: (es: string, en: string) => string
 }) {
-  const [postMode, setPostMode] = useState<'free' | 'paid'>('free')
+  const [postMode, setPostMode] = useState<'free' | 'paid' | 'preseleccion'>('free')
   const [title, setTitle] = useState('')
   const [mod, setMod] = useState('')
   const [city, setCity] = useState('')
@@ -4267,7 +4284,7 @@ function PostJobView({ userEmail, onSuccess, t }: {
           style={{ flex: 1, padding: '.9rem 1rem', borderRadius: 12, border: `2px solid ${postMode === 'free' ? 'var(--forest)' : 'var(--line)'}`, background: postMode === 'free' ? 'var(--pale)' : '#fafafa', cursor: 'pointer', textAlign: 'left', transition: 'all .15s' }}
         >
           <div style={{ fontWeight: 700, fontSize: '.88rem', color: postMode === 'free' ? 'var(--forest)' : 'var(--ink)', marginBottom: '.2rem' }}>
-            {t('Señal gratuita', 'Free signal')}
+            {t('Vacante gratuita', 'Free listing')}
           </div>
           <div style={{ fontSize: '.75rem', color: 'var(--ink-45)', lineHeight: 1.45 }}>
             {t('Aparece en el feed público. Sin matching automático.', 'Appears in the public feed. No automatic matching.')}
@@ -4292,6 +4309,21 @@ function PostJobView({ userEmail, onSuccess, t }: {
           </div>
           <div style={{ marginTop: '.4rem', fontSize: '.72rem', fontWeight: 700, color: 'var(--coral)' }}>
             {t('Desde $300.000 COP', 'From $300,000 COP')}
+          </div>
+        </button>
+        <button
+          type="button"
+          onClick={() => setPostMode('preseleccion')}
+          style={{ flex: 1, padding: '.9rem 1rem', borderRadius: 12, border: `2px solid ${postMode === 'preseleccion' ? '#5a3e8a' : 'var(--line)'}`, background: postMode === 'preseleccion' ? '#f5f0ff' : '#fafafa', cursor: 'pointer', textAlign: 'left', transition: 'all .15s' }}
+        >
+          <div style={{ fontWeight: 700, fontSize: '.88rem', color: postMode === 'preseleccion' ? '#5a3e8a' : 'var(--ink)', marginBottom: '.2rem' }}>
+            {t('⬡ Preselección & Validación', '⬡ Screening & Validation')}
+          </div>
+          <div style={{ fontSize: '.75rem', color: 'var(--ink-45)', lineHeight: 1.45 }}>
+            {t('Top 5 candidatos validados por nuestro equipo.', 'Top 5 candidates validated by our team.')}
+          </div>
+          <div style={{ marginTop: '.4rem', fontSize: '.72rem', fontWeight: 700, color: '#5a3e8a' }}>
+            {t('Desde $800.000 COP/mes', 'From $800,000 COP/mo')}
           </div>
         </button>
       </div>
@@ -4374,7 +4406,25 @@ function PostJobView({ userEmail, onSuccess, t }: {
           {postMode === 'free' && (
             <div className="fg fg-full">
               <div style={{ background: 'rgba(27,59,62,.05)', borderRadius: 10, padding: '.9rem 1rem', fontSize: '.8rem', color: 'var(--ink-70)', lineHeight: 1.6 }}>
-                💡 {t('La señal gratuita aparece en el feed público. Los candidatos pueden verla y postularse directamente. Para activar el matching automático con IA, podés destacarla después.', 'The free signal appears in the public feed. Candidates can view and apply directly. To activate automatic AI matching, you can feature it later.')}
+                💡 {t('La vacante gratuita aparece en el feed público. Los candidatos pueden verla y postularse directamente. Para activar el matching automático con IA, podés destacarla después.', 'The free listing appears in the public feed. Candidates can view and apply directly. To activate automatic AI matching, you can feature it later.')}
+              </div>
+            </div>
+          )}
+          {postMode === 'preseleccion' && (
+            <div className="fg fg-full">
+              <div style={{ background: '#f5f0ff', border: '1.5px solid #c4b0f0', borderRadius: 10, padding: '1rem 1.1rem', fontSize: '.8rem', color: '#3d2970', lineHeight: 1.7 }}>
+                <div style={{ fontWeight: 700, marginBottom: '.4rem' }}>🔍 {t('¿Cómo funciona?', 'How does it work?')}</div>
+                {t(
+                  'Nuestro equipo valida candidatos: perfil, experiencia, conocimientos y entorno. Te entregamos los top 5 más compatibles listos para entrevistar. Sin revisar cientos de CVs.',
+                  'Our team validates candidates: profile, experience, knowledge, and background. We deliver the top 5 most compatible ones ready to interview. No CV overload.',
+                )}
+                <div style={{ marginTop: '.75rem', display: 'flex', gap: '1.2rem', flexWrap: 'wrap' }}>
+                  {[
+                    t('✓ Validación de perfil', '✓ Profile validation'),
+                    t('✓ Verificación de experiencia', '✓ Experience check'),
+                    t('✓ Top 5 entregados en 48h', '✓ Top 5 in 48h'),
+                  ].map(f => <span key={f} style={{ fontWeight: 600, fontSize: '.78rem' }}>{f}</span>)}
+                </div>
               </div>
             </div>
           )}
@@ -4435,8 +4485,18 @@ function PostJobView({ userEmail, onSuccess, t }: {
             {payErr && <div style={{ color: '#c0392b', fontSize: '.82rem', marginBottom: '.5rem' }}>{payErr}</div>}
             {postMode === 'free' ? (
               <button className="submit-btn" disabled={saving || !title.trim()} onClick={handleFreePost} style={{ background: 'var(--forest)' }}>
-                {saving ? t('Publicando…', 'Publishing…') : t('Publicar señal gratis →', 'Post free signal →')}
+                {saving ? t('Publicando…', 'Publishing…') : t('Publicar vacante gratis →', 'Post free listing →')}
               </button>
+            ) : postMode === 'preseleccion' ? (
+              <a
+                href={`https://wa.me/573205046723?text=${encodeURIComponent(`Hola, me interesa el servicio de Preselección & Validación para la vacante: "${title || 'Sin título aún'}" en candidato.com.co`)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="submit-btn"
+                style={{ background: '#5a3e8a', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '.5rem', textDecoration: 'none' }}
+              >
+                {t('Contactar por WhatsApp →', 'Contact via WhatsApp →')}
+              </a>
             ) : (
               <button className="submit-btn" disabled={saving || !title.trim()} onClick={handlePay}>
                 {saving

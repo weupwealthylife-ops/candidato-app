@@ -49,7 +49,7 @@ export default function Hero() {
           <div className="hero-cta-group">
             <div className="hero-cta-label">{t('Soy empresa', "I'm a company")}</div>
             <a href="/app" className="btn btn-outline btn-xl">
-              {t('Publicar señal gratis →', 'Post free signal →')}
+              {t('Publicar vacante gratis →', 'Post free listing →')}
             </a>
           </div>
         </div>
