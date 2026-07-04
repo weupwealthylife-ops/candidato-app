@@ -53,9 +53,24 @@ export async function POST(req: NextRequest) {
   const body = await req.json()
   const { action } = body
 
-  // Client-only: save own notes on a candidate
+  // Client-only: save own notes on a candidate (verify ownership via engagement)
   if (action === 'save_client_notes' && email) {
     const { candidateId, client_notes } = body
+    // Fetch the candidate's engagement and verify client_email matches the session
+    const { data: cand } = await client
+      .from('matchgraph_candidates')
+      .select('engagement_id')
+      .eq('id', candidateId)
+      .maybeSingle()
+    if (!cand) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+    const { data: eng } = await client
+      .from('matchgraph_engagements')
+      .select('client_email')
+      .eq('id', cand.engagement_id)
+      .maybeSingle()
+    if (!eng || eng.client_email?.toLowerCase() !== email.toLowerCase()) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
     await client.from('matchgraph_candidates').update({ client_notes }).eq('id', candidateId)
     return NextResponse.json({ ok: true })
   }

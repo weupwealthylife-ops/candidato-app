@@ -7,7 +7,7 @@ const MP_WEBHOOK_SECRET = process.env.MP_WEBHOOK_SECRET
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://candidato.com.co'
 
 function verifyMpSignature(req: NextRequest, rawBody: string): boolean {
-  if (!MP_WEBHOOK_SECRET) return true // skip if not configured
+  if (!MP_WEBHOOK_SECRET) return false // reject if secret not configured
   const xSig = req.headers.get('x-signature') || ''
   const xReqId = req.headers.get('x-request-id') || ''
   const tsMatch = xSig.match(/ts=(\d+)/)

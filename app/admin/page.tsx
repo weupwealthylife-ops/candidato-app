@@ -49,7 +49,9 @@ export default function AdminPage() {
   const [jobs, setJobs] = useState<Row[]>([])
   const [applications, setApplications] = useState<Row[]>([])
   const [preselQueue, setPreselQueue] = useState<Row[]>([])
-  const [preselStatus, setPreselStatus] = useState<Record<string, string>>({})
+  const [preselStatus, setPreselStatusRaw] = useState<Record<string, string>>(() => {
+    try { return JSON.parse(localStorage.getItem('presel_status') || '{}') } catch { return {} }
+  })
   const [loading, setLoading] = useState(false)
   const [tab, setTab] = useState<'overview' | 'candidates' | 'companies' | 'jobs' | 'applications' | 'preseleccion'>('overview')
   const [candSearch, setCandSearch] = useState('')
@@ -85,6 +87,14 @@ export default function AdminPage() {
   }
 
   useEffect(() => { load() }, [])
+
+  function setPreselStatus(updater: (prev: Record<string, string>) => Record<string, string>) {
+    setPreselStatusRaw(prev => {
+      const next = updater(prev)
+      try { localStorage.setItem('presel_status', JSON.stringify(next)) } catch { /* ignore */ }
+      return next
+    })
+  }
 
   async function logout() {
     await fetch('/api/admin-auth', { method: 'DELETE' })
@@ -269,17 +279,17 @@ export default function AdminPage() {
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '.4rem', flexShrink: 0 }}>
                         <a
-                          href={`https://wa.me/${String(job.company_email || '').replace(/\D/g, '')}?text=${encodeURIComponent(`Hola, somos el equipo de Candidato®. Recibimos tu solicitud de Preselección para "${String(job.title || '')}" y ya estamos trabajando en ello.`)}`}
-                          target="_blank" rel="noopener noreferrer"
+                          href={`mailto:${String(job.company_email || '')}?subject=Tu solicitud de Preselección — ${String(job.title || '')}&body=Hola, somos el equipo de Candidato®. Recibimos tu solicitud de Preselección para "${String(job.title || '')}" y ya estamos trabajando en ello.`}
                           style={{ fontSize: '.75rem', fontWeight: 700, color: 'white', background: '#25D366', borderRadius: 7, padding: '5px 12px', textDecoration: 'none', whiteSpace: 'nowrap' }}
                         >
-                          WhatsApp →
+                          Email →
                         </a>
                         <a
-                          href={`mailto:${String(job.company_email || '')}?subject=Tu solicitud de Preselección — ${String(job.title || '')}&body=Hola, somos el equipo de Candidato®...`}
+                          href={`https://wa.me/?text=${encodeURIComponent(`Hola, somos el equipo de Candidato®. Recibimos tu solicitud de Preselección para "${String(job.title || '')}" y ya estamos trabajando en ello.`)}`}
+                          target="_blank" rel="noopener noreferrer"
                           style={{ fontSize: '.75rem', fontWeight: 700, color: 'var(--forest)', background: 'rgba(27,59,62,.08)', borderRadius: 7, padding: '5px 12px', textDecoration: 'none', whiteSpace: 'nowrap' }}
                         >
-                          Email →
+                          WhatsApp →
                         </a>
                       </div>
                     </div>

@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
   const secret = body.secret || ''
 
   const emailOk = ADMIN_EMAILS.includes(email)
-  const secretOk = ADMIN_SECRET ? secret === ADMIN_SECRET : true
+  const secretOk = !ADMIN_SECRET || secret === ADMIN_SECRET
 
   if (!emailOk || !secretOk) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
