@@ -232,47 +232,55 @@ export default function Pricing() {
             </a>
           </div>
         ) : (
-          /* Preselección info card */
+          /* Preselección info card — forest colors */
           <div style={{
             borderRadius: 18, padding: '1.6rem 2rem',
-            background: 'linear-gradient(135deg, rgba(90,62,138,.04) 0%, rgba(90,62,138,.09) 100%)',
-            border: '1.5px solid rgba(90,62,138,.2)',
+            background: 'linear-gradient(135deg, rgba(27,59,62,.04) 0%, rgba(27,59,62,.09) 100%)',
+            border: '1.5px solid rgba(27,59,62,.18)',
             display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '1.5rem', justifyContent: 'space-between',
           }}>
             <div style={{ flex: 1, minWidth: 280 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '.55rem', marginBottom: '.55rem' }}>
-                <span style={{ fontSize: '.63rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.12em', color: 'white', background: '#5a3e8a', borderRadius: 20, padding: '3px 10px' }}>
+                <span style={{ fontSize: '.63rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.12em', color: 'white', background: 'var(--forest)', borderRadius: 20, padding: '3px 10px' }}>
                   {t('Servicio premium', 'Premium')}
                 </span>
-                <span style={{ fontFamily: 'var(--head)', fontWeight: 800, fontSize: '1.15rem', color: '#5a3e8a', letterSpacing: '-.02em' }}>
+                <span style={{ fontFamily: 'var(--head)', fontWeight: 800, fontSize: '1.15rem', color: 'var(--forest)', letterSpacing: '-.02em' }}>
                   {t('Nosotros validamos, vos decidís.', 'We validate, you decide.')}
                 </span>
               </div>
               <p style={{ fontSize: '.84rem', color: 'var(--ink-70)', margin: '0 0 .75rem', lineHeight: 1.6, maxWidth: 500 }}>
                 {t(
-                  'Nuestro equipo valida candidatos: perfil, experiencia, conocimientos y entorno. Te entregamos los top 5 listos para entrevistar. Sin revisar cientos de CVs.',
-                  'Our team validates candidates: profile, experience, knowledge, and background. We deliver the top 5 ready to interview. No CV overload.',
+                  'Nuestro equipo valida candidatos: perfil, experiencia, conocimientos y entorno. Te entregamos los top 5 listos para entrevistar — con su Match Graph personalizado.',
+                  'Our team validates candidates: profile, experience, knowledge, and background. We deliver the top 5 ready to interview — with their personalized Match Graph.',
                 )}
               </p>
-              <div style={{ display: 'flex', gap: '1.1rem', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', gap: '1.1rem', flexWrap: 'wrap', marginBottom: '.7rem' }}>
                 {[
                   t('✓ Validación completa', '✓ Full validation'),
                   t('✓ Top 5 candidatos', '✓ Top 5 candidates'),
                   t('✓ Entrega en 48h', '✓ 48h delivery'),
                   t('✓ Reemplazo sin costo', '✓ Free replacement'),
                 ].map(f => (
-                  <span key={f} style={{ fontSize: '.77rem', color: '#5a3e8a', fontWeight: 700 }}>{f}</span>
+                  <span key={f} style={{ fontSize: '.77rem', color: 'var(--forest)', fontWeight: 700 }}>{f}</span>
                 ))}
               </div>
+              {/* Match Graph link */}
+              <a
+                href="https://www.candidato.com.co/app/matchgraph"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '.35rem', fontSize: '.75rem', fontWeight: 700, color: 'var(--forest)', textDecoration: 'none', borderBottom: '1.5px solid rgba(27,59,62,.25)', paddingBottom: '1px' }}
+              >
+                <span style={{ fontSize: '.8rem' }}>⬡</span>
+                {t('Ver Candidato Match Graph →', 'View Candidato Match Graph →')}
+              </a>
             </div>
             <a
               href="https://wa.me/573205046723?text=Hola%2C%20me%20interesa%20el%20servicio%20de%20Preselección%20y%20Validación%20de%20candidato.com.co"
               target="_blank" rel="noopener noreferrer"
               style={{
                 whiteSpace: 'nowrap', fontWeight: 700, fontSize: '.84rem',
-                background: '#5a3e8a', color: 'white',
+                background: 'var(--forest)', color: 'white',
                 borderRadius: 10, padding: '11px 22px', textDecoration: 'none',
-                boxShadow: '0 2px 8px rgba(90,62,138,.25)',
+                boxShadow: '0 2px 8px rgba(27,59,62,.2)',
                 transition: 'opacity .15s',
               }}
             >
