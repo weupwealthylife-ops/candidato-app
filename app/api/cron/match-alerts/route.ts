@@ -8,31 +8,31 @@ function baseUrl(raw: string): string {
 function sb() {
   return createClient(
     baseUrl(process.env.NEXT_PUBLIC_SUPABASE_URL!),
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
   )
 }
 
 // Vercel cron calls this with Authorization: Bearer <CRON_SECRET>
 export async function GET(req: NextRequest) {
   const secret = process.env.CRON_SECRET
-  if (secret) {
-    const auth = req.headers.get('authorization')
-    if (auth !== `Bearer ${secret}`) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+  if (!secret || req.headers.get('authorization') !== `Bearer ${secret}`) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   const client = sb()
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || req.nextUrl.origin
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || 'https://candidato.com.co'
 
-  // Fetch all active jobs that haven't had a push in the last 7 days (or ever)
+  // Fetch paid active jobs that haven't had a push in the last 7 days (or ever)
+  // Free-plan "señal" jobs are excluded — they don't include AI matching
   const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
   const { data: jobs, error: jobsErr } = await client
     .from('jobs')
     .select('id, title, companies(company_name)')
     .eq('active', true)
+    .neq('plan', 'free')
     .or(`closes_at.is.null,closes_at.gte.${new Date().toISOString()}`)
     .or(`push_sent_at.is.null,push_sent_at.lte.${cutoff}`)
+    .limit(50)
 
   if (jobsErr || !jobs?.length) {
     return NextResponse.json({ ok: true, processed: 0, message: jobsErr?.message || 'No eligible jobs' })
@@ -44,7 +44,10 @@ export async function GET(req: NextRequest) {
     try {
       const res = await fetch(`${siteUrl}/api/match-push`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${secret}`,
+        },
         body: JSON.stringify({ job_id: job.id }),
       })
       const result = await res.json() as { count?: number }

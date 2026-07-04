@@ -65,22 +65,20 @@ export async function POST(req: NextRequest) {
     await sb.from('jobs').update({ active: true, payment_pending: false }).eq('id', jobId)
 
     // Fetch job title + company info for receipt
-    const { data: job } = await sb.from('jobs').select('title, companies(name, email)').eq('id', jobId).maybeSingle()
-    const co = (job?.companies as { name?: string; email?: string } | null)
+    const { data: job } = await sb.from('jobs').select('title, companies(company_name, email)').eq('id', jobId).maybeSingle()
+    const co = (job?.companies as { company_name?: string; email?: string } | null)
     const totalCOP = payment.transaction_amount
       ? `$${Number(payment.transaction_amount).toLocaleString('es-CO')} COP`
       : '—'
 
-    // Bundle credits
+    // Bundle credits — use RPC for atomic server-side increment to prevent double-grant
     if (extraCredits > 0 && companyId) {
-      const { data: coRow } = await sb.from('companies').select('job_credits').eq('id', companyId).maybeSingle()
-      const current = (coRow as { job_credits?: number } | null)?.job_credits ?? 0
-      await sb.from('companies').update({ job_credits: current + extraCredits }).eq('id', companyId)
+      await sb.rpc('increment_job_credits', { company_id: companyId, amount: extraCredits })
     }
 
     // Send receipt email to company
     if (co?.email) {
-      await sendReceipt(co.email, co.name ?? 'equipo', job?.title ?? '', totalCOP, extraCredits)
+      await sendReceipt(co.email, co.company_name ?? 'equipo', job?.title ?? '', totalCOP, extraCredits)
     }
 
     console.log(`[mp-webhook] Job ${jobId} activated, +${extraCredits} credits — payment ${paymentId}`)

@@ -14,6 +14,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     .from('jobs')
     .select('title, area, city, modality, companies(company_name)')
     .eq('id', id)
+    .eq('active', true)
     .maybeSingle()
   if (!data) return { title: 'Vacante — Candidato®' }
   const co = (data.companies as { company_name?: string })?.company_name || ''

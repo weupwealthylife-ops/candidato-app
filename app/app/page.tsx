@@ -1025,9 +1025,9 @@ export default function AppPage() {
                             <label>{t('Modalidad preferida', 'Preferred work mode')}</label>
                             <select value={cmo} onChange={(e) => setCmo(e.target.value)}>
                               <option value="" disabled>{t('Seleccioná', 'Select')}</option>
-                              <option>{t('Presencial', 'On-site')}</option>
-                              <option>{t('Remoto', 'Remote')}</option>
-                              <option>{t('Híbrido', 'Hybrid')}</option>
+                              <option value="Presencial">{t('Presencial', 'On-site')}</option>
+                              <option value="Remoto">{t('Remoto', 'Remote')}</option>
+                              <option value="Híbrido">{t('Híbrido', 'Hybrid')}</option>
                             </select>
                           </div>
                           <div className="fg fg-full" style={{ marginTop: '.4rem' }}>
@@ -1048,13 +1048,13 @@ export default function AppPage() {
                             <label>{t('Área profesional *', 'Professional area *')}</label>
                             <select value={car} onChange={(e) => setCar(e.target.value)}>
                               <option value="" disabled>{t('Seleccioná tu área', 'Select your area')}</option>
-                              <option>{t('Tecnología / IT', 'Technology / IT')}</option>
-                              <option>{t('Diseño UX/UI', 'UX/UI Design')}</option>
-                              <option>{t('Marketing y Comunicaciones', 'Marketing & Comms')}</option>
-                              <option>{t('Ventas y Comercial', 'Sales & Business Dev')}</option>
-                              <option>{t('Finanzas y Contabilidad', 'Finance & Accounting')}</option>
-                              <option>{t('Recursos Humanos', 'Human Resources')}</option>
-                              <option>{t('Operaciones', 'Operations')}</option>
+                              <option value="Tecnología / IT">{t('Tecnología / IT', 'Technology / IT')}</option>
+                              <option value="Diseño UX/UI">{t('Diseño UX/UI', 'UX/UI Design')}</option>
+                              <option value="Marketing y Comunicaciones">{t('Marketing y Comunicaciones', 'Marketing & Comms')}</option>
+                              <option value="Ventas y Comercial">{t('Ventas y Comercial', 'Sales & Business Dev')}</option>
+                              <option value="Finanzas y Contabilidad">{t('Finanzas y Contabilidad', 'Finance & Accounting')}</option>
+                              <option value="Recursos Humanos">{t('Recursos Humanos', 'Human Resources')}</option>
+                              <option value="Operaciones">{t('Operaciones', 'Operations')}</option>
                               <option>{t('Otro', 'Other')}</option>
                             </select>
                           </div>
@@ -1062,11 +1062,11 @@ export default function AppPage() {
                             <label>{t('Experiencia', 'Experience')}</label>
                             <select value={cex} onChange={(e) => setCex(e.target.value)}>
                               <option value="" disabled>{t('Años', 'Years')}</option>
-                              <option>{t('Sin experiencia', 'No experience')}</option>
-                              <option>{t('1–2 años', '1–2 years')}</option>
-                              <option>{t('3–5 años', '3–5 years')}</option>
-                              <option>{t('5–10 años', '5–10 years')}</option>
-                              <option>{t('10+ años', '10+ years')}</option>
+                              <option value="Sin experiencia">{t('Sin experiencia', 'No experience')}</option>
+                              <option value="1–2 años">{t('1–2 años', '1–2 years')}</option>
+                              <option value="3–5 años">{t('3–5 años', '3–5 years')}</option>
+                              <option value="5–10 años">{t('5–10 años', '5–10 years')}</option>
+                              <option value="10+ años">{t('10+ años', '10+ years')}</option>
                             </select>
                           </div>
                           <div className="fg">
@@ -1183,11 +1183,11 @@ export default function AppPage() {
                             <label>{t('Industria', 'Industry')}</label>
                             <select value={coind} onChange={(e) => setCoind(e.target.value)}>
                               <option value="" disabled>{t('Seleccioná', 'Select')}</option>
-                              <option>{t('Tecnología', 'Technology')}</option>
-                              <option>{t('Finanzas', 'Finance')}</option>
+                              <option value="Tecnología">{t('Tecnología', 'Technology')}</option>
+                              <option value="Finanzas">{t('Finanzas', 'Finance')}</option>
                               <option>Retail</option>
-                              <option>{t('Salud', 'Healthcare')}</option>
-                              <option>{t('Educación', 'Education')}</option>
+                              <option value="Salud">{t('Salud', 'Healthcare')}</option>
+                              <option value="Educación">{t('Educación', 'Education')}</option>
                               <option>{t('Manufactura', 'Manufacturing')}</option>
                               <option>{t('Servicios', 'Services')}</option>
                               <option>{t('Otra', 'Other')}</option>
@@ -1236,9 +1236,9 @@ export default function AppPage() {
                             <label>{t('Modalidad', 'Work mode')}</label>
                             <select value={jobmod} onChange={(e) => setJobmod(e.target.value)}>
                               <option value="" disabled>{t('Seleccioná', 'Select')}</option>
-                              <option>{t('Presencial', 'On-site')}</option>
-                              <option>{t('Remoto', 'Remote')}</option>
-                              <option>{t('Híbrido', 'Hybrid')}</option>
+                              <option value="Presencial">{t('Presencial', 'On-site')}</option>
+                              <option value="Remoto">{t('Remoto', 'Remote')}</option>
+                              <option value="Híbrido">{t('Híbrido', 'Hybrid')}</option>
                             </select>
                           </div>
                           <div className="fg">
@@ -1253,13 +1253,13 @@ export default function AppPage() {
                             <label>{t('Área', 'Area')}</label>
                             <select value={jobarea} onChange={(e) => setJobarea(e.target.value)}>
                               <option value="" disabled>{t('Área', 'Area')}</option>
-                              <option>{t('Tecnología', 'Technology')}</option>
-                              <option>{t('Diseño', 'Design')}</option>
+                              <option value="Tecnología">{t('Tecnología', 'Technology')}</option>
+                              <option value="Diseño">{t('Diseño', 'Design')}</option>
                               <option>Marketing</option>
-                              <option>{t('Ventas', 'Sales')}</option>
-                              <option>{t('Finanzas', 'Finance')}</option>
+                              <option value="Ventas">{t('Ventas', 'Sales')}</option>
+                              <option value="Finanzas">{t('Finanzas', 'Finance')}</option>
                               <option>{t('RRHH', 'HR')}</option>
-                              <option>{t('Operaciones', 'Operations')}</option>
+                              <option value="Operaciones">{t('Operaciones', 'Operations')}</option>
                               <option>{t('Otra', 'Other')}</option>
                             </select>
                           </div>
@@ -2288,15 +2288,15 @@ function CandidateView({
           <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
             <select className="filter-select" value={filterArea} onChange={e => { setFilterArea(e.target.value); loadJobs(query, e.target.value, filterCity, filterMod, filterSal) }}>
               <option value="">{t('Área', 'Area')}</option>
-              <option>{t('Tecnología / IT', 'Technology / IT')}</option>
-              <option>{t('Diseño UX/UI', 'UX/UI Design')}</option>
-              <option>{t('Marketing y Comunicaciones', 'Marketing & Comms')}</option>
-              <option>{t('Ventas y Comercial', 'Sales & Business Dev')}</option>
-              <option>{t('Finanzas y Contabilidad', 'Finance & Accounting')}</option>
-              <option>{t('Recursos Humanos', 'Human Resources')}</option>
-              <option>{t('Operaciones', 'Operations')}</option>
+              <option value="Tecnología / IT">{t('Tecnología / IT', 'Technology / IT')}</option>
+              <option value="Diseño UX/UI">{t('Diseño UX/UI', 'UX/UI Design')}</option>
+              <option value="Marketing y Comunicaciones">{t('Marketing y Comunicaciones', 'Marketing & Comms')}</option>
+              <option value="Ventas y Comercial">{t('Ventas y Comercial', 'Sales & Business Dev')}</option>
+              <option value="Finanzas y Contabilidad">{t('Finanzas y Contabilidad', 'Finance & Accounting')}</option>
+              <option value="Recursos Humanos">{t('Recursos Humanos', 'Human Resources')}</option>
+              <option value="Operaciones">{t('Operaciones', 'Operations')}</option>
               <option>{t('Producto / Product', 'Product')}</option>
-              <option>{t('Legal', 'Legal')}</option>
+              <option value="Legal">{t('Legal', 'Legal')}</option>
             </select>
             <select className="filter-select" value={filterCity} onChange={e => { setFilterCity(e.target.value); loadJobs(query, filterArea, e.target.value, filterMod, filterSal) }}>
               <option value="">{t('Ciudad', 'City')}</option>
@@ -2305,9 +2305,9 @@ function CandidateView({
             </select>
             <select className="filter-select" value={filterMod} onChange={e => { setFilterMod(e.target.value); loadJobs(query, filterArea, filterCity, e.target.value, filterSal) }}>
               <option value="">{t('Modalidad', 'Mode')}</option>
-              <option>{t('Presencial', 'On-site')}</option>
-              <option>{t('Remoto', 'Remote')}</option>
-              <option>{t('Híbrido', 'Hybrid')}</option>
+              <option value="Presencial">{t('Presencial', 'On-site')}</option>
+              <option value="Remoto">{t('Remoto', 'Remote')}</option>
+              <option value="Híbrido">{t('Híbrido', 'Hybrid')}</option>
             </select>
             <select className="filter-select" value={filterSal} onChange={e => { setFilterSal(e.target.value); loadJobs(query, filterArea, filterCity, filterMod, e.target.value) }}>
               <option value="">{t('Salario', 'Salary')}</option>
@@ -2598,7 +2598,11 @@ function CandidateView({
                 {isEditing
                   ? <select style={sel} value={editData.experience} onChange={e => setEdit('experience', e.target.value)}>
                       <option value="">{t('Seleccioná', 'Select')}</option>
-                      {[t('Sin experiencia','No experience'),t('1–2 años','1–2 years'),t('3–5 años','3–5 years'),t('5–10 años','5–10 years'),t('10+ años','10+ years')].map(o => <option key={o}>{o}</option>)}
+                      <option value="Sin experiencia">{t('Sin experiencia','No experience')}</option>
+                      <option value="1–2 años">{t('1–2 años','1–2 years')}</option>
+                      <option value="3–5 años">{t('3–5 años','3–5 years')}</option>
+                      <option value="5–10 años">{t('5–10 años','5–10 years')}</option>
+                      <option value="10+ años">{t('10+ años','10+ years')}</option>
                     </select>
                   : <span style={{ fontSize: '.82rem' }}>{experience ? tv(experience, t) : <span style={{ color: 'var(--ink-45)' }}>—</span>}</span>}
               </div>
@@ -2607,7 +2611,9 @@ function CandidateView({
                 {isEditing
                   ? <select style={sel} value={editData.modality} onChange={e => setEdit('modality', e.target.value)}>
                       <option value="">{t('Seleccioná', 'Select')}</option>
-                      {[t('Presencial','On-site'),t('Remoto','Remote'),t('Híbrido','Hybrid')].map(o => <option key={o}>{o}</option>)}
+                      <option value="Presencial">{t('Presencial','On-site')}</option>
+                      <option value="Remoto">{t('Remoto','Remote')}</option>
+                      <option value="Híbrido">{t('Híbrido','Hybrid')}</option>
                     </select>
                   : <span style={{ fontSize: '.82rem' }}>{modality ? tv(modality, t) : <span style={{ color: 'var(--ink-45)' }}>—</span>}</span>}
               </div>
@@ -3308,11 +3314,11 @@ function MyCompanyView({ userEmail, coProfile, onUpdate, t }: {
                   <div><label style={lbl}>{t('Industria', 'Industry')}</label>
                     <select style={inp} value={form.industry} onChange={e => f('industry', e.target.value)}>
                       <option value="">{t('Seleccioná', 'Select')}</option>
-                      <option>{t('Tecnología', 'Technology')}</option>
-                      <option>{t('Finanzas', 'Finance')}</option>
+                      <option value="Tecnología">{t('Tecnología', 'Technology')}</option>
+                      <option value="Finanzas">{t('Finanzas', 'Finance')}</option>
                       <option>Retail</option>
-                      <option>{t('Salud', 'Healthcare')}</option>
-                      <option>{t('Educación', 'Education')}</option>
+                      <option value="Salud">{t('Salud', 'Healthcare')}</option>
+                      <option value="Educación">{t('Educación', 'Education')}</option>
                       <option>{t('Manufactura', 'Manufacturing')}</option>
                       <option>{t('Consultoría', 'Consulting')}</option>
                       <option>{t('Otra', 'Other')}</option>
@@ -3383,11 +3389,11 @@ function MyCompanyView({ userEmail, coProfile, onUpdate, t }: {
                   <label style={matchLbl}>📊 {t('Nivel de experiencia requerido', 'Required experience level')}</label>
                   <select style={inp} value={form.looking_for_experience} onChange={e => f('looking_for_experience', e.target.value)}>
                     <option value="">{t('Cualquiera', 'Any')}</option>
-                    <option>{t('Sin experiencia', 'No experience')}</option>
-                    <option>{t('1–2 años', '1–2 years')}</option>
-                    <option>{t('3–5 años', '3–5 years')}</option>
-                    <option>{t('5–10 años', '5–10 years')}</option>
-                    <option>{t('10+ años', '10+ years')}</option>
+                    <option value="Sin experiencia">{t('Sin experiencia', 'No experience')}</option>
+                    <option value="1–2 años">{t('1–2 años', '1–2 years')}</option>
+                    <option value="3–5 años">{t('3–5 años', '3–5 years')}</option>
+                    <option value="5–10 años">{t('5–10 años', '5–10 years')}</option>
+                    <option value="10+ años">{t('10+ años', '10+ years')}</option>
                   </select>
                 </div>
 
@@ -3396,9 +3402,9 @@ function MyCompanyView({ userEmail, coProfile, onUpdate, t }: {
                   <label style={matchLbl}>🏠 {t('Modalidad de trabajo', 'Work mode')}</label>
                   <select style={inp} value={form.looking_for_modality} onChange={e => f('looking_for_modality', e.target.value)}>
                     <option value="">{t('Cualquiera', 'Any')}</option>
-                    <option>{t('Presencial', 'On-site')}</option>
-                    <option>{t('Remoto', 'Remote')}</option>
-                    <option>{t('Híbrido', 'Hybrid')}</option>
+                    <option value="Presencial">{t('Presencial', 'On-site')}</option>
+                    <option value="Remoto">{t('Remoto', 'Remote')}</option>
+                    <option value="Híbrido">{t('Híbrido', 'Hybrid')}</option>
                   </select>
                 </div>
 
@@ -3492,17 +3498,17 @@ function TalentView({ candidates, loadCandidates, t }: {
           </div>
         )}
         <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
-          <select className="filter-select" value={filterArea} onChange={e => { setFilterArea(e.target.value); setSearchErr(''); loadCandidates(query, e.target.value, filterCity, filterMod, filterSal) }}>
+          <select className="filter-select" value={filterArea} onChange={e => { setFilterArea(e.target.value); setSearchErr(''); loadCandidates(query, e.target.value, filterCity, filterMod, filterSal, filterExp) }}>
             <option value="">{t('Área', 'Area')}</option>
-            <option>{t('Tecnología / IT', 'Technology / IT')}</option>
-            <option>{t('Diseño UX/UI', 'UX/UI Design')}</option>
-            <option>{t('Marketing y Comunicaciones', 'Marketing & Comms')}</option>
-            <option>{t('Ventas y Comercial', 'Sales & Business Dev')}</option>
-            <option>{t('Finanzas y Contabilidad', 'Finance & Accounting')}</option>
-            <option>{t('Recursos Humanos', 'Human Resources')}</option>
-            <option>{t('Operaciones', 'Operations')}</option>
+            <option value="Tecnología / IT">{t('Tecnología / IT', 'Technology / IT')}</option>
+            <option value="Diseño UX/UI">{t('Diseño UX/UI', 'UX/UI Design')}</option>
+            <option value="Marketing y Comunicaciones">{t('Marketing y Comunicaciones', 'Marketing & Comms')}</option>
+            <option value="Ventas y Comercial">{t('Ventas y Comercial', 'Sales & Business Dev')}</option>
+            <option value="Finanzas y Contabilidad">{t('Finanzas y Contabilidad', 'Finance & Accounting')}</option>
+            <option value="Recursos Humanos">{t('Recursos Humanos', 'Human Resources')}</option>
+            <option value="Operaciones">{t('Operaciones', 'Operations')}</option>
             <option>{t('Producto / Product', 'Product')}</option>
-            <option>{t('Legal', 'Legal')}</option>
+            <option value="Legal">{t('Legal', 'Legal')}</option>
           </select>
           <select className="filter-select" value={filterCity} onChange={e => { setFilterCity(e.target.value); setSearchErr(''); loadCandidates(query, filterArea, e.target.value, filterMod, filterSal) }}>
             <option value="">{t('Ciudad', 'City')}</option>
@@ -3511,17 +3517,17 @@ function TalentView({ candidates, loadCandidates, t }: {
           </select>
           <select className="filter-select" value={filterMod} onChange={e => { setFilterMod(e.target.value); setSearchErr(''); loadCandidates(query, filterArea, filterCity, e.target.value, filterSal, filterExp) }}>
             <option value="">{t('Modalidad', 'Mode')}</option>
-            <option>{t('Presencial', 'On-site')}</option>
-            <option>{t('Remoto', 'Remote')}</option>
-            <option>{t('Híbrido', 'Hybrid')}</option>
+            <option value="Presencial">{t('Presencial', 'On-site')}</option>
+            <option value="Remoto">{t('Remoto', 'Remote')}</option>
+            <option value="Híbrido">{t('Híbrido', 'Hybrid')}</option>
           </select>
           <select className="filter-select" value={filterExp} onChange={e => { setFilterExp(e.target.value); setSearchErr(''); loadCandidates(query, filterArea, filterCity, filterMod, filterSal, e.target.value) }}>
             <option value="">{t('Experiencia', 'Experience')}</option>
-            <option>{t('Sin experiencia', 'No experience')}</option>
-            <option>{t('1–2 años', '1–2 years')}</option>
-            <option>{t('3–5 años', '3–5 years')}</option>
-            <option>{t('5–10 años', '5–10 years')}</option>
-            <option>{t('10+ años', '10+ years')}</option>
+            <option value="Sin experiencia">{t('Sin experiencia', 'No experience')}</option>
+            <option value="1–2 años">{t('1–2 años', '1–2 years')}</option>
+            <option value="3–5 años">{t('3–5 años', '3–5 years')}</option>
+            <option value="5–10 años">{t('5–10 años', '5–10 years')}</option>
+            <option value="10+ años">{t('10+ años', '10+ years')}</option>
           </select>
           <select className="filter-select" value={filterSal} onChange={e => { setFilterSal(e.target.value); setSearchErr(''); loadCandidates(query, filterArea, filterCity, filterMod, e.target.value, filterExp) }}>
             <option value="">{t('Pretensión salarial', 'Expected salary')}</option>
@@ -3701,6 +3707,7 @@ function MyJobsView({ userEmail, coName, onPost, t }: {
 
   async function viewApplicants(jobId: string) {
     setViewingJobId(jobId)
+    setApplications([])
     setAppsLoading(true)
     try {
       const sb = createClient()
@@ -3967,9 +3974,9 @@ function MyJobsView({ userEmail, coName, onPost, t }: {
                 <div style={{ display: 'flex', gap: '.5rem' }}>
                   <select style={{ ...inp, flex: 1 }} value={editMod} onChange={e => setEditMod(e.target.value)}>
                     <option value="">{t('Modalidad', 'Mode')}</option>
-                    <option>{t('Presencial', 'On-site')}</option>
-                    <option>{t('Remoto', 'Remote')}</option>
-                    <option>{t('Híbrido', 'Hybrid')}</option>
+                    <option value="Presencial">{t('Presencial', 'On-site')}</option>
+                    <option value="Remoto">{t('Remoto', 'Remote')}</option>
+                    <option value="Híbrido">{t('Híbrido', 'Hybrid')}</option>
                   </select>
                   <select style={{ ...inp, flex: 1 }} value={editCity} onChange={e => setEditCity(e.target.value)}>
                     <option value="">{t('Ciudad', 'City')}</option>
@@ -3979,13 +3986,13 @@ function MyJobsView({ userEmail, coName, onPost, t }: {
                 <div style={{ display: 'flex', gap: '.5rem' }}>
                   <select style={{ ...inp, flex: 1 }} value={editArea} onChange={e => setEditArea(e.target.value)}>
                     <option value="">{t('Área', 'Area')}</option>
-                    <option>{t('Tecnología / IT', 'Technology / IT')}</option>
-                    <option>{t('Diseño UX/UI', 'UX/UI Design')}</option>
+                    <option value="Tecnología / IT">{t('Tecnología / IT', 'Technology / IT')}</option>
+                    <option value="Diseño UX/UI">{t('Diseño UX/UI', 'UX/UI Design')}</option>
                     <option>Marketing</option>
-                    <option>{t('Ventas y Comercial', 'Sales')}</option>
-                    <option>{t('Finanzas', 'Finance')}</option>
-                    <option>{t('Recursos Humanos', 'HR')}</option>
-                    <option>{t('Operaciones', 'Operations')}</option>
+                    <option value="Ventas y Comercial">{t('Ventas y Comercial', 'Sales')}</option>
+                    <option value="Finanzas">{t('Finanzas', 'Finance')}</option>
+                    <option value="Recursos Humanos">{t('Recursos Humanos', 'HR')}</option>
+                    <option value="Operaciones">{t('Operaciones', 'Operations')}</option>
                   </select>
                   <select style={{ ...inp, flex: 1 }} value={editSal} onChange={e => setEditSal(e.target.value)}>
                     <option value="">{t('Salario', 'Salary')}</option>
@@ -4006,9 +4013,9 @@ function MyJobsView({ userEmail, coName, onPost, t }: {
                       <div style={{ fontFamily: 'var(--head)', fontWeight: 700, fontSize: '.95rem', color: 'var(--ink)' }}>{j.title}</div>
                       {j.plan === 'free' ? (
                         <span style={{ fontSize: '.63rem', fontWeight: 700, color: '#666', background: '#f0f0f0', borderRadius: 4, padding: '1px 6px', letterSpacing: '.04em', flexShrink: 0 }}>SEÑAL</span>
-                      ) : (
+                      ) : j.plan === 'paid' ? (
                         <span style={{ fontSize: '.63rem', fontWeight: 700, color: 'var(--forest)', background: 'rgba(27,59,62,.1)', borderRadius: 4, padding: '1px 6px', letterSpacing: '.04em', flexShrink: 0 }}>✦ DESTACADA</span>
-                      )}
+                      ) : null}
                     </div>
                     <div style={{ fontSize: '.74rem', color: 'var(--ink-45)', marginTop: '2px' }}>{timeAgo(j.created_at)}</div>
                   </div>
@@ -4212,7 +4219,7 @@ function PostJobView({ userEmail, onSuccess, t }: {
             salary_range: sal || null, description: desc.trim() || null,
             skills, required_experience: reqExp || null,
             closes_at: closesAt ? new Date(closesAt).toISOString() : null,
-            active: true,
+            active: true, plan: 'paid',
           }])
           await sb.from('companies').update({ job_credits: (co as { job_credits: number }).job_credits - 1 }).eq('id', co.id)
           setSaving(false)
@@ -4299,9 +4306,9 @@ function PostJobView({ userEmail, onSuccess, t }: {
             <label>{t('Modalidad', 'Work mode')}</label>
             <select value={mod} onChange={e => setMod(e.target.value)}>
               <option value="" disabled>{t('Seleccioná', 'Select')}</option>
-              <option>{t('Presencial', 'On-site')}</option>
-              <option>{t('Remoto', 'Remote')}</option>
-              <option>{t('Híbrido', 'Hybrid')}</option>
+              <option value="Presencial">{t('Presencial', 'On-site')}</option>
+              <option value="Remoto">{t('Remoto', 'Remote')}</option>
+              <option value="Híbrido">{t('Híbrido', 'Hybrid')}</option>
             </select>
           </div>
           <div className="fg">
@@ -4315,13 +4322,13 @@ function PostJobView({ userEmail, onSuccess, t }: {
             <label>{t('Área', 'Area')}</label>
             <select value={area} onChange={e => setArea(e.target.value)}>
               <option value="" disabled>{t('Área', 'Area')}</option>
-              <option>{t('Tecnología / IT', 'Technology / IT')}</option>
-              <option>{t('Diseño UX/UI', 'UX/UI Design')}</option>
+              <option value="Tecnología / IT">{t('Tecnología / IT', 'Technology / IT')}</option>
+              <option value="Diseño UX/UI">{t('Diseño UX/UI', 'UX/UI Design')}</option>
               <option>Marketing</option>
-              <option>{t('Ventas y Comercial', 'Sales')}</option>
-              <option>{t('Finanzas', 'Finance')}</option>
-              <option>{t('Recursos Humanos', 'HR')}</option>
-              <option>{t('Operaciones', 'Operations')}</option>
+              <option value="Ventas y Comercial">{t('Ventas y Comercial', 'Sales')}</option>
+              <option value="Finanzas">{t('Finanzas', 'Finance')}</option>
+              <option value="Recursos Humanos">{t('Recursos Humanos', 'HR')}</option>
+              <option value="Operaciones">{t('Operaciones', 'Operations')}</option>
               <option>{t('Otra', 'Other')}</option>
             </select>
           </div>
@@ -4337,7 +4344,7 @@ function PostJobView({ userEmail, onSuccess, t }: {
             <label>{t('Experiencia requerida', 'Required experience')} <span style={{color:'var(--ink-45)',fontWeight:400,textTransform:'none',letterSpacing:0}}>{t('(opcional)', '(optional)')}</span></label>
             <select value={reqExp} onChange={e => setReqExp(e.target.value)}>
               <option value="">{t('Cualquier nivel', 'Any level')}</option>
-              <option>{t('Sin experiencia', 'No experience')}</option>
+              <option value="Sin experiencia">{t('Sin experiencia', 'No experience')}</option>
               <option>1-2 años</option>
               <option>3-5 años</option>
               <option>6+ años</option>
@@ -4372,56 +4379,58 @@ function PostJobView({ userEmail, onSuccess, t }: {
             </div>
           )}
           <div className="fg fg-full">
-            {(jobCredits ?? 0) > 0 ? (
-              /* Has credits — skip payment */
-              <div style={{ background: '#EAF6EC', border: '1.5px solid #2ecc71', borderRadius: 10, padding: '.9rem 1rem', marginBottom: '.75rem', display: 'flex', alignItems: 'center', gap: '.75rem' }}>
-                <span style={{ fontSize: '1.1rem' }}>✅</span>
-                <div>
-                  <div style={{ fontWeight: 700, fontSize: '.84rem', color: 'var(--ink)' }}>
-                    {t(`Tenés ${jobCredits} vacante${jobCredits! > 1 ? 's' : ''} disponible${jobCredits! > 1 ? 's' : ''}`, `You have ${jobCredits} listing credit${jobCredits! > 1 ? 's' : ''}`)}
-                  </div>
-                  <div style={{ fontSize: '.75rem', color: 'var(--ink-45)', marginTop: 2 }}>
-                    {t('Esta publicación se activa sin costo adicional.', 'This listing activates at no extra cost.')}
+            {postMode === 'paid' && (
+              (jobCredits ?? 0) > 0 ? (
+                /* Has credits — skip payment */
+                <div style={{ background: '#EAF6EC', border: '1.5px solid #2ecc71', borderRadius: 10, padding: '.9rem 1rem', marginBottom: '.75rem', display: 'flex', alignItems: 'center', gap: '.75rem' }}>
+                  <span style={{ fontSize: '1.1rem' }}>✅</span>
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: '.84rem', color: 'var(--ink)' }}>
+                      {t(`Tenés ${jobCredits} vacante${jobCredits! > 1 ? 's' : ''} disponible${jobCredits! > 1 ? 's' : ''}`, `You have ${jobCredits} listing credit${jobCredits! > 1 ? 's' : ''}`)}
+                    </div>
+                    <div style={{ fontSize: '.75rem', color: 'var(--ink-45)', marginTop: 2 }}>
+                      {t('Esta publicación se activa sin costo adicional.', 'This listing activates at no extra cost.')}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ) : (
-              /* Bundle picker */
-              <div style={{ marginBottom: '.9rem' }}>
-                <div style={{ fontSize: '.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--ink-45)', marginBottom: '.7rem' }}>
-                  {t('¿Cuántas vacantes necesitás?', 'How many listings do you need?')}
-                </div>
-                <div style={{ display: 'flex', gap: '.7rem' }}>
-                  {PLANS.map(p => {
-                    const selected = qty === p.qty
-                    return (
-                      <button key={p.qty} type="button" onClick={() => setQty(p.qty)} style={{
-                        flex: 1, border: `2px solid ${selected ? 'var(--forest)' : 'var(--line)'}`,
-                        borderRadius: 14, padding: '1rem .6rem .85rem',
-                        background: selected ? 'var(--pale)' : '#fafafa',
-                        cursor: 'pointer', textAlign: 'center', transition: 'all .15s',
-                        boxShadow: selected ? '0 0 0 3px rgba(27,59,62,.1)' : 'none',
-                        position: 'relative',
-                      }}>
-                        {p.badge && (
-                          <div style={{ position: 'absolute', top: -10, left: '50%', transform: 'translateX(-50%)', whiteSpace: 'nowrap', fontSize: '.6rem', fontWeight: 700, color: 'var(--white)', background: 'var(--forest)', borderRadius: 20, padding: '2px 8px', letterSpacing: '.04em' }}>
-                            {p.badge}
+              ) : (
+                /* Bundle picker */
+                <div style={{ marginBottom: '.9rem' }}>
+                  <div style={{ fontSize: '.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--ink-45)', marginBottom: '.7rem' }}>
+                    {t('¿Cuántas vacantes necesitás?', 'How many listings do you need?')}
+                  </div>
+                  <div style={{ display: 'flex', gap: '.7rem' }}>
+                    {PLANS.map(p => {
+                      const selected = qty === p.qty
+                      return (
+                        <button key={p.qty} type="button" onClick={() => setQty(p.qty)} style={{
+                          flex: 1, border: `2px solid ${selected ? 'var(--forest)' : 'var(--line)'}`,
+                          borderRadius: 14, padding: '1rem .6rem .85rem',
+                          background: selected ? 'var(--pale)' : '#fafafa',
+                          cursor: 'pointer', textAlign: 'center', transition: 'all .15s',
+                          boxShadow: selected ? '0 0 0 3px rgba(27,59,62,.1)' : 'none',
+                          position: 'relative',
+                        }}>
+                          {p.badge && (
+                            <div style={{ position: 'absolute', top: -10, left: '50%', transform: 'translateX(-50%)', whiteSpace: 'nowrap', fontSize: '.6rem', fontWeight: 700, color: 'var(--white)', background: 'var(--forest)', borderRadius: 20, padding: '2px 8px', letterSpacing: '.04em' }}>
+                              {p.badge}
+                            </div>
+                          )}
+                          <div style={{ fontWeight: 900, fontSize: '1.15rem', color: selected ? 'var(--forest)' : 'var(--ink)', lineHeight: 1, letterSpacing: '-.02em' }}>
+                            ${p.price.toLocaleString('es-CO')}
                           </div>
-                        )}
-                        <div style={{ fontWeight: 900, fontSize: '1.15rem', color: selected ? 'var(--forest)' : 'var(--ink)', lineHeight: 1, letterSpacing: '-.02em' }}>
-                          ${p.price.toLocaleString('es-CO')}
-                        </div>
-                        <div style={{ fontSize: '.65rem', color: 'var(--ink-45)', marginTop: 2, fontWeight: 500 }}>COP</div>
-                        <div style={{ fontSize: '.75rem', fontWeight: 600, color: selected ? 'var(--forest)' : 'var(--ink-70)', marginTop: 5 }}>{p.label}</div>
-                      </button>
-                    )
-                  })}
+                          <div style={{ fontSize: '.65rem', color: 'var(--ink-45)', marginTop: 2, fontWeight: 500 }}>COP</div>
+                          <div style={{ fontSize: '.75rem', fontWeight: 600, color: selected ? 'var(--forest)' : 'var(--ink-70)', marginTop: 5 }}>{p.label}</div>
+                        </button>
+                      )
+                    })}
+                  </div>
+                  <div style={{ marginTop: '.65rem', fontSize: '.73rem', color: 'var(--ink-45)', display: 'flex', alignItems: 'center', gap: '.45rem' }}>
+                    <span>💳</span>
+                    {t('PSE, Nequi, tarjeta · Se activa al instante · Pago único', 'PSE, Nequi, card · Active instantly · One-time')}
+                  </div>
                 </div>
-                <div style={{ marginTop: '.65rem', fontSize: '.73rem', color: 'var(--ink-45)', display: 'flex', alignItems: 'center', gap: '.45rem' }}>
-                  <span>💳</span>
-                  {t('PSE, Nequi, tarjeta · Se activa al instante · Pago único', 'PSE, Nequi, card · Active instantly · One-time')}
-                </div>
-              </div>
+              )
             )}
             {payErr && <div style={{ color: '#c0392b', fontSize: '.82rem', marginBottom: '.5rem' }}>{payErr}</div>}
             {postMode === 'free' ? (

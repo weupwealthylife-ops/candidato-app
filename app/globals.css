@@ -826,7 +826,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,.btn:focus-visible
 .pc.feat .pcn{color:var(--white)}
 .pca{font-family:var(--head);font-size:2rem;font-weight:800;color:var(--forest);line-height:1;letter-spacing:-.04em}
 .pc.feat .pca{color:var(--white)}
-.pca sup{font-size:.85rem;vertical-align:super;font-weight:600}
+.pca sup{font-size:.85rem;vertical-align:super;font-weight:600;margin-right:3px}
 .pca span{font-size:.78rem;font-weight:400;color:var(--ink-45)}
 .pc.feat .pca span{color:rgba(255,255,255,.4)}
 .pcd{height:1px;background:var(--line);margin:1.2rem 0}

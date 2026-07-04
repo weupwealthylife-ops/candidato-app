@@ -42,6 +42,7 @@ async function fetchJobs(q?: string): Promise<JobRow[]> {
     .from('jobs')
     .select('id, title, area, city, modality, salary_range, description, closes_at, created_at, plan, companies(company_name)')
     .eq('active', true)
+    .or(`closes_at.is.null,closes_at.gte.${new Date().toISOString()}`)
     .order('created_at', { ascending: false })
     .limit(100)
 

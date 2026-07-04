@@ -55,7 +55,7 @@ export default function AdminPage() {
     setLoading(true)
     const sb = createClient()
     const [c, co, j, a] = await Promise.all([
-      sb.from('candidates').select('id,name,email,area,city,modality,experience,skills,created_at').order('created_at', { ascending: false }).limit(200),
+      sb.from('candidates').select('id,name,email,area,city,modality,experience,skills,cv_url,created_at').order('created_at', { ascending: false }).limit(200),
       sb.from('companies').select('id,company_name,email,industry,city,looking_for_areas,created_at').order('created_at', { ascending: false }).limit(200),
       sb.from('jobs').select('id,title,area,city,modality,salary_range,active,views,closes_at,created_at,companies(company_name)').order('created_at', { ascending: false }).limit(200),
       sb.from('applications').select('id,status,applied_at,candidates(name,email),jobs(title)').order('applied_at', { ascending: false }).limit(200),
