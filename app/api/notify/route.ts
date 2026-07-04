@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 // Supported notification types
-type NotifyType = 'application_submitted' | 'company_contacted' | 'match_found' | 'application_status_changed' | 'match_confirmed' | 'payment_confirmed' | 'expiry_reminder' | 'welcome_candidate' | 'welcome_company' | 'profile_incomplete' | 'free_job_upsell'
+type NotifyType = 'application_submitted' | 'company_contacted' | 'match_found' | 'application_status_changed' | 'match_confirmed' | 'payment_confirmed' | 'expiry_reminder' | 'welcome_candidate' | 'welcome_company' | 'profile_incomplete' | 'free_job_upsell' | 'free_job_published'
 
 interface NotifyPayload {
   type: NotifyType
@@ -210,6 +210,36 @@ function buildHtml(type: NotifyType, name: string, extra: Record<string, string>
       </div>
       <a href="https://candidato.com.co/app" style="display:inline-block;background:#EA6440;color:white;border-radius:8px;padding:12px 26px;font-size:.88rem;font-weight:700;text-decoration:none">Completar mi perfil ahora →</a>
       <p style="color:#9aacac;font-size:.75rem;margin-top:16px">Solo te enviamos este recordatorio una vez. Sin spam.</p>
+    `
+    return { subject, html: base.replace('CONTENT', content) }
+  }
+
+  if (type === 'free_job_published') {
+    const jobTitle = extra.jobTitle || 'tu vacante'
+    const subject = `✅ Vacante publicada — "${jobTitle}" ya está activa`
+    const content = `
+      <h2 style="color:#0E1E20;font-size:1.15rem;margin:0 0 12px">¡Tu vacante está publicada! 🎉</h2>
+      <p style="color:#4a6a6a;font-size:.88rem;line-height:1.65;margin:0 0 16px">
+        Hola <strong style="color:#1B3B3E">${name}</strong>, tu vacante gratuita
+        <strong style="color:#1B3B3E"> "${jobTitle}"</strong> ya está visible en el feed público de Candidato®.
+        Los candidatos ya pueden verla y postularse.
+      </p>
+      <div style="background:#E4F0F1;border-radius:8px;padding:14px 18px;margin-bottom:16px">
+        <p style="color:#1B3B3E;font-size:.83rem;font-weight:600;margin:0 0 8px">¿Qué pasa ahora?</p>
+        <ol style="color:#264D51;font-size:.82rem;line-height:1.8;margin:0;padding-left:18px">
+          <li>Los candidatos pueden ver tu vacante y postularse en 1 clic.</li>
+          <li>Recibís notificaciones cuando alguien se postula.</li>
+          <li>Revisás los perfiles y contactás directamente a quien te interese.</li>
+        </ol>
+      </div>
+      <div style="background:#FFF8E1;border:1px solid #FDE68A;border-radius:8px;padding:12px 16px;margin-bottom:16px">
+        <p style="color:#B45309;font-size:.82rem;font-weight:600;margin:0 0 4px">💡 ¿Querés llegar a más candidatos?</p>
+        <p style="color:#92400e;font-size:.8rem;line-height:1.6;margin:0">
+          Activá el matching inteligente ($300.000 COP · único pago) y el algoritmo identifica y notifica
+          proactivamente a los candidatos con mayor compatibilidad con tu vacante.
+        </p>
+      </div>
+      <a href="https://candidato.com.co/app" style="display:inline-block;background:#1B3B3E;color:white;border-radius:8px;padding:10px 22px;font-size:.85rem;font-weight:600;text-decoration:none">Ver mi vacante →</a>
     `
     return { subject, html: base.replace('CONTENT', content) }
   }

@@ -2158,6 +2158,10 @@ function CandidateView({
                 </div>
                 <button className="btn btn-forest btn-sm" onClick={() => setView('profile')}>{t('Completar →', 'Complete →')}</button>
               </div>
+              {/* Progress bar */}
+              <div style={{ background: 'var(--line)', borderRadius: 6, height: 6, marginBottom: '.85rem', overflow: 'hidden' }}>
+                <div style={{ width: `${profilePct}%`, height: '100%', background: profilePct >= 80 ? 'var(--forest)' : profilePct >= 50 ? '#e6a817' : 'var(--coral)', borderRadius: 6, transition: 'width .4s ease' }} />
+              </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '.3rem' }}>
                 {items.map(item => (
                   <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: '.5rem', fontSize: '.78rem' }}>
@@ -3843,11 +3847,13 @@ function MyJobsView({ userEmail, coName, onPost, t }: {
 
   const inp: React.CSSProperties = { width: '100%', background: 'var(--off)', border: '1.5px solid transparent', borderRadius: '8px', padding: '8px 10px', color: 'var(--ink)', fontFamily: 'var(--body)', fontSize: '.83rem', outline: 'none' }
 
-  const statusColor: Record<string, string> = { pending: 'var(--ink-45)', reviewed: 'var(--forest)', contacted: '#2A7E4E', rejected: 'var(--coral)' }
+  const statusColor: Record<string, string> = { pending: 'var(--ink-45)', reviewed: 'var(--forest)', shortlisted: '#5a3e8a', contacted: '#2A7E4E', rejected: 'var(--coral)' }
 
   // ── APPLICANTS PANEL ──
   if (viewingJobId) {
     const job = myJobs.find(j => j.id === viewingJobId)
+    const stageCounts = { pending: 0, reviewed: 0, shortlisted: 0, contacted: 0, rejected: 0 }
+    applications.forEach(a => { if (a.status in stageCounts) stageCounts[a.status as keyof typeof stageCounts]++ })
     return (
       <>
         <div className="page-head">
@@ -3855,6 +3861,23 @@ function MyJobsView({ userEmail, coName, onPost, t }: {
           <div className="page-title" style={{ marginTop: '.5rem' }}>{job?.title}</div>
           <div className="page-sub">{t(`${applications.length} postulante${applications.length !== 1 ? 's' : ''}`, `${applications.length} applicant${applications.length !== 1 ? 's' : ''}`)}</div>
         </div>
+        {applications.length > 0 && (
+          <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
+            {[
+              { key: 'pending', label: t('Pendientes', 'Pending') },
+              { key: 'reviewed', label: t('Revisados', 'Reviewed') },
+              { key: 'shortlisted', label: t('Preseleccionados', 'Shortlisted') },
+              { key: 'contacted', label: t('Contactados', 'Contacted') },
+              { key: 'rejected', label: t('Descartados', 'Rejected') },
+            ].map(s => (
+              <div key={s.key} style={{ display: 'flex', alignItems: 'center', gap: '.3rem', background: 'white', border: '1px solid var(--line)', borderRadius: 8, padding: '4px 10px', fontSize: '.74rem' }}>
+                <span style={{ width: 8, height: 8, borderRadius: '50%', background: statusColor[s.key], flexShrink: 0 }} />
+                <span style={{ color: 'var(--ink-45)' }}>{s.label}</span>
+                <span style={{ fontWeight: 700, color: statusColor[s.key] }}>{stageCounts[s.key as keyof typeof stageCounts]}</span>
+              </div>
+            ))}
+          </div>
+        )}
         {appsLoading && <div className="loading-state">{t('Cargando postulantes…', 'Loading applicants…')}</div>}
         {!appsLoading && applications.length === 0 && (
           <div className="empty-state">
@@ -3890,6 +3913,7 @@ function MyJobsView({ userEmail, coName, onPost, t }: {
                   >
                     <option value="pending">{t('Pendiente', 'Pending')}</option>
                     <option value="reviewed">{t('Revisado', 'Reviewed')}</option>
+                    <option value="shortlisted">{t('Preseleccionado', 'Shortlisted')}</option>
                     <option value="contacted">{t('Contactado', 'Contacted')}</option>
                     <option value="rejected">{t('Descartado', 'Rejected')}</option>
                   </select>
@@ -3964,21 +3988,40 @@ function MyJobsView({ userEmail, coName, onPost, t }: {
       {loading && <div className="loading-state">{t('Cargando…', 'Loading…')}</div>}
 
       {!loading && myJobs.length === 0 && (
-        <div style={{ textAlign: 'center', padding: '3.5rem 1rem 2rem' }}>
-          <div style={{ fontSize: '3rem', marginBottom: '1rem', lineHeight: 1 }}>📋</div>
-          <div style={{ fontFamily: 'var(--head)', fontSize: '1.25rem', fontWeight: 800, color: 'var(--ink)', letterSpacing: '-.02em', marginBottom: '.45rem' }}>
-            {t('Publicá tu primera vacante', 'Post your first listing')}
+        <div style={{ maxWidth: 520, margin: '0 auto', padding: '2rem 0' }}>
+          {/* First-job free banner */}
+          <div style={{ background: 'linear-gradient(135deg,rgba(27,59,62,.06),rgba(27,59,62,.11))', border: '1.5px solid rgba(27,59,62,.2)', borderRadius: 16, padding: '1.3rem 1.5rem', marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <span style={{ fontSize: '2rem', flexShrink: 0 }}>🎉</span>
+            <div>
+              <div style={{ fontFamily: 'var(--head)', fontWeight: 800, fontSize: '1rem', color: 'var(--forest)', marginBottom: '.25rem' }}>
+                {t('Tu primera vacante es gratis', 'Your first listing is free')}
+              </div>
+              <div style={{ fontSize: '.8rem', color: 'var(--ink-70)', lineHeight: 1.5 }}>
+                {t('Publicala ahora sin costo. Sin tarjeta de crédito.', 'Post it now at no cost. No credit card needed.')}
+              </div>
+            </div>
           </div>
-          <p style={{ fontSize: '.84rem', color: 'var(--ink-45)', maxWidth: 320, margin: '0 auto 1.5rem', lineHeight: 1.6 }}>
-            {t('El algoritmo encontrará los candidatos más compatibles automáticamente.', 'The algorithm will automatically find the most compatible candidates.')}
-          </p>
-          <button className="btn btn-forest" style={{ fontSize: '.9rem', padding: '.75rem 1.6rem' }} onClick={onPost}>
-            {t('Publicar vacante →', 'Post a listing →')}
+
+          {/* 3-step guide */}
+          <div style={{ background: 'white', border: '1px solid var(--line)', borderRadius: 16, padding: '1.3rem 1.5rem', marginBottom: '1.25rem' }}>
+            <div style={{ fontFamily: 'var(--head)', fontWeight: 700, fontSize: '.85rem', color: 'var(--ink)', marginBottom: '1rem' }}>
+              {t('Cómo funciona', 'How it works')}
+            </div>
+            {[
+              { n: '1', es: 'Describí el perfil que buscás (2 minutos)', en: 'Describe the profile you need (2 minutes)' },
+              { n: '2', es: 'Candidatos se postulan directamente a tu vacante', en: 'Candidates apply directly to your listing' },
+              { n: '3', es: 'Revisás perfiles y contactás solo a quienes te interesan', en: 'Review profiles and contact only those who fit' },
+            ].map(s => (
+              <div key={s.n} style={{ display: 'flex', alignItems: 'flex-start', gap: '.75rem', marginBottom: '.75rem' }}>
+                <div style={{ width: 26, height: 26, borderRadius: '50%', background: 'var(--forest)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--head)', fontWeight: 800, fontSize: '.78rem', flexShrink: 0, marginTop: '1px' }}>{s.n}</div>
+                <div style={{ fontSize: '.83rem', color: 'var(--ink-70)', lineHeight: 1.55, paddingTop: '3px' }}>{t(s.es, s.en)}</div>
+              </div>
+            ))}
+          </div>
+
+          <button className="btn btn-forest" style={{ width: '100%', fontSize: '.9rem', padding: '.8rem 1.6rem', justifyContent: 'center' }} onClick={onPost}>
+            {t('Publicar mi primera vacante →', 'Post my first listing →')}
           </button>
-          <div style={{ marginTop: '1rem', fontSize: '.72rem', color: 'var(--ink-45)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '.35rem' }}>
-            <span>💳</span>
-            {t('$300.000 COP · Sin suscripción · Pago único', '$300,000 COP · No subscription · One-time payment')}
-          </div>
         </div>
       )}
 
@@ -4215,13 +4258,23 @@ function PostJobView({ userEmail, onSuccess, t }: {
     setPayErr('')
     try {
       const sb = createClient()
-      const { data: co } = await sb.from('companies').select('id').ilike('email', userEmail).maybeSingle()
+      const { data: co } = await sb.from('companies').select('id, company_name').ilike('email', userEmail).maybeSingle()
       if (!co?.id) { setPayErr(t('No se encontró la empresa.', 'Company not found.')); setSaving(false); return }
       await sb.from('jobs').insert([{
         company_id: co.id,
         title: title.trim(), modality: mod || null, city: city || null, area: area || null,
         active: true, plan: 'free',
       }])
+      fetch('/api/notify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'free_job_published',
+          to: userEmail,
+          name: ((co as { company_name?: string }).company_name || 'equipo').split(' ')[0],
+          extra: { jobTitle: title.trim() },
+        }),
+      }).catch(() => {})
       setSaving(false)
       onSuccess()
     } catch {
