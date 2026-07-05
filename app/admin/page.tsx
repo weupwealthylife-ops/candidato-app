@@ -145,6 +145,7 @@ export default function AdminPage() {
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--off)', fontFamily: 'var(--body)' }}>
+      <ToastProvider />
       {/* Top bar */}
       <div style={{ background: 'var(--forest)', padding: isMobile ? '0 1rem' : '0 2rem', height: 52, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <span style={{ color: 'white', fontFamily: 'var(--head)', fontWeight: 700, fontSize: '.95rem' }}>Candidato® Admin</span>
