@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { createHmac } from 'crypto'
 
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://candidato.com.co'
 
@@ -90,7 +91,10 @@ export async function GET(req: NextRequest) {
             jobTitle: job.title,
             closesAt: formatDate(job.closes_at),
             jobId: job.id,
-            renewUrl: `${BASE_URL}/app`,
+            renewUrl: (() => {
+                const tok = createHmac('sha256', process.env.CRON_SECRET || '').update(job.id).digest('hex').slice(0, 16)
+                return `${BASE_URL}/app/renovar?job=${job.id}&tok=${tok}`
+              })(),
           },
         }),
       })
