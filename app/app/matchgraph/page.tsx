@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { ToastProvider, showToast } from '@/components/Toast'
 
 const ADMIN_EMAIL = 'candidatojobs@gmail.com'
 const FOREST = '#1B3B3E'
@@ -65,19 +66,21 @@ function useIsMobile() {
   return mobile
 }
 
-/* ── Logo SVG ─────────────────────────────────────────────── */
-function LogoIcon({ size = 32, light = false }: { size?: number; light?: boolean }) {
-  const fill = light ? 'white' : FOREST
-  const bg = light ? 'rgba(255,255,255,.12)' : PALE
+/* ── Bird Logo ────────────────────────────────────────────── */
+function BirdLogo({ size = 32, light = false }: { size?: number; light?: boolean }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 32 32" fill="none">
-      <rect width={32} height={32} rx={7} fill={bg} />
-      <path d="M16 5 L9 11 H23 Z" fill={fill} />
-      <rect x={10} y={11.5} width={2.2} height={13} fill={fill} rx={1.1} />
-      <rect x={14.9} y={11.5} width={2.2} height={13} fill={fill} rx={1.1} />
-      <rect x={19.8} y={11.5} width={2.2} height={13} fill={fill} rx={1.1} />
-      <rect x={7.5} y={23.5} width={17} height={2} fill={fill} rx={1} />
-    </svg>
+    <img
+      src="/bird-logo.png"
+      alt="Candidato®"
+      width={size}
+      height={size}
+      style={{
+        borderRadius: 8,
+        objectFit: 'cover',
+        filter: light ? 'brightness(0) invert(1)' : 'none',
+        flexShrink: 0,
+      }}
+    />
   )
 }
 
@@ -253,8 +256,10 @@ export default function MatchGraphPage() {
     if (!selEng) return
     setSaving(true)
     const body = { action: 'upsert_candidate', ...candForm, engagement_id: selEng!.id, id: editingCand?.id }
-    await fetch('/api/matchgraph', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+    const saveRes = await fetch('/api/matchgraph', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
     setSaving(false); setShowEditCand(false); setEditingCand(null)
+    if (saveRes.ok) showToast('Candidato guardado', 'success')
+    else showToast('Error al guardar', 'error')
     const res = await fetch(`/api/matchgraph?action=detail&id=${selEng!.id}`)
     const data = await res.json()
     setCandidates(data.candidates || [])
@@ -278,12 +283,14 @@ export default function MatchGraphPage() {
     const updated = newCands.map((c, i) => ({ ...c, sort_order: i + 1 }))
     setCandidates(updated)
     setDragIndex(null); setDragOverIndex(null)
-    await Promise.all(updated.map(c =>
+    const results = await Promise.all(updated.map(c =>
       fetch('/api/matchgraph', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'upsert_candidate', id: c.id, sort_order: c.sort_order }),
       })
     ))
+    if (results.every(r => r.ok)) showToast('Reordenados correctamente', 'success')
+    else showToast('Error al guardar', 'error')
   }
 
   async function uploadFile(file: File, bucket: string, path: string): Promise<string> {
@@ -311,11 +318,13 @@ export default function MatchGraphPage() {
 
   async function saveClientNotes(candId: string) {
     setSavingNotes(candId)
-    await fetch('/api/matchgraph', {
+    const res = await fetch('/api/matchgraph', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'save_client_notes', candidateId: candId, client_notes: clientNotes[candId] || '' }),
     })
     setSavingNotes(null)
+    if (res.ok) showToast('Nota guardada', 'success')
+    else showToast('Error al guardar', 'error')
   }
 
   function openAddCandidate() {
@@ -334,7 +343,7 @@ export default function MatchGraphPage() {
   if (loading) return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: FOREST }}>
       <div style={{ textAlign: 'center' }}>
-        <LogoIcon size={44} light />
+        <img src="/bird-logo.png" width={48} height={48} alt="" style={{ borderRadius: 12, filter: 'brightness(0) invert(1)', opacity: 0.85 }} />
         <div style={{ color: 'rgba(255,255,255,.4)', fontSize: '.78rem', marginTop: '1rem', letterSpacing: '.05em' }}>Cargando…</div>
       </div>
     </div>
@@ -356,38 +365,42 @@ export default function MatchGraphPage() {
         <div style={{ position: 'absolute', bottom: -60, left: -60, width: 300, height: 300, borderRadius: '50%', background: 'rgba(228,240,241,.05)', pointerEvents: 'none' }} />
 
         <div style={{ position: 'relative', zIndex: 1 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: '3.5rem' }}>
-            <LogoIcon size={38} light />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: '3rem' }}>
+            <BirdLogo size={40} light />
             <div>
-              <div style={{ color: 'white', fontFamily: 'Georgia,serif', fontWeight: 700, fontSize: '1.2rem', letterSpacing: '-.01em' }}>Candidato®</div>
-              <div style={{ color: 'rgba(255,255,255,.4)', fontSize: '.62rem', letterSpacing: '.14em', textTransform: 'uppercase' }}>Match Graph</div>
+              <div style={{ color: 'white', fontFamily: 'Georgia,serif', fontWeight: 700, fontSize: '1.15rem', letterSpacing: '-.01em' }}>Candidato®</div>
+              <div style={{ color: 'rgba(255,255,255,.4)', fontSize: '.6rem', letterSpacing: '.15em', textTransform: 'uppercase', marginTop: 2 }}>Candidato® — Match Graph</div>
             </div>
           </div>
 
-          <h1 style={{ color: 'white', fontFamily: 'Georgia,serif', fontSize: '1.75rem', fontWeight: 700, lineHeight: 1.3, margin: '0 0 1rem', letterSpacing: '-.02em' }}>
-            Evaluación integral de candidatos
+          <div style={{ fontSize: '.7rem', fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,.4)', marginBottom: '.75rem' }}>
+            Preselección &amp; Validación
+          </div>
+          <h1 style={{ fontFamily: 'Georgia,serif', fontSize: '1.9rem', fontWeight: 700, lineHeight: 1.25, margin: '0 0 .5rem', letterSpacing: '-.02em' }}>
+            <span style={{ color: 'white' }}>El talento que</span><br />
+            <span style={{ color: CORAL }}>ya fue validado.</span>
           </h1>
-          <p style={{ color: 'rgba(255,255,255,.55)', fontSize: '.85rem', lineHeight: 1.8, margin: '0 0 2.5rem' }}>
-            Panel privado con los perfiles preseleccionados y validados por el equipo de Candidato® para tu proceso de selección.
+          <p style={{ color: 'rgba(255,255,255,.55)', fontSize: '.84rem', lineHeight: 1.75, margin: '0 0 2.5rem' }}>
+            Perfiles preseleccionados y validados por el equipo de Candidato® para tu proceso de selección.
           </p>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '.75rem' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '.65rem' }}>
             {[
-              'Scores de compatibilidad por dimensión',
-              'Match Graph radar comparativo',
-              'Perfiles validados + CV descargable',
-              'Notas privadas por candidato',
-              'Entrevistas coordinadas en un clic',
+              { icon: '⚡', text: 'Scores de compatibilidad por dimensión' },
+              { icon: '📊', text: 'Match Graph radar comparativo' },
+              { icon: '✅', text: 'Perfiles validados + CV descargable' },
+              { icon: '📝', text: 'Notas privadas por candidato' },
+              { icon: '📅', text: 'Entrevistas coordinadas en un clic' },
             ].map(f => (
-              <div key={f} style={{ display: 'flex', alignItems: 'center', gap: '.75rem' }}>
-                <div style={{ width: 6, height: 6, borderRadius: '50%', background: CORAL, flexShrink: 0 }} />
-                <span style={{ color: 'rgba(255,255,255,.65)', fontSize: '.81rem' }}>{f}</span>
+              <div key={f.text} style={{ display: 'flex', alignItems: 'center', gap: '.75rem' }}>
+                <span style={{ fontSize: '.88rem', flexShrink: 0 }}>{f.icon}</span>
+                <span style={{ color: 'rgba(255,255,255,.65)', fontSize: '.81rem' }}>{f.text}</span>
               </div>
             ))}
           </div>
 
-          <div style={{ marginTop: '3rem', paddingTop: '1.5rem', borderTop: '1px solid rgba(255,255,255,.1)', display: 'flex', alignItems: 'center', gap: '.6rem' }}>
-            <div style={{ width: 28, height: 28, borderRadius: 8, background: 'rgba(255,255,255,.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '.75rem' }}>🔒</div>
+          <div style={{ marginTop: '2.5rem', paddingTop: '1.5rem', borderTop: '1px solid rgba(255,255,255,.1)', display: 'flex', alignItems: 'center', gap: '.6rem' }}>
+            <span style={{ fontSize: '.88rem' }}>🔒</span>
             <span style={{ color: 'rgba(255,255,255,.35)', fontSize: '.73rem', lineHeight: 1.5 }}>Acceso privado por email · datos cifrados en tránsito</span>
           </div>
         </div>
@@ -398,25 +411,30 @@ export default function MatchGraphPage() {
         <div style={{ width: '100%', maxWidth: 380 }}>
           {/* Mobile-only logo */}
           <div className="mg-mobile-brand" style={{ alignItems: 'center', gap: 10, marginBottom: '2rem', display: 'none' }}>
-            <LogoIcon size={32} />
+            <BirdLogo size={36} />
             <div>
-              <div style={{ fontFamily: 'Georgia,serif', fontWeight: 700, fontSize: '1rem', color: FOREST }}>Candidato®</div>
-              <div style={{ fontSize: '.62rem', color: '#9aacac', letterSpacing: '.1em', textTransform: 'uppercase' }}>Match Graph</div>
+              <div style={{ fontFamily: 'Georgia,serif', fontWeight: 700, fontSize: '1.05rem', color: FOREST }}>Candidato®</div>
+              <div style={{ fontSize: '.6rem', color: '#9aacac', letterSpacing: '.12em', textTransform: 'uppercase' }}>Match Graph</div>
             </div>
           </div>
 
-          <div style={{ fontFamily: 'Georgia,serif', fontWeight: 700, fontSize: '1.45rem', color: INK, marginBottom: '.4rem', letterSpacing: '-.02em' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: '1.5rem' }}>
+            <BirdLogo size={28} />
+            <span style={{ fontFamily: 'Georgia,serif', fontWeight: 700, fontSize: '.95rem', color: FOREST, letterSpacing: '-.01em' }}>Candidato®</span>
+          </div>
+
+          <div style={{ fontFamily: 'Georgia,serif', fontWeight: 700, fontSize: '1.55rem', color: INK, marginBottom: '.4rem', letterSpacing: '-.025em', lineHeight: 1.2 }}>
             Accedé a tu evaluación
           </div>
           <p style={{ fontSize: '.83rem', color: '#9aacac', margin: '0 0 2rem', lineHeight: 1.65 }}>
             Ingresá el email corporativo con el que coordinaste el servicio de Preselección &amp; Validación.
           </p>
 
-          <label style={{ fontSize: '.72rem', fontWeight: 700, color: '#4a6a6a', display: 'block', marginBottom: '.35rem', textTransform: 'uppercase', letterSpacing: '.07em' }}>
-            Email corporativo
+          <label style={{ fontSize: '.7rem', fontWeight: 700, color: '#4a6a6a', display: 'block', marginBottom: '.35rem', textTransform: 'uppercase', letterSpacing: '.08em' }}>
+            Tu email para continuar
           </label>
           <input
-            style={{ ...inp, marginBottom: '.85rem' }}
+            style={{ ...inp, marginBottom: '.85rem', borderRadius: 8, padding: '12px 14px', fontSize: '.88rem' }}
             type="email"
             placeholder="empresa@corporativo.com"
             value={loginEmail}
@@ -434,15 +452,15 @@ export default function MatchGraphPage() {
           <button
             onClick={handleLogin}
             disabled={loginLoading || !loginEmail.trim()}
-            style={{ width: '100%', background: loginLoading || !loginEmail.trim() ? '#b0c0c0' : FOREST, color: 'white', border: 'none', borderRadius: 10, padding: '13px', fontSize: '.9rem', fontWeight: 700, cursor: loginLoading || !loginEmail.trim() ? 'not-allowed' : 'pointer', fontFamily: 'inherit', transition: 'all .15s', letterSpacing: '-.01em' }}
+            style={{ width: '100%', background: loginLoading || !loginEmail.trim() ? '#b0c0c0' : FOREST, color: 'white', border: 'none', borderRadius: 10, padding: '14px', fontSize: '.92rem', fontWeight: 700, cursor: loginLoading || !loginEmail.trim() ? 'not-allowed' : 'pointer', fontFamily: 'inherit', transition: 'all .15s', letterSpacing: '-.01em' }}
           >
-            {loginLoading ? 'Verificando…' : 'Ingresar →'}
+            {loginLoading ? 'Verificando…' : 'Continuar →'}
           </button>
 
-          <p style={{ textAlign: 'center', fontSize: '.73rem', color: '#b0c4c4', margin: '1.2rem 0 0', lineHeight: 1.5 }}>
+          <p style={{ textAlign: 'center', fontSize: '.75rem', color: '#b0c4c4', margin: '1.2rem 0 0', lineHeight: 1.5 }}>
             ¿Aún no tenés acceso?{' '}
             <a href="https://wa.me/573205046723" target="_blank" rel="noopener noreferrer" style={{ color: FOREST, fontWeight: 600, textDecoration: 'none' }}>
-              Contactá a tu consultor
+              Contactá a tu consultor →
             </a>
           </p>
         </div>
@@ -459,9 +477,9 @@ export default function MatchGraphPage() {
             ← Inicio
           </button>
         )}
-        <LogoIcon size={28} light />
+        <BirdLogo size={26} light />
         <div style={{ color: 'white', fontFamily: 'Georgia,serif', fontWeight: 700, fontSize: '1rem', letterSpacing: '-.01em' }}>Candidato®</div>
-        <span style={{ color: 'rgba(255,255,255,.35)', fontSize: '.78rem' }}>Match Graph</span>
+        <span style={{ color: 'rgba(255,255,255,.35)', fontSize: '.75rem', letterSpacing: '.04em' }}>Match Graph</span>
         {title && (
           <>
             <span style={{ color: 'rgba(255,255,255,.2)' }}>·</span>
@@ -862,6 +880,7 @@ export default function MatchGraphPage() {
 
   return (
     <div style={{ minHeight: '100vh', background: OFF, display: 'flex', flexDirection: 'column' }}>
+      <ToastProvider />
       <style>{`
         @media print {
           .no-print { display: none !important; }
@@ -902,6 +921,31 @@ export default function MatchGraphPage() {
           </button>
         ))}
       </div>
+
+      {/* Prev / Next navigation — shown when viewing a candidate */}
+      {candIdx >= 0 && (
+        <div className="no-print" style={{ background: 'white', borderBottom: '1px solid #e0eaea', padding: '8px 1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+          <button
+            onClick={() => setCandIdx(candIdx === 0 ? -1 : candIdx - 1)}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '.78rem', fontWeight: 700, color: FOREST, padding: '4px 8px', borderRadius: 6, display: 'flex', alignItems: 'center', gap: '.3rem', transition: 'background .12s' }}
+          >
+            ← {candIdx === 0 ? 'Resumen' : 'Anterior'}
+          </button>
+          <span style={{ fontSize: '.78rem', fontWeight: 600, color: '#4a6a6a' }}>
+            C{candIdx + 1}: {currentCand?.name.split(' ')[0]} · {avgScore(currentCand!)}%
+          </span>
+          {candIdx < candidates.length - 1 ? (
+            <button
+              onClick={() => setCandIdx(candIdx + 1)}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '.78rem', fontWeight: 700, color: FOREST, padding: '4px 8px', borderRadius: 6, display: 'flex', alignItems: 'center', gap: '.3rem', transition: 'background .12s' }}
+            >
+              Siguiente →
+            </button>
+          ) : (
+            <span style={{ width: 80 }} />
+          )}
+        </div>
+      )}
 
       <div style={{ flex: 1 }}>
         {candIdx === -1 ? <CoverView /> : currentCand ? <CandidateView c={currentCand} /> : null}
