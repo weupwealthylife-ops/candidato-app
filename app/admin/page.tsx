@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { ToastProvider, showToast } from '@/components/Toast'
 
 function useIsMobile() {
   const [mobile, setMobile] = useState(false)
@@ -104,6 +105,11 @@ export default function AdminPage() {
     setPreselStatusRaw(prev => {
       const next = updater(prev)
       try { localStorage.setItem('presel_status', JSON.stringify(next)) } catch { /* ignore */ }
+      const changedKey = Object.keys(next).find(k => next[k] !== prev[k])
+      if (changedKey) {
+        const labels: Record<string, string> = { pending: 'Pendiente', in_progress: 'En progreso', completed: 'Completado' }
+        showToast(`Estado: ${labels[next[changedKey]] || next[changedKey]}`, 'info')
+      }
       return next
     })
   }
