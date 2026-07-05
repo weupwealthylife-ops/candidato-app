@@ -80,9 +80,14 @@ export default async function JobsPage({
         <a href="https://candidato.com.co" style={{ color: 'white', fontWeight: 700, fontSize: '13px', letterSpacing: '0.08em', textTransform: 'uppercase', textDecoration: 'none' }}>
           Candidato® ✦
         </a>
-        <a href="/app" style={{ background: coral, color: 'white', borderRadius: '8px', padding: '6px 14px', fontSize: '13px', fontWeight: 700, textDecoration: 'none' }}>
-          Postularme gratis →
-        </a>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <Link href="/empresas/dashboard" style={{ color: 'rgba(255,255,255,.65)', fontSize: '12px', fontWeight: 600, textDecoration: 'none', letterSpacing: '0.02em' }}>
+            Panel empresa
+          </Link>
+          <a href="/app" style={{ background: coral, color: 'white', borderRadius: '8px', padding: '6px 14px', fontSize: '13px', fontWeight: 700, textDecoration: 'none' }}>
+            Postularme gratis →
+          </a>
+        </div>
       </div>
 
       <div style={{ maxWidth: '820px', margin: '0 auto', padding: '40px 16px 80px' }}>
