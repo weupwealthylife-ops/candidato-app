@@ -3,6 +3,17 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
+function useIsMobile() {
+  const [mobile, setMobile] = useState(false)
+  useEffect(() => {
+    const check = () => setMobile(window.innerWidth < 768)
+    check()
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [])
+  return mobile
+}
+
 interface Row { [key: string]: unknown }
 
 function StatCard({ label, value, sub }: { label: string; value: string | number; sub?: string }) {
@@ -44,6 +55,7 @@ function DataTable({ rows, cols }: { rows: Row[]; cols: string[] }) {
 }
 
 export default function AdminPage() {
+  const isMobile = useIsMobile()
   const [candidates, setCandidates] = useState<Row[]>([])
   const [companies, setCompanies] = useState<Row[]>([])
   const [jobs, setJobs] = useState<Row[]>([])
@@ -128,21 +140,21 @@ export default function AdminPage() {
   return (
     <div style={{ minHeight: '100vh', background: 'var(--off)', fontFamily: 'var(--body)' }}>
       {/* Top bar */}
-      <div style={{ background: 'var(--forest)', padding: '0 2rem', height: 52, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div style={{ background: 'var(--forest)', padding: isMobile ? '0 1rem' : '0 2rem', height: 52, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <span style={{ color: 'white', fontFamily: 'var(--head)', fontWeight: 700, fontSize: '.95rem' }}>Candidato® Admin</span>
         <button onClick={logout} style={{ background: 'rgba(255,255,255,.15)', border: 'none', color: 'white', borderRadius: 6, padding: '4px 12px', cursor: 'pointer', fontSize: '.78rem' }}>
           Salir
         </button>
       </div>
 
-      <div style={{ maxWidth: 1100, margin: '0 auto', padding: '1.5rem 1.5rem' }}>
+      <div style={{ maxWidth: 1100, margin: '0 auto', padding: isMobile ? '1rem' : '1.5rem 1.5rem' }}>
         {/* Tabs */}
         <div style={{ display: 'flex', gap: '.3rem', flexWrap: 'wrap', marginBottom: '1.5rem' }}>
           {tabs.map(t => (
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
-              style={{ padding: '6px 14px', borderRadius: 7, border: 'none', fontSize: '.79rem', fontWeight: 600, cursor: 'pointer', background: tab === t.id ? 'var(--forest)' : 'white', color: tab === t.id ? 'white' : 'var(--ink-70)', transition: 'all .15s' }}
+              style={{ padding: isMobile ? '7px 10px' : '6px 14px', borderRadius: 7, border: 'none', fontSize: isMobile ? '.72rem' : '.79rem', fontWeight: 600, cursor: 'pointer', background: tab === t.id ? 'var(--forest)' : 'white', color: tab === t.id ? 'white' : 'var(--ink-70)', transition: 'all .15s' }}
             >
               {t.label}
             </button>
@@ -154,7 +166,7 @@ export default function AdminPage() {
 
         {tab === 'overview' && (
           <>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(200px,1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(auto-fill,minmax(200px,1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
               <StatCard label="Candidatos" value={candidates.length} sub="registrados en total" />
               <StatCard label="Con CV" value={candWithCV} sub={`${candidates.length ? Math.round(candWithCV/candidates.length*100) : 0}% del total`} />
               <StatCard label="Empresas" value={companies.length} sub="registradas" />
@@ -162,7 +174,7 @@ export default function AdminPage() {
               <StatCard label="Postulaciones" value={applications.length} sub={`${pendingApps} pendientes`} />
               <StatCard label="Vistas totales" value={totalViews.toLocaleString('es-CO')} sub="en todas las vacantes" />
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '1rem' }}>
               <div style={{ background: 'white', border: '1px solid var(--line)', borderRadius: 12, padding: '1.2rem' }}>
                 <div style={{ fontWeight: 700, fontSize: '.85rem', marginBottom: '.75rem', color: 'var(--ink)' }}>Últimos candidatos</div>
                 <DataTable rows={candidates.slice(0,5)} cols={['name','email','area','city','created_at']} />
@@ -177,7 +189,7 @@ export default function AdminPage() {
 
         {tab === 'candidates' && (
           <div style={{ background: 'white', border: '1px solid var(--line)', borderRadius: 12, padding: '1.2rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '.85rem', gap: '.75rem', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'stretch' : 'center', justifyContent: 'space-between', marginBottom: '.85rem', gap: '.75rem' }}>
               <div style={{ fontWeight: 700, fontSize: '.88rem', color: 'var(--ink)' }}>
                 Candidatos ({filteredCands.length}{filteredCands.length !== candidates.length ? ` de ${candidates.length}` : ''})
               </div>
@@ -190,7 +202,7 @@ export default function AdminPage() {
 
         {tab === 'companies' && (
           <div style={{ background: 'white', border: '1px solid var(--line)', borderRadius: 12, padding: '1.2rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '.85rem', gap: '.75rem', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'stretch' : 'center', justifyContent: 'space-between', marginBottom: '.85rem', gap: '.75rem' }}>
               <div style={{ fontWeight: 700, fontSize: '.88rem', color: 'var(--ink)' }}>
                 Empresas ({filteredCos.length}{filteredCos.length !== companies.length ? ` de ${companies.length}` : ''})
               </div>
@@ -203,7 +215,7 @@ export default function AdminPage() {
 
         {tab === 'jobs' && (
           <div style={{ background: 'white', border: '1px solid var(--line)', borderRadius: 12, padding: '1.2rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '.85rem', gap: '.75rem', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'stretch' : 'center', justifyContent: 'space-between', marginBottom: '.85rem', gap: '.75rem' }}>
               <div style={{ fontWeight: 700, fontSize: '.88rem', color: 'var(--ink)' }}>
                 Vacantes ({filteredJobs.length}{filteredJobs.length !== jobs.length ? ` de ${jobs.length}` : ''})
               </div>
@@ -216,7 +228,7 @@ export default function AdminPage() {
 
         {tab === 'applications' && (
           <div style={{ background: 'white', border: '1px solid var(--line)', borderRadius: 12, padding: '1.2rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '.85rem', gap: '.75rem', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'stretch' : 'center', justifyContent: 'space-between', marginBottom: '.85rem', gap: '.75rem' }}>
               <div style={{ fontWeight: 700, fontSize: '.88rem', color: 'var(--ink)' }}>
                 Postulaciones ({filteredApps.length}{filteredApps.length !== applications.length ? ` de ${applications.length}` : ''})
               </div>

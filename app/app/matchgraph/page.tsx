@@ -53,6 +53,18 @@ function avgScore(c: Candidate) {
   return Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * 20)
 }
 
+/* ── Mobile hook ─────────────────────────────────────────── */
+function useIsMobile() {
+  const [mobile, setMobile] = useState(false)
+  useEffect(() => {
+    const check = () => setMobile(window.innerWidth < 768)
+    check()
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [])
+  return mobile
+}
+
 /* ── Logo SVG ─────────────────────────────────────────────── */
 function LogoIcon({ size = 32, light = false }: { size?: number; light?: boolean }) {
   const fill = light ? 'white' : FOREST
@@ -122,9 +134,10 @@ function ScoreBar({ score }: { score: number }) {
 
 /* ── Modal ────────────────────────────────────────────────── */
 function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
+  const isMobile = useIsMobile()
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(14,30,32,.55)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem', backdropFilter: 'blur(2px)' }}>
-      <div style={{ background: 'white', borderRadius: 18, padding: '1.6rem', width: '100%', maxWidth: 560, maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 24px 64px rgba(14,30,32,.22)' }}>
+      <div style={{ background: 'white', borderRadius: 18, padding: isMobile ? '1.2rem' : '1.6rem', width: isMobile ? '95vw' : '100%', maxWidth: 560, maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 24px 64px rgba(14,30,32,.22)' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.3rem' }}>
           <div style={{ fontWeight: 700, fontSize: '.95rem', color: INK, fontFamily: 'Georgia,serif' }}>{title}</div>
           <button onClick={onClose} style={{ border: 'none', background: 'none', cursor: 'pointer', fontSize: '1.3rem', color: '#9aacac', lineHeight: 1, width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%' }}>×</button>
@@ -141,6 +154,7 @@ const ta: React.CSSProperties = { ...inp, resize: 'vertical', minHeight: 76, lin
 /* ── Main Page ────────────────────────────────────────────── */
 export default function MatchGraphPage() {
   type View = 'login' | 'dashboard' | 'engagement'
+  const isMobile = useIsMobile()
   const [view, setView] = useState<View>('login')
   const [session, setSession] = useState<{ email: string; isAdmin: boolean } | null>(null)
   const [engagements, setEngagements] = useState<Engagement[]>([])
@@ -249,8 +263,11 @@ export default function MatchGraphPage() {
   async function deleteCandidate(id: string) {
     if (!confirm('¿Eliminar este candidato?')) return
     await fetch('/api/matchgraph', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'delete_candidate', id }) })
-    setCandidates(prev => prev.filter(c => c.id !== id))
-    if (candIdx >= candidates.length - 1) setCandIdx(Math.max(-1, candidates.length - 2))
+    setCandidates(prev => {
+      const next = prev.filter(c => c.id !== id)
+      if (candIdx >= next.length) setCandIdx(Math.max(-1, next.length - 1))
+      return next
+    })
   }
 
   async function handleReorder(fromIdx: number, toIdx: number) {
@@ -454,7 +471,7 @@ export default function MatchGraphPage() {
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem' }}>
         {actions}
-        <div style={{ fontSize: '.7rem', color: 'rgba(255,255,255,.4)', marginLeft: 6 }}>{session?.email}</div>
+        {!isMobile && <div style={{ fontSize: '.7rem', color: 'rgba(255,255,255,.4)', marginLeft: 6 }}>{session?.email}</div>}
         <button onClick={logout} style={{ background: 'rgba(255,255,255,.1)', border: 'none', color: 'rgba(255,255,255,.75)', borderRadius: 7, padding: '4px 11px', cursor: 'pointer', fontSize: '.75rem', transition: 'background .15s' }}>
           Salir
         </button>
@@ -580,7 +597,7 @@ export default function MatchGraphPage() {
 
   /* Cover summary view */
   function CoverView() {
-    const overallAvgs = candidates.map(c => ({ name: c.name.split(' ')[0], score: avgScore(c), isTop: c.is_top }))
+    const overallAvgs = candidates.map(c => ({ name: c.name.split(' ')[0], score: avgScore(c), isTop: c.is_top, photo_url: c.photo_url }))
     return (
       <div style={{ padding: '2.5rem 2rem', maxWidth: 860, margin: '0 auto' }}>
         <div style={{ marginBottom: '2.5rem' }}>
@@ -634,9 +651,13 @@ export default function MatchGraphPage() {
                   {c.isTop && (
                     <div style={{ position: 'absolute', top: -9, left: '50%', transform: 'translateX(-50%)', background: FOREST, color: 'white', fontSize: '.58rem', fontWeight: 700, padding: '2px 9px', borderRadius: 10, whiteSpace: 'nowrap', letterSpacing: '.04em' }}>⭐ TOP</div>
                   )}
-                  <div style={{ width: 46, height: 46, borderRadius: '50%', background: PALE, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Georgia,serif', fontWeight: 700, fontSize: '.88rem', color: FOREST, margin: '0 auto .65rem' }}>
-                    C{i + 1}
-                  </div>
+                  {c.photo_url ? (
+                    <img src={c.photo_url} alt={c.name} style={{ width: 46, height: 46, borderRadius: '50%', objectFit: 'cover', border: `2px solid ${c.isTop ? FOREST : '#e0eaea'}`, margin: '0 auto .65rem', display: 'block' }} />
+                  ) : (
+                    <div style={{ width: 46, height: 46, borderRadius: '50%', background: PALE, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Georgia,serif', fontWeight: 700, fontSize: '.88rem', color: FOREST, margin: '0 auto .65rem' }}>
+                      C{i + 1}
+                    </div>
+                  )}
                   <div style={{ fontWeight: 700, fontSize: '.79rem', color: INK, marginBottom: '.3rem', lineHeight: 1.2 }}>{c.name}</div>
                   <div style={{ fontSize: '1.15rem', fontWeight: 800, color: c.score >= 80 ? FOREST : c.score >= 60 ? '#e6a817' : CORAL, lineHeight: 1 }}>{c.score}%</div>
                   <div style={{ fontSize: '.63rem', color: '#9aacac', marginTop: '.1rem' }}>fit score</div>
@@ -739,13 +760,13 @@ export default function MatchGraphPage() {
           <div style={{ fontSize: '.8rem', color: '#4a6a6a' }}>{selEng!.title} · {selEng!.company_name}</div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: '2rem', alignItems: 'start' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 360px', gap: '2rem', alignItems: 'start' }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1.1rem', marginBottom: '1.5rem' }}>
               {c.photo_url ? (
-                <img src={c.photo_url} alt={c.name} style={{ width: 82, height: 82, borderRadius: 13, objectFit: 'cover', border: '2px solid #e0eaea', flexShrink: 0 }} />
+                <img src={c.photo_url} alt={c.name} style={{ width: isMobile ? 60 : 82, height: isMobile ? 60 : 82, borderRadius: 13, objectFit: 'cover', border: '2px solid #e0eaea', flexShrink: 0 }} />
               ) : (
-                <div style={{ width: 82, height: 82, borderRadius: 13, background: PALE, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Georgia,serif', fontWeight: 700, fontSize: '1.4rem', color: FOREST, flexShrink: 0 }}>
+                <div style={{ width: isMobile ? 60 : 82, height: isMobile ? 60 : 82, borderRadius: 13, background: PALE, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Georgia,serif', fontWeight: 700, fontSize: isMobile ? '1.1rem' : '1.4rem', color: FOREST, flexShrink: 0 }}>
                   C{candIdx + 1}
                 </div>
               )}
@@ -766,7 +787,7 @@ export default function MatchGraphPage() {
                 <span style={{ fontSize: '.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.09em', color: '#9aacac' }}>Puntaje (1–5)</span>
               </div>
               {SCORE_LABELS.map((label, i) => (
-                <div key={label} style={{ display: 'grid', gridTemplateColumns: '1fr 220px', gap: '1rem', alignItems: 'center', padding: '10px 15px', borderBottom: i < 4 ? '1px solid #f4f8f8' : 'none' }}>
+                <div key={label} style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 220px', gap: isMobile ? '.3rem' : '1rem', alignItems: 'center', padding: '10px 15px', borderBottom: i < 4 ? '1px solid #f4f8f8' : 'none' }}>
                   <span style={{ fontSize: '.83rem', color: INK, fontWeight: 600 }}>{label}</span>
                   <ScoreBar score={scores[i]} />
                 </div>
@@ -926,7 +947,7 @@ export default function MatchGraphPage() {
             <label style={{ fontSize: '.72rem', fontWeight: 700, color: '#4a6a6a', display: 'block', marginBottom: '.28rem', textTransform: 'uppercase', letterSpacing: '.06em' }}>Nombre completo *</label>
             <input style={inp} placeholder="Nombre del candidato" value={candForm.name || ''} onChange={e => setCandForm(p => ({ ...p, name: e.target.value }))} />
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '.5rem', marginBottom: '.75rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '.5rem', marginBottom: '.75rem' }}>
             <div>
               <label style={{ fontSize: '.72rem', fontWeight: 700, color: '#4a6a6a', display: 'block', marginBottom: '.28rem', textTransform: 'uppercase', letterSpacing: '.06em' }}>Orden</label>
               <input style={inp} type="number" min={1} max={10} value={candForm.sort_order || 1} onChange={e => setCandForm(p => ({ ...p, sort_order: parseInt(e.target.value) || 1 }))} />
@@ -936,7 +957,7 @@ export default function MatchGraphPage() {
               <input style={inp} placeholder="Ej: $3.500.000" value={candForm.salary_expectation || ''} onChange={e => setCandForm(p => ({ ...p, salary_expectation: e.target.value }))} />
             </div>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '.5rem', marginBottom: '.75rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '.5rem', marginBottom: '.75rem' }}>
             <div>
               <label style={{ fontSize: '.72rem', fontWeight: 700, color: '#4a6a6a', display: 'block', marginBottom: '.28rem', textTransform: 'uppercase', letterSpacing: '.06em' }}>Movilidad</label>
               <input style={inp} placeholder="Ej: Transporte propio" value={candForm.mobility || ''} onChange={e => setCandForm(p => ({ ...p, mobility: e.target.value }))} />
