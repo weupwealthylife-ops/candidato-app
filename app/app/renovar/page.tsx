@@ -18,18 +18,20 @@ export default function RenovarPage() {
   const [job, setJob] = useState<JobInfo | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [renewing, setRenewing] = useState(false)
-  const [newDate, setNewDate] = useState<string | null>(null)
+  const [redirecting, setRedirecting] = useState(false)
 
   const [jobId, setJobId] = useState<string>('')
   const [tok, setTok] = useState<string>('')
+  const [paymentStatus, setPaymentStatus] = useState<string | null>(null)
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const jid = params.get('job') || ''
     const t = params.get('tok') || ''
+    const payment = params.get('payment') || null
     setJobId(jid)
     setTok(t)
+    setPaymentStatus(payment)
 
     if (!jid || !t) {
       setError('Enlace inválido. Revisá el email que recibiste.')
@@ -55,23 +57,23 @@ export default function RenovarPage() {
       })
   }, [])
 
-  async function handleRenew() {
-    if (!jobId || !tok) return
-    setRenewing(true)
+  async function handleRenewWithPayment() {
+    if (!jobId || !tok || !job) return
+    setRedirecting(true)
     try {
-      const res = await fetch('/api/renew-job', {
+      const res = await fetch('/api/mp-renewal', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ jobId, tok }),
+        body: JSON.stringify({ jobId, tok, title: job.title }),
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Error al renovar')
-      setNewDate(data.new_closes_at)
+      if (!res.ok) throw new Error(data.error || 'Error al crear pago')
+      window.location.href = data.url
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Error inesperado'
       setError(message)
+      setRedirecting(false)
     }
-    setRenewing(false)
   }
 
   return (
@@ -107,11 +109,11 @@ export default function RenovarPage() {
         .rv-btn {
           display: block;
           width: 100%;
-          background: var(--coral);
+          background: var(--forest);
           color: white;
           border: none;
           border-radius: 10px;
-          padding: .85rem 1.5rem;
+          padding: .9rem 1.5rem;
           font-size: .95rem;
           font-weight: 700;
           cursor: pointer;
@@ -119,7 +121,7 @@ export default function RenovarPage() {
           font-family: Inter, system-ui, sans-serif;
           transition: background .15s;
         }
-        .rv-btn:hover:not(:disabled) { background: #d4533a; }
+        .rv-btn:hover:not(:disabled) { background: #163032; }
         .rv-btn:disabled { opacity: .6; cursor: not-allowed; }
         .rv-row {
           display: flex;
@@ -158,34 +160,59 @@ export default function RenovarPage() {
           </div>
         )}
 
-        {!loading && !error && job && !newDate && (
+        {/* Payment success */}
+        {!loading && !error && paymentStatus === 'success' && job && (
+          <div style={{ textAlign: 'center', padding: '1.5rem 0' }}>
+            <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'var(--pale)', color: 'var(--forest)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.8rem', margin: '0 auto 1rem', border: '2px solid var(--forest)' }}>
+              ✓
+            </div>
+            <h2 style={{ fontFamily: 'Georgia, serif', fontWeight: 700, fontSize: '1.3rem', color: 'var(--forest)', margin: '0 0 .4rem' }}>
+              Pago confirmado
+            </h2>
+            <p style={{ fontSize: '.88rem', color: 'var(--ink-70)', margin: '0 0 .3rem' }}>
+              <strong>{job.title}</strong>
+            </p>
+            <p style={{ fontSize: '.83rem', color: 'var(--ink-45)', margin: 0, lineHeight: 1.6 }}>
+              Tu vacante fue renovada por 30 días adicionales.<br />
+              Recibirás confirmación por email.
+            </p>
+          </div>
+        )}
+
+        {/* Payment pending */}
+        {!loading && !error && paymentStatus === 'pending' && job && (
+          <div style={{ textAlign: 'center', padding: '1.5rem 0' }}>
+            <div style={{ fontSize: '2.5rem', marginBottom: '.75rem' }}>⏳</div>
+            <h2 style={{ fontFamily: 'Georgia, serif', fontWeight: 700, fontSize: '1.2rem', color: '#e6a817', margin: '0 0 .5rem' }}>Pago en proceso</h2>
+            <p style={{ fontSize: '.83rem', color: 'var(--ink-45)', margin: 0, lineHeight: 1.6 }}>
+              Estamos verificando tu pago. La renovación se activará automáticamente en minutos.
+            </p>
+          </div>
+        )}
+
+        {/* Payment failure */}
+        {!loading && !error && paymentStatus === 'failure' && job && (
+          <div style={{ textAlign: 'center', padding: '1rem 0' }}>
+            <div style={{ fontSize: '2rem', marginBottom: '.75rem' }}>❌</div>
+            <h2 style={{ fontFamily: 'Georgia, serif', fontWeight: 700, fontSize: '1.2rem', color: 'var(--coral)', margin: '0 0 .5rem' }}>Pago rechazado</h2>
+            <p style={{ fontSize: '.83rem', color: 'var(--ink-70)', margin: '0 0 1.5rem', lineHeight: 1.6 }}>
+              El pago no pudo procesarse. Podés intentarlo nuevamente.
+            </p>
+            <button className="rv-btn" onClick={handleRenewWithPayment} disabled={redirecting}>
+              {redirecting ? 'Redirigiendo…' : 'Intentar de nuevo →'}
+            </button>
+          </div>
+        )}
+
+        {/* Normal state — show renewal CTA */}
+        {!loading && !error && job && !paymentStatus && (
           <>
-            {/* Header */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '.9rem', marginBottom: '1.5rem' }}>
-              <div style={{
-                width: 48,
-                height: 48,
-                borderRadius: 12,
-                background: 'var(--forest)',
-                color: 'white',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontWeight: 800,
-                fontSize: '1.1rem',
-                flexShrink: 0,
-              }}>
+              <div style={{ width: 48, height: 48, borderRadius: 12, background: 'var(--forest)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '1.1rem', flexShrink: 0 }}>
                 {job.company_name ? job.company_name[0].toUpperCase() : '?'}
               </div>
               <div>
-                <h1 style={{
-                  margin: 0,
-                  fontFamily: 'Georgia, serif',
-                  fontWeight: 700,
-                  fontSize: '1.15rem',
-                  color: 'var(--ink)',
-                  lineHeight: 1.25,
-                }}>
+                <h1 style={{ margin: 0, fontFamily: 'Georgia, serif', fontWeight: 700, fontSize: '1.15rem', color: 'var(--ink)', lineHeight: 1.25 }}>
                   {job.title}
                 </h1>
                 <div style={{ fontSize: '.8rem', color: 'var(--ink-70)', marginTop: '.1rem' }}>
@@ -194,7 +221,6 @@ export default function RenovarPage() {
               </div>
             </div>
 
-            {/* Info rows */}
             <div style={{ marginBottom: '1.5rem' }}>
               <div className="rv-row">
                 <span className="rv-label">Cierre actual</span>
@@ -203,57 +229,23 @@ export default function RenovarPage() {
                 </span>
               </div>
               <div className="rv-row">
-                <span className="rv-label">Nueva vigencia</span>
+                <span className="rv-label">Renovación</span>
                 <span className="rv-value">30 días adicionales</span>
+              </div>
+              <div className="rv-row">
+                <span className="rv-label">Precio</span>
+                <span className="rv-value" style={{ color: 'var(--forest)', fontSize: '1rem' }}>$150.000 COP</span>
               </div>
             </div>
 
-            {/* CTA */}
-            <button className="rv-btn" onClick={handleRenew} disabled={renewing}>
-              {renewing ? 'Renovando…' : 'Renovar por 30 días más →'}
+            <button className="rv-btn" onClick={handleRenewWithPayment} disabled={redirecting}>
+              {redirecting ? 'Redirigiendo a pago…' : 'Renovar con MercadoPago →'}
             </button>
 
-            <p style={{ fontSize: '.74rem', color: 'var(--ink-45)', textAlign: 'center', marginTop: '.9rem', marginBottom: 0 }}>
-              La fecha de cierre se extenderá desde hoy o desde el cierre actual si aún está vigente.
+            <p style={{ fontSize: '.74rem', color: 'var(--ink-45)', textAlign: 'center', marginTop: '.9rem', marginBottom: 0, lineHeight: 1.5 }}>
+              Pago seguro vía MercadoPago · La vigencia se extiende automáticamente al confirmar.
             </p>
           </>
-        )}
-
-        {!loading && !error && newDate && (
-          <div style={{ textAlign: 'center', padding: '1.5rem 0' }}>
-            <div style={{
-              width: 64,
-              height: 64,
-              borderRadius: '50%',
-              background: 'var(--pale)',
-              color: 'var(--forest)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '1.8rem',
-              margin: '0 auto 1rem',
-              border: '2px solid var(--forest)',
-            }}>
-              ✓
-            </div>
-            <h2 style={{
-              fontFamily: 'Georgia, serif',
-              fontWeight: 700,
-              fontSize: '1.3rem',
-              color: 'var(--forest)',
-              margin: '0 0 .4rem',
-            }}>
-              Renovada
-            </h2>
-            {job && (
-              <p style={{ fontSize: '.88rem', color: 'var(--ink-70)', margin: '0 0 .3rem' }}>
-                <strong>{job.title}</strong>
-              </p>
-            )}
-            <p style={{ fontSize: '.83rem', color: 'var(--ink-45)', margin: 0 }}>
-              Nuevo cierre: <strong style={{ color: 'var(--forest)' }}>{formatDate(newDate)}</strong>
-            </p>
-          </div>
         )}
       </div>
 

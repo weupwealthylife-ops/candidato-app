@@ -73,11 +73,27 @@ export async function POST(req: NextRequest) {
   const ref = payment.external_reference as string | undefined
   if (!ref) return NextResponse.json({ ok: true })
 
+  const sb = adminClient()
+
+  // Handle renewal payments: external_reference = "renewal:<jobId>"
+  if (ref.startsWith('renewal:')) {
+    const renewJobId = ref.replace('renewal:', '')
+    if (payment.status === 'approved') {
+      const { data: job } = await sb.from('jobs').select('closes_at').eq('id', renewJobId).maybeSingle()
+      const now = new Date()
+      const currentClose = job?.closes_at ? new Date(job.closes_at) : now
+      const base = currentClose > now ? currentClose : now
+      const newClosesAt = new Date(base)
+      newClosesAt.setDate(newClosesAt.getDate() + 30)
+      await sb.from('jobs').update({ closes_at: newClosesAt.toISOString(), expiry_reminder_sent: false, active: true }).eq('id', renewJobId)
+      console.log(`[mp-webhook] Job ${renewJobId} renewed until ${newClosesAt.toISOString()} — payment ${paymentId}`)
+    }
+    return NextResponse.json({ ok: true })
+  }
+
   // external_reference: "jobId" or "jobId:credits:companyId"
   const [jobId, creditsStr, companyId] = ref.split(':')
   const extraCredits = parseInt(creditsStr ?? '0', 10) || 0
-
-  const sb = adminClient()
 
   if (payment.status === 'approved') {
     // Idempotency: skip if job is already active (payment already processed)

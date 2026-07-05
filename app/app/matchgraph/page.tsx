@@ -121,6 +121,51 @@ function RadarChart({ scores, size = 240 }: { scores: number[]; size?: number })
   )
 }
 
+/* ── Multi-candidate Radar chart ─────────────────────────── */
+function MultiRadarChart({ cands, colors, size = 280 }: { cands: Candidate[]; colors: string[]; size?: number }) {
+  const cx = size / 2, cy = size / 2
+  const r = size * 0.33
+  const labelR = size * 0.47
+  const n = 5
+  const ang = (i: number) => -Math.PI / 2 + i * ((2 * Math.PI) / n)
+  const pt = (i: number, radius: number) => ({ x: cx + radius * Math.cos(ang(i)), y: cy + radius * Math.sin(ang(i)) })
+  const poly = (points: { x: number; y: number }[]) =>
+    points.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ') + 'Z'
+  const shortLabels = ['Profesión', 'Experiencia', 'Sector', 'Requisitos', 'Disponibilidad']
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+      {[1, 2, 3, 4, 5].map(level => (
+        <path key={level} d={poly(Array.from({ length: n }, (_, i) => pt(i, (level / 5) * r)))}
+          fill="none" stroke={level === 5 ? '#c8d8d9' : '#e2eced'} strokeWidth={level === 5 ? 1 : 0.6} />
+      ))}
+      {Array.from({ length: n }, (_, i) => {
+        const e = pt(i, r)
+        return <line key={i} x1={cx} y1={cy} x2={e.x.toFixed(1)} y2={e.y.toFixed(1)} stroke="#c8d8d9" strokeWidth={0.7} />
+      })}
+      {cands.map((c, ci) => {
+        const scores = SCORE_KEYS.map(k => Number(c[k]) || 0)
+        const scorePoints = scores.map((s, i) => pt(i, (Math.max(1, Math.min(5, s)) / 5) * r))
+        const color = colors[ci] || FOREST
+        return (
+          <g key={c.id}>
+            <path d={poly(scorePoints)} fill={`${color}33`} stroke={color} strokeWidth={2} />
+            {scorePoints.map((p, i) => <circle key={i} cx={p.x} cy={p.y} r={3.5} fill={color} />)}
+          </g>
+        )
+      })}
+      {shortLabels.map((label, i) => {
+        const p = pt(i, labelR)
+        return (
+          <text key={i} x={p.x} y={p.y} textAnchor="middle" dominantBaseline="middle"
+            fontSize={9.5} fill="#4a6a6a" fontFamily="system-ui,sans-serif">
+            {label}
+          </text>
+        )
+      })}
+    </svg>
+  )
+}
+
 /* ── Score bar ────────────────────────────────────────────── */
 function ScoreBar({ score }: { score: number }) {
   const pct = ((score - 1) / 4) * 100
@@ -184,6 +229,11 @@ export default function MatchGraphPage() {
 
   const [clientNotes, setClientNotes] = useState<Record<string, string>>({})
   const [savingNotes, setSavingNotes] = useState<string | null>(null)
+
+  // Comparison mode
+  const [compareMode, setCompareMode] = useState(false)
+  const [compareIds, setCompareIds] = useState<string[]>([])
+  const [showCompare, setShowCompare] = useState(false)
 
   // Drag-and-drop reorder (admin only)
   const [dragIndex, setDragIndex] = useState<number | null>(null)
@@ -630,57 +680,97 @@ export default function MatchGraphPage() {
 
         {candidates.length > 0 ? (
           <>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem', flexWrap: 'wrap', gap: '.5rem' }}>
               <div style={{ fontSize: '.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: '#9aacac' }}>
                 {candidates.length} candidato{candidates.length !== 1 ? 's' : ''} evaluado{candidates.length !== 1 ? 's' : ''}
               </div>
-              {session?.isAdmin && candidates.length > 1 && (
-                <div style={{ fontSize: '.7rem', color: '#b0c4c4', display: 'flex', alignItems: 'center', gap: '.35rem' }}>
-                  <span>⠿</span> Arrastrá para reordenar
-                </div>
-              )}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem', flexWrap: 'wrap' }}>
+                {session?.isAdmin && candidates.length > 1 && !compareMode && (
+                  <div style={{ fontSize: '.7rem', color: '#b0c4c4', display: 'flex', alignItems: 'center', gap: '.35rem' }}>
+                    <span>⠿</span> Arrastrá para reordenar
+                  </div>
+                )}
+                {candidates.length >= 2 && !compareMode && (
+                  <button onClick={() => { setCompareMode(true); setCompareIds([]) }}
+                    style={{ fontSize: '.72rem', fontWeight: 700, padding: '5px 13px', borderRadius: 8, border: `1.5px solid ${FOREST}`, background: 'white', color: FOREST, cursor: 'pointer', transition: 'all .15s' }}>
+                    ⚖️ Comparar
+                  </button>
+                )}
+                {compareMode && (
+                  <>
+                    <span style={{ fontSize: '.72rem', color: '#4a6a6a' }}>
+                      {compareIds.length < 2 ? `Seleccioná ${2 - compareIds.length} más` : `${compareIds.length} seleccionados`}
+                    </span>
+                    {compareIds.length >= 2 && (
+                      <button onClick={() => setShowCompare(true)}
+                        style={{ fontSize: '.72rem', fontWeight: 700, padding: '5px 13px', borderRadius: 8, border: 'none', background: FOREST, color: 'white', cursor: 'pointer' }}>
+                        Ver comparación →
+                      </button>
+                    )}
+                    <button onClick={() => { setCompareMode(false); setCompareIds([]) }}
+                      style={{ fontSize: '.72rem', fontWeight: 600, padding: '5px 10px', borderRadius: 8, border: '1.5px solid #e0eaea', background: 'white', color: '#9aacac', cursor: 'pointer' }}>
+                      Cancelar
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(145px,1fr))', gap: '.75rem', marginBottom: '2rem' }}>
-              {overallAvgs.map((c, i) => (
-                <div
-                  key={i}
-                  draggable={session?.isAdmin}
-                  onDragStart={() => setDragIndex(i)}
-                  onDragOver={e => { e.preventDefault(); setDragOverIndex(i) }}
-                  onDrop={() => { if (dragIndex !== null) handleReorder(dragIndex, i) }}
-                  onDragEnd={() => { setDragIndex(null); setDragOverIndex(null) }}
-                  onClick={() => setCandIdx(i)}
-                  style={{
-                    background: 'white',
-                    border: `1.5px solid ${dragOverIndex === i ? FOREST : c.isTop ? `${FOREST}55` : '#e0eaea'}`,
-                    borderRadius: 13,
-                    padding: '1.1rem .8rem',
-                    cursor: session?.isAdmin ? 'grab' : 'pointer',
-                    textAlign: 'center',
-                    transition: 'all .15s',
-                    position: 'relative',
-                    opacity: dragIndex === i ? 0.45 : 1,
-                    transform: dragOverIndex === i && dragIndex !== i ? 'scale(1.02)' : 'scale(1)',
-                    boxShadow: dragOverIndex === i ? `0 4px 16px rgba(27,59,62,.15)` : '0 2px 6px rgba(14,30,32,.04)',
-                    userSelect: 'none',
-                  }}
-                >
-                  {c.isTop && (
-                    <div style={{ position: 'absolute', top: -9, left: '50%', transform: 'translateX(-50%)', background: FOREST, color: 'white', fontSize: '.58rem', fontWeight: 700, padding: '2px 9px', borderRadius: 10, whiteSpace: 'nowrap', letterSpacing: '.04em' }}>⭐ TOP</div>
-                  )}
-                  {c.photo_url ? (
-                    <img src={c.photo_url} alt={c.name} style={{ width: 46, height: 46, borderRadius: '50%', objectFit: 'cover', border: `2px solid ${c.isTop ? FOREST : '#e0eaea'}`, margin: '0 auto .65rem', display: 'block' }} />
-                  ) : (
-                    <div style={{ width: 46, height: 46, borderRadius: '50%', background: PALE, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Georgia,serif', fontWeight: 700, fontSize: '.88rem', color: FOREST, margin: '0 auto .65rem' }}>
-                      C{i + 1}
-                    </div>
-                  )}
-                  <div style={{ fontWeight: 700, fontSize: '.79rem', color: INK, marginBottom: '.3rem', lineHeight: 1.2 }}>{c.name}</div>
-                  <div style={{ fontSize: '1.15rem', fontWeight: 800, color: c.score >= 80 ? FOREST : c.score >= 60 ? '#e6a817' : CORAL, lineHeight: 1 }}>{c.score}%</div>
-                  <div style={{ fontSize: '.63rem', color: '#9aacac', marginTop: '.1rem' }}>fit score</div>
-                </div>
-              ))}
+              {overallAvgs.map((c, i) => {
+                const cand = candidates[i]
+                const isSelected = compareIds.includes(cand.id)
+                const canSelect = compareIds.length < 3 || isSelected
+                return (
+                  <div
+                    key={i}
+                    draggable={session?.isAdmin && !compareMode}
+                    onDragStart={() => setDragIndex(i)}
+                    onDragOver={e => { e.preventDefault(); setDragOverIndex(i) }}
+                    onDrop={() => { if (dragIndex !== null) handleReorder(dragIndex, i) }}
+                    onDragEnd={() => { setDragIndex(null); setDragOverIndex(null) }}
+                    onClick={() => {
+                      if (compareMode) {
+                        if (!canSelect && !isSelected) return
+                        setCompareIds(prev => isSelected ? prev.filter(id => id !== cand.id) : [...prev, cand.id])
+                      } else {
+                        setCandIdx(i)
+                      }
+                    }}
+                    style={{
+                      background: compareMode && isSelected ? PALE : 'white',
+                      border: `1.5px solid ${compareMode ? (isSelected ? FOREST : canSelect ? '#d0e4e4' : '#efefef') : dragOverIndex === i ? FOREST : c.isTop ? `${FOREST}55` : '#e0eaea'}`,
+                      borderRadius: 13,
+                      padding: '1.1rem .8rem',
+                      cursor: compareMode ? (canSelect || isSelected ? 'pointer' : 'not-allowed') : session?.isAdmin ? 'grab' : 'pointer',
+                      textAlign: 'center',
+                      transition: 'all .15s',
+                      position: 'relative',
+                      opacity: dragIndex === i ? 0.45 : compareMode && !canSelect && !isSelected ? 0.4 : 1,
+                      transform: dragOverIndex === i && dragIndex !== i ? 'scale(1.02)' : 'scale(1)',
+                      boxShadow: compareMode && isSelected ? `0 4px 16px rgba(27,59,62,.15)` : dragOverIndex === i ? `0 4px 16px rgba(27,59,62,.15)` : '0 2px 6px rgba(14,30,32,.04)',
+                      userSelect: 'none',
+                    }}
+                  >
+                    {compareMode && isSelected && (
+                      <div style={{ position: 'absolute', top: 7, right: 7, width: 18, height: 18, borderRadius: '50%', background: FOREST, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '.65rem', color: 'white', fontWeight: 700 }}>✓</div>
+                    )}
+                    {c.isTop && (
+                      <div style={{ position: 'absolute', top: -9, left: '50%', transform: 'translateX(-50%)', background: FOREST, color: 'white', fontSize: '.58rem', fontWeight: 700, padding: '2px 9px', borderRadius: 10, whiteSpace: 'nowrap', letterSpacing: '.04em' }}>⭐ TOP</div>
+                    )}
+                    {c.photo_url ? (
+                      <img src={c.photo_url} alt={c.name} style={{ width: 46, height: 46, borderRadius: '50%', objectFit: 'cover', border: `2px solid ${c.isTop ? FOREST : '#e0eaea'}`, margin: '0 auto .65rem', display: 'block' }} />
+                    ) : (
+                      <div style={{ width: 46, height: 46, borderRadius: '50%', background: PALE, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Georgia,serif', fontWeight: 700, fontSize: '.88rem', color: FOREST, margin: '0 auto .65rem' }}>
+                        C{i + 1}
+                      </div>
+                    )}
+                    <div style={{ fontWeight: 700, fontSize: '.79rem', color: INK, marginBottom: '.3rem', lineHeight: 1.2 }}>{c.name}</div>
+                    <div style={{ fontSize: '1.15rem', fontWeight: 800, color: c.score >= 80 ? FOREST : c.score >= 60 ? '#e6a817' : CORAL, lineHeight: 1 }}>{c.score}%</div>
+                    <div style={{ fontSize: '.63rem', color: '#9aacac', marginTop: '.1rem' }}>fit score</div>
+                  </div>
+                )
+              })}
             </div>
 
             {candidates.length > 1 && (
@@ -878,6 +968,119 @@ export default function MatchGraphPage() {
     )
   }
 
+  /* ── Compare View ───────────────────────────────────────── */
+  function CompareView() {
+    const COMP_COLORS = [FOREST, CORAL, '#e6a817']
+    const comps = candidates.filter(c => compareIds.includes(c.id))
+    return (
+      <div style={{ padding: '2rem', maxWidth: 1040, margin: '0 auto' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '.5rem' }}>
+          <div>
+            <h2 style={{ fontFamily: 'Georgia,serif', fontWeight: 700, fontSize: '1.3rem', color: INK, margin: '0 0 .2rem', letterSpacing: '-.02em' }}>Comparación de candidatos</h2>
+            <p style={{ fontSize: '.8rem', color: '#9aacac', margin: 0 }}>{comps.length} candidatos seleccionados · {selEng!.title}</p>
+          </div>
+          <button onClick={() => { setShowCompare(false); setCompareMode(false); setCompareIds([]) }}
+            style={{ fontSize: '.75rem', fontWeight: 600, padding: '7px 15px', borderRadius: 9, border: '1.5px solid #e0eaea', background: 'white', color: '#4a6a6a', cursor: 'pointer' }}>
+            ← Volver al resumen
+          </button>
+        </div>
+
+        {/* Overlaid radar */}
+        <div style={{ background: 'white', border: '1px solid #e0eaea', borderRadius: 15, padding: '1.5rem', marginBottom: '1.5rem', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <div style={{ fontSize: '.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: '#9aacac', marginBottom: '1rem' }}>Match Graph comparativo</div>
+          <MultiRadarChart cands={comps} colors={COMP_COLORS} size={isMobile ? 240 : 300} />
+          <div style={{ display: 'flex', gap: '1.5rem', marginTop: '1rem', flexWrap: 'wrap', justifyContent: 'center' }}>
+            {comps.map((c, i) => (
+              <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: '.4rem' }}>
+                <div style={{ width: 12, height: 12, borderRadius: '50%', background: COMP_COLORS[i] }} />
+                <span style={{ fontSize: '.75rem', color: INK, fontWeight: 600 }}>{c.name.split(' ')[0]} — {avgScore(c)}%</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Side-by-side cards */}
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : `repeat(${comps.length}, 1fr)`, gap: '1rem', marginBottom: '1.5rem' }}>
+          {comps.map((c, i) => {
+            const fit = avgScore(c)
+            const color = COMP_COLORS[i]
+            return (
+              <div key={c.id} style={{ background: 'white', border: `2px solid ${color}44`, borderRadius: 14, padding: '1.3rem', textAlign: 'center' }}>
+                <div style={{ width: '100%', height: 4, borderRadius: 2, background: color, marginBottom: '.9rem' }} />
+                {c.photo_url ? (
+                  <img src={c.photo_url} alt={c.name} style={{ width: 54, height: 54, borderRadius: '50%', objectFit: 'cover', border: `2px solid ${color}`, margin: '0 auto .7rem', display: 'block' }} />
+                ) : (
+                  <div style={{ width: 54, height: 54, borderRadius: '50%', background: `${color}22`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Georgia,serif', fontWeight: 700, fontSize: '1.1rem', color, margin: '0 auto .7rem' }}>
+                    {c.name.charAt(0)}
+                  </div>
+                )}
+                <div style={{ fontWeight: 700, fontSize: '.92rem', color: INK, marginBottom: '.2rem' }}>{c.name}</div>
+                {c.is_top && <span style={{ fontSize: '.6rem', fontWeight: 700, background: FOREST, color: 'white', borderRadius: 6, padding: '2px 8px', letterSpacing: '.03em' }}>⭐ TOP</span>}
+                <div style={{ fontSize: '2rem', fontWeight: 800, color, marginTop: '.6rem', lineHeight: 1 }}>{fit}%</div>
+                <div style={{ fontSize: '.65rem', color: '#9aacac', marginBottom: '.6rem' }}>fit score</div>
+                {c.salary_expectation && <div style={{ fontSize: '.75rem', color: '#4a6a6a' }}>💰 {c.salary_expectation}</div>}
+                {c.mobility && <div style={{ fontSize: '.72rem', color: '#9aacac', marginTop: '.2rem' }}>🚗 {c.mobility}</div>}
+                <button onClick={() => { setShowCompare(false); setCompareMode(false); setCompareIds([]); setCandIdx(candidates.findIndex(x => x.id === c.id)) }}
+                  style={{ marginTop: '.85rem', fontSize: '.72rem', fontWeight: 700, padding: '6px 14px', borderRadius: 8, border: `1.5px solid ${color}`, background: 'white', color, cursor: 'pointer', width: '100%' }}>
+                  Ver perfil completo →
+                </button>
+              </div>
+            )
+          })}
+        </div>
+
+        {/* Comparison table */}
+        <div style={{ background: 'white', border: '1px solid #e0eaea', borderRadius: 14, overflow: 'hidden' }}>
+          <div style={{ padding: '10px 15px', background: OFF, borderBottom: '1px solid #e0eaea', fontSize: '.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: '#9aacac' }}>
+            Detalle por dimensión
+          </div>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '.8rem' }}>
+              <thead>
+                <tr style={{ background: OFF }}>
+                  <th style={{ padding: '8px 14px', textAlign: 'left', color: '#9aacac', fontWeight: 700, fontSize: '.64rem', textTransform: 'uppercase', letterSpacing: '.06em' }}>Dimensión</th>
+                  {comps.map((c, i) => (
+                    <th key={c.id} style={{ padding: '8px 14px', textAlign: 'center', color: COMP_COLORS[i], fontWeight: 700, fontSize: '.82rem' }}>
+                      {c.name.split(' ')[0]}{c.is_top ? ' ⭐' : ''}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {SCORE_LABELS.map((label, si) => (
+                  <tr key={label} style={{ borderBottom: '1px solid #f0f4f4' }}>
+                    <td style={{ padding: '8px 14px', color: '#4a6a6a', fontSize: '.82rem' }}>{label}</td>
+                    {comps.map((c, ci) => {
+                      const val = Number(c[SCORE_KEYS[si]]) || 0
+                      const best = Math.max(...comps.map(x => Number(x[SCORE_KEYS[si]]) || 0))
+                      return (
+                        <td key={c.id} style={{ padding: '8px 14px', textAlign: 'center', fontWeight: val === best && comps.length > 1 ? 800 : 600, color: val >= 4 ? FOREST : val >= 3 ? '#e6a817' : CORAL }}>
+                          {val}{val === best && comps.length > 1 ? ' ↑' : ''}
+                        </td>
+                      )
+                    })}
+                  </tr>
+                ))}
+                <tr style={{ background: OFF }}>
+                  <td style={{ padding: '9px 14px', fontWeight: 700, color: INK, fontSize: '.7rem', textTransform: 'uppercase', letterSpacing: '.06em' }}>Fit Score</td>
+                  {comps.map((c, ci) => {
+                    const fit = avgScore(c)
+                    const bestFit = Math.max(...comps.map(avgScore))
+                    return (
+                      <td key={c.id} style={{ padding: '9px 14px', textAlign: 'center', fontWeight: 800, color: COMP_COLORS[ci], fontSize: '.95rem' }}>
+                        {fit}%{fit === bestFit && comps.length > 1 ? ' 🏆' : ''}
+                      </td>
+                    )
+                  })}
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div style={{ minHeight: '100vh', background: OFF, display: 'flex', flexDirection: 'column' }}>
       <ToastProvider />
@@ -909,12 +1112,12 @@ export default function MatchGraphPage() {
 
       {/* Tab navigation */}
       <div className="no-print" style={{ background: 'white', borderBottom: '1px solid #e0eaea', padding: '0 1.5rem', display: 'flex', gap: 0, overflowX: 'auto', flexShrink: 0 }}>
-        <button onClick={() => setCandIdx(-1)}
-          style={{ padding: '13px 18px', fontSize: '.79rem', fontWeight: candIdx === -1 ? 700 : 500, color: candIdx === -1 ? FOREST : '#9aacac', background: 'none', border: 'none', borderBottom: candIdx === -1 ? `2.5px solid ${FOREST}` : '2.5px solid transparent', cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all .15s' }}>
+        <button onClick={() => { setCandIdx(-1); setShowCompare(false); setCompareMode(false); setCompareIds([]) }}
+          style={{ padding: '13px 18px', fontSize: '.79rem', fontWeight: !showCompare && candIdx === -1 ? 700 : 500, color: !showCompare && candIdx === -1 ? FOREST : '#9aacac', background: 'none', border: 'none', borderBottom: !showCompare && candIdx === -1 ? `2.5px solid ${FOREST}` : '2.5px solid transparent', cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all .15s' }}>
           Resumen
         </button>
         {candidates.map((c, i) => (
-          <button key={c.id} onClick={() => setCandIdx(i)}
+          <button key={c.id} onClick={() => { setCandIdx(i); setShowCompare(false); setCompareMode(false); setCompareIds([]) }}
             style={{ padding: '13px 18px', fontSize: '.79rem', fontWeight: candIdx === i ? 700 : 500, color: candIdx === i ? FOREST : '#9aacac', background: 'none', border: 'none', borderBottom: candIdx === i ? `2.5px solid ${FOREST}` : '2.5px solid transparent', cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all .15s', display: 'flex', alignItems: 'center', gap: '.3rem' }}>
             {c.is_top && <span style={{ fontSize: '.58rem' }}>⭐</span>}
             C{i + 1}: {c.name.split(' ')[0]}
@@ -948,7 +1151,7 @@ export default function MatchGraphPage() {
       )}
 
       <div style={{ flex: 1 }}>
-        {candIdx === -1 ? <CoverView /> : currentCand ? <CandidateView c={currentCand} /> : null}
+        {showCompare ? <CompareView /> : candIdx === -1 ? <CoverView /> : currentCand ? <CandidateView c={currentCand} /> : null}
       </div>
 
       {/* Edit engagement modal */}
