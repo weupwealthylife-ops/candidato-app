@@ -69,38 +69,61 @@ export default function AdminDashboard() {
   const [data, setData] = useState<AnalyticsData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [retrying, setRetrying] = useState(false)
 
-  useEffect(() => {
-    async function init() {
-      try {
-        const authRes = await fetch('/api/matchgraph-auth')
-        const auth = await authRes.json()
-        if (!auth.email || auth.email !== ADMIN_EMAIL) {
-          window.location.href = '/app/matchgraph'
-          return
-        }
-        const res = await fetch('/api/matchgraph?action=analytics')
-        if (!res.ok) throw new Error('Failed to load analytics')
-        const json = await res.json()
-        setData(json)
-      } catch (e) {
-        setError(e instanceof Error ? e.message : 'Error')
-      } finally {
-        setLoading(false)
+  async function loadData() {
+    setError(null)
+    setLoading(true)
+    try {
+      const authRes = await fetch('/api/matchgraph-auth')
+      const auth = await authRes.json()
+      if (!auth.email || auth.email !== ADMIN_EMAIL) {
+        window.location.href = '/app/matchgraph'
+        return
       }
+      const res = await fetch('/api/matchgraph?action=analytics')
+      if (!res.ok) throw new Error('No se pudieron cargar las métricas. Verifica tu conexión.')
+      const json = await res.json()
+      setData(json)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Error desconocido')
+    } finally {
+      setLoading(false)
+      setRetrying(false)
     }
-    init()
-  }, [])
+  }
+
+  useEffect(() => { loadData() }, [])
 
   if (loading) return (
-    <div style={{ minHeight: '100vh', background: OFF, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <p style={{ fontFamily: 'var(--body)', color: FOREST }}>Cargando…</p>
+    <div style={{ minHeight: '100vh', background: OFF, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
+      <div style={{ width: 36, height: 36, border: `3px solid ${FOREST}30`, borderTopColor: FOREST, borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+      <p style={{ fontFamily: 'var(--body)', color: FOREST, margin: 0 }}>Cargando métricas…</p>
+      <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
     </div>
   )
 
   if (error) return (
-    <div style={{ minHeight: '100vh', background: OFF, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <p style={{ fontFamily: 'var(--body)', color: CORAL }}>{error}</p>
+    <div style={{ minHeight: '100vh', background: OFF, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
+      <div style={{ background: '#fff', borderRadius: 16, padding: '2.5rem 2rem', maxWidth: 400, textAlign: 'center', boxShadow: '0 4px 24px #00000010' }}>
+        <div style={{ fontSize: 40, marginBottom: 12 }}>⚠️</div>
+        <p style={{ fontFamily: 'var(--head)', color: INK, fontWeight: 700, fontSize: '1.1rem', margin: '0 0 8px' }}>Error al cargar</p>
+        <p style={{ fontFamily: 'var(--body)', color: '#6a8a8a', fontSize: '0.9rem', margin: '0 0 24px' }}>{error}</p>
+        <button
+          onClick={() => { setRetrying(true); loadData() }}
+          disabled={retrying}
+          style={{
+            background: FOREST, color: '#fff', border: 'none', borderRadius: 10,
+            padding: '0.75rem 1.5rem', fontFamily: 'var(--body)', fontWeight: 600,
+            fontSize: '0.9rem', cursor: retrying ? 'not-allowed' : 'pointer', opacity: retrying ? 0.6 : 1,
+          }}
+        >
+          {retrying ? 'Reintentando…' : 'Reintentar'}
+        </button>
+        <div style={{ marginTop: 16 }}>
+          <a href="/app/matchgraph" style={{ color: FOREST, fontFamily: 'var(--body)', fontSize: '0.85rem' }}>← Volver al dashboard</a>
+        </div>
+      </div>
     </div>
   )
 

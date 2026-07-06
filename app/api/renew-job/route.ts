@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
   }
 
   if (tok !== makeToken(jobId)) {
-    return NextResponse.json({ error: 'Invalid token' }, { status: 403 })
+    return NextResponse.json({ error: 'Token inválido' }, { status: 403 })
   }
 
   const supabase = getSupabase()
@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
   }
 
   if (tok !== makeToken(jobId)) {
-    return NextResponse.json({ error: 'Invalid token' }, { status: 403 })
+    return NextResponse.json({ error: 'Token inválido' }, { status: 403 })
   }
 
   const supabase = getSupabase()

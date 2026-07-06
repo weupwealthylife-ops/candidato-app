@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
   const { jobId, tok, title } = body as { jobId?: string; tok?: string; title?: string }
 
   if (!jobId || !tok) return NextResponse.json({ error: 'Missing parameters' }, { status: 400 })
-  if (tok !== makeToken(jobId)) return NextResponse.json({ error: 'Invalid token' }, { status: 403 })
+  if (tok !== makeToken(jobId)) return NextResponse.json({ error: 'Token inválido' }, { status: 403 })
   if (!MP_ACCESS_TOKEN) return NextResponse.json({ error: 'MP not configured' }, { status: 500 })
 
   const preference = {

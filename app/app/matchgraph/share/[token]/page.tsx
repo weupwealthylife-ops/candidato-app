@@ -275,29 +275,38 @@ export default async function SharePage({
   params: Promise<{ token: string }>
 }) {
   const { token } = await params
-  const client = sb()
 
-  /* Fetch engagement */
-  const { data: eng } = await client
-    .from('matchgraph_engagements')
-    .select('*')
-    .eq('share_token', token)
-    .maybeSingle()
+  let eng: Record<string, unknown> | null = null
+  let cands: Candidate[] = []
+
+  try {
+    const client = sb()
+
+    const { data: engData } = await client
+      .from('matchgraph_engagements')
+      .select('*')
+      .eq('share_token', token)
+      .maybeSingle()
+
+    if (!engData) notFound()
+    if (engData.share_token_expires_at && new Date(engData.share_token_expires_at as string) < new Date()) notFound()
+
+    eng = engData
+
+    const { data: candidates } = await client
+      .from('matchgraph_candidates')
+      .select(
+        'id, name, photo_url, score_profession, score_experience, score_sector, score_requirements, score_availability, is_top, formation, relevant_experience, technical_strengths, pipeline_status'
+      )
+      .eq('engagement_id', eng!.id)
+      .order('sort_order')
+
+    cands = (candidates || []) as Candidate[]
+  } catch {
+    notFound()
+  }
 
   if (!eng) notFound()
-  // Check expiry
-  if (eng.share_token_expires_at && new Date(eng.share_token_expires_at) < new Date()) notFound()
-
-  /* Fetch candidates */
-  const { data: candidates } = await client
-    .from('matchgraph_candidates')
-    .select(
-      'id, name, photo_url, score_profession, score_experience, score_sector, score_requirements, score_availability, is_top, formation, relevant_experience, technical_strengths, pipeline_status'
-    )
-    .eq('engagement_id', eng.id)
-    .order('sort_order')
-
-  const cands: Candidate[] = (candidates || []) as Candidate[]
 
   return (
     <div

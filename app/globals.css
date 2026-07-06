@@ -311,7 +311,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,.btn:focus-visible
 .trust-bar{
   background:var(--white);border-bottom:1px solid var(--line);
   padding:1.5rem max(5vw,28px);display:flex;align-items:center;gap:1.5rem;flex-wrap:wrap;
-  position:relative;
+  position:relative;overflow:hidden;max-width:100%;
 }
 
 .trust-lbl{
