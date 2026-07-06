@@ -112,7 +112,7 @@ function RadarChart({ scores, size = 240 }: { scores: number[]; size?: number })
         const p = pt(i, labelR)
         return (
           <text key={i} x={p.x} y={p.y} textAnchor="middle" dominantBaseline="middle"
-            fontSize={9.5} fill="#4a6a6a" fontFamily="system-ui,sans-serif">
+            fontSize={9.5} fill="#4a6a6a" fontFamily="Sora, system-ui, sans-serif">
             {label}
           </text>
         )
@@ -157,7 +157,7 @@ function MultiRadarChart({ cands, colors, size = 280 }: { cands: Candidate[]; co
         const p = pt(i, labelR)
         return (
           <text key={i} x={p.x} y={p.y} textAnchor="middle" dominantBaseline="middle"
-            fontSize={9.5} fill="#4a6a6a" fontFamily="system-ui,sans-serif">
+            fontSize={9.5} fill="#4a6a6a" fontFamily="Sora, system-ui, sans-serif">
             {label}
           </text>
         )
@@ -187,7 +187,7 @@ function Modal({ title, onClose, children }: { title: string; onClose: () => voi
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(14,30,32,.55)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem', backdropFilter: 'blur(2px)' }}>
       <div style={{ background: 'white', borderRadius: 18, padding: isMobile ? '1.2rem' : '1.6rem', width: isMobile ? '95vw' : '100%', maxWidth: 560, maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 24px 64px rgba(14,30,32,.22)' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.3rem' }}>
-          <div style={{ fontWeight: 700, fontSize: '.95rem', color: INK, fontFamily: 'Georgia,serif' }}>{title}</div>
+          <div style={{ fontWeight: 700, fontSize: '.95rem', color: INK, fontFamily: 'var(--head)' }}>{title}</div>
           <button onClick={onClose} style={{ border: 'none', background: 'none', cursor: 'pointer', fontSize: '1.3rem', color: '#9aacac', lineHeight: 1, width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%' }}>×</button>
         </div>
         {children}
@@ -196,7 +196,7 @@ function Modal({ title, onClose, children }: { title: string; onClose: () => voi
   )
 }
 
-const inp: React.CSSProperties = { width: '100%', border: '1.5px solid #d8e4e4', borderRadius: 9, padding: '10px 13px', fontSize: '.83rem', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box', background: '#fafcfc', color: INK, transition: 'border-color .15s' }
+const inp: React.CSSProperties = { width: '100%', border: '1.5px solid #d8e4e4', borderRadius: 9, padding: '10px 13px', fontSize: '.83rem', fontFamily: 'var(--body)', outline: 'none', boxSizing: 'border-box', background: '#fafcfc', color: INK, transition: 'border-color .15s' }
 const ta: React.CSSProperties = { ...inp, resize: 'vertical', minHeight: 76, lineHeight: 1.6 }
 
 /* ── Main Page ────────────────────────────────────────────── */
@@ -401,7 +401,7 @@ export default function MatchGraphPage() {
 
   /* ── LOGIN ───────────────────────────────────────────────── */
   if (view === 'login') return (
-    <div style={{ minHeight: '100vh', display: 'flex', background: FOREST }}>
+    <div style={{ minHeight: '100vh', display: 'flex', background: FOREST, fontFamily: 'var(--body)' }}>
       <style>{`
         .mg-panel { display: flex; }
         .mg-mobile-brand { display: none; }
@@ -418,7 +418,7 @@ export default function MatchGraphPage() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: '3rem' }}>
             <BirdLogo size={40} light />
             <div>
-              <div style={{ color: 'white', fontFamily: 'Georgia,serif', fontWeight: 700, fontSize: '1.15rem', letterSpacing: '-.01em' }}>Candidato®</div>
+              <div style={{ color: 'white', fontFamily: 'var(--head)', fontWeight: 700, fontSize: '1.15rem', letterSpacing: '-.01em' }}>Candidato®</div>
               <div style={{ color: 'rgba(255,255,255,.4)', fontSize: '.6rem', letterSpacing: '.15em', textTransform: 'uppercase', marginTop: 2 }}>Candidato® — Match Graph</div>
             </div>
           </div>
@@ -426,7 +426,7 @@ export default function MatchGraphPage() {
           <div style={{ fontSize: '.7rem', fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,.4)', marginBottom: '.75rem' }}>
             Preselección &amp; Validación
           </div>
-          <h1 style={{ fontFamily: 'Georgia,serif', fontSize: '1.9rem', fontWeight: 700, lineHeight: 1.25, margin: '0 0 .5rem', letterSpacing: '-.02em' }}>
+          <h1 style={{ fontFamily: 'var(--head)', fontSize: '1.9rem', fontWeight: 700, lineHeight: 1.25, margin: '0 0 .5rem', letterSpacing: '-.02em' }}>
             <span style={{ color: 'white' }}>El talento que</span><br />
             <span style={{ color: CORAL }}>ya fue validado.</span>
           </h1>
@@ -463,17 +463,17 @@ export default function MatchGraphPage() {
           <div className="mg-mobile-brand" style={{ alignItems: 'center', gap: 10, marginBottom: '2rem', display: 'none' }}>
             <BirdLogo size={36} />
             <div>
-              <div style={{ fontFamily: 'Georgia,serif', fontWeight: 700, fontSize: '1.05rem', color: FOREST }}>Candidato®</div>
+              <div style={{ fontFamily: 'var(--head)', fontWeight: 700, fontSize: '1.05rem', color: FOREST }}>Candidato®</div>
               <div style={{ fontSize: '.6rem', color: '#9aacac', letterSpacing: '.12em', textTransform: 'uppercase' }}>Match Graph</div>
             </div>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: '1.5rem' }}>
             <BirdLogo size={28} />
-            <span style={{ fontFamily: 'Georgia,serif', fontWeight: 700, fontSize: '.95rem', color: FOREST, letterSpacing: '-.01em' }}>Candidato®</span>
+            <span style={{ fontFamily: 'var(--head)', fontWeight: 700, fontSize: '.95rem', color: FOREST, letterSpacing: '-.01em' }}>Candidato®</span>
           </div>
 
-          <div style={{ fontFamily: 'Georgia,serif', fontWeight: 700, fontSize: '1.55rem', color: INK, marginBottom: '.4rem', letterSpacing: '-.025em', lineHeight: 1.2 }}>
+          <div style={{ fontFamily: 'var(--head)', fontWeight: 700, fontSize: '1.55rem', color: INK, marginBottom: '.4rem', letterSpacing: '-.025em', lineHeight: 1.2 }}>
             Accedé a tu evaluación
           </div>
           <p style={{ fontSize: '.83rem', color: '#9aacac', margin: '0 0 2rem', lineHeight: 1.65 }}>
@@ -502,7 +502,7 @@ export default function MatchGraphPage() {
           <button
             onClick={handleLogin}
             disabled={loginLoading || !loginEmail.trim()}
-            style={{ width: '100%', background: loginLoading || !loginEmail.trim() ? '#b0c0c0' : FOREST, color: 'white', border: 'none', borderRadius: 10, padding: '14px', fontSize: '.92rem', fontWeight: 700, cursor: loginLoading || !loginEmail.trim() ? 'not-allowed' : 'pointer', fontFamily: 'inherit', transition: 'all .15s', letterSpacing: '-.01em' }}
+            style={{ width: '100%', background: loginLoading || !loginEmail.trim() ? '#b0c0c0' : FOREST, color: 'white', border: 'none', borderRadius: 10, padding: '14px', fontSize: '.92rem', fontWeight: 700, cursor: loginLoading || !loginEmail.trim() ? 'not-allowed' : 'pointer', fontFamily: 'var(--body)', transition: 'all .15s', letterSpacing: '-.01em' }}
           >
             {loginLoading ? 'Verificando…' : 'Continuar →'}
           </button>
@@ -520,27 +520,50 @@ export default function MatchGraphPage() {
 
   /* ── TOP BAR ─────────────────────────────────────────────── */
   const TopBar = ({ title, actions }: { title?: string; actions?: React.ReactNode }) => (
-    <div className="no-print" style={{ background: FOREST, padding: '0 1.5rem', height: 54, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, position: 'sticky', top: 0, zIndex: 100, boxShadow: '0 1px 0 rgba(255,255,255,.06)' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+    <div className="no-print" style={{ background: FOREST, padding: '0 max(1.5rem, 2vw)', height: 60, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, position: 'sticky', top: 0, zIndex: 100, borderBottom: '1px solid rgba(255,255,255,.07)' }}>
+
+      {/* Left: back + logo */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 0, minWidth: 0 }}>
         {view === 'engagement' && (
-          <button onClick={() => setView('dashboard')} style={{ background: 'rgba(255,255,255,.1)', border: 'none', color: 'rgba(255,255,255,.8)', borderRadius: 7, padding: '4px 10px', cursor: 'pointer', fontSize: '.75rem', marginRight: 4, transition: 'background .15s' }}>
-            ← Inicio
+          <button onClick={() => setView('dashboard')} style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'none', border: 'none', color: 'rgba(255,255,255,.55)', borderRadius: 8, padding: '5px 10px 5px 4px', cursor: 'pointer', fontSize: '.76rem', fontWeight: 500, fontFamily: 'var(--body)', marginRight: 8, transition: 'color .15s', letterSpacing: '.01em', whiteSpace: 'nowrap' }}
+            onMouseEnter={e => (e.currentTarget.style.color = 'rgba(255,255,255,.9)')}
+            onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,.55)')}>
+            ← Evaluaciones
           </button>
         )}
-        <BirdLogo size={26} light />
-        <div style={{ color: 'white', fontFamily: 'Georgia,serif', fontWeight: 700, fontSize: '1rem', letterSpacing: '-.01em' }}>Candidato®</div>
-        <span style={{ color: 'rgba(255,255,255,.35)', fontSize: '.75rem', letterSpacing: '.04em' }}>Match Graph</span>
-        {title && (
-          <>
-            <span style={{ color: 'rgba(255,255,255,.2)' }}>·</span>
-            <span style={{ color: 'rgba(255,255,255,.75)', fontSize: '.82rem', maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{title}</span>
-          </>
+
+        {/* Logo lockup */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 9, flexShrink: 0 }}>
+          <BirdLogo size={28} light />
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+            <span style={{ color: 'white', fontFamily: 'var(--head)', fontWeight: 700, fontSize: '.97rem', letterSpacing: '-.02em', lineHeight: 1 }}>Candidato®</span>
+            <span style={{ background: 'rgba(255,255,255,.12)', color: 'rgba(255,255,255,.65)', fontSize: '.6rem', fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase', borderRadius: 5, padding: '2px 7px', fontFamily: 'var(--body)' }}>Match Graph</span>
+          </div>
+        </div>
+
+        {/* Breadcrumb: engagement title */}
+        {title && !isMobile && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 18, paddingLeft: 18, borderLeft: '1px solid rgba(255,255,255,.12)', minWidth: 0 }}>
+            <span style={{ color: 'rgba(255,255,255,.7)', fontSize: '.82rem', fontWeight: 500, fontFamily: 'var(--body)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 260 }}>{title}</span>
+          </div>
         )}
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem' }}>
+
+      {/* Right: actions + user */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
         {actions}
-        {!isMobile && <div style={{ fontSize: '.7rem', color: 'rgba(255,255,255,.4)', marginLeft: 6 }}>{session?.email}</div>}
-        <button onClick={logout} style={{ background: 'rgba(255,255,255,.1)', border: 'none', color: 'rgba(255,255,255,.75)', borderRadius: 7, padding: '4px 11px', cursor: 'pointer', fontSize: '.75rem', transition: 'background .15s' }}>
+        {!isMobile && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 10px', background: 'rgba(255,255,255,.07)', borderRadius: 8, border: '1px solid rgba(255,255,255,.1)' }}>
+            <div style={{ width: 20, height: 20, borderRadius: '50%', background: 'rgba(255,255,255,.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '.65rem', fontWeight: 700, color: 'white', flexShrink: 0 }}>
+              {session?.email?.[0]?.toUpperCase() || '?'}
+            </div>
+            <span style={{ fontSize: '.7rem', color: 'rgba(255,255,255,.55)', fontFamily: 'var(--body)', maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{session?.email}</span>
+          </div>
+        )}
+        <button onClick={logout}
+          style={{ background: 'rgba(255,255,255,.08)', border: '1px solid rgba(255,255,255,.12)', color: 'rgba(255,255,255,.7)', borderRadius: 8, padding: '6px 13px', cursor: 'pointer', fontSize: '.74rem', fontWeight: 600, fontFamily: 'var(--body)', transition: 'all .15s', letterSpacing: '.01em' }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,.14)'; e.currentTarget.style.color = 'white' }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,.08)'; e.currentTarget.style.color = 'rgba(255,255,255,.7)' }}>
           Salir
         </button>
       </div>
@@ -552,17 +575,17 @@ export default function MatchGraphPage() {
     const open = engagements.filter(e => e.status === 'open')
     const closed = engagements.filter(e => e.status === 'closed')
     return (
-      <div style={{ minHeight: '100vh', background: OFF, display: 'flex', flexDirection: 'column' }}>
+      <div style={{ minHeight: '100vh', background: OFF, display: 'flex', flexDirection: 'column', fontFamily: 'var(--body)' }}>
         <TopBar actions={session?.isAdmin ? (
           <button onClick={() => { setEngForm({ title: '', company_name: '', client_email: '', job_area: '', city: '', notes: '', status: 'open' }); setShowCreateEng(true) }}
-            style={{ background: CORAL, border: 'none', color: 'white', borderRadius: 8, padding: '6px 14px', cursor: 'pointer', fontSize: '.78rem', fontWeight: 700, transition: 'opacity .15s' }}>
+            style={{ background: CORAL, border: 'none', color: 'white', borderRadius: 8, padding: '6px 16px', cursor: 'pointer', fontSize: '.78rem', fontWeight: 700, fontFamily: 'var(--body)', letterSpacing: '.01em', transition: 'opacity .15s' }}>
             + Nueva evaluación
           </button>
         ) : undefined} />
 
         <div style={{ maxWidth: 960, margin: '0 auto', padding: '2rem 1.5rem', width: '100%' }}>
           <div style={{ marginBottom: '2rem' }}>
-            <h1 style={{ fontFamily: 'Georgia,serif', fontWeight: 700, fontSize: '1.5rem', color: INK, margin: '0 0 .35rem', letterSpacing: '-.02em' }}>
+            <h1 style={{ fontFamily: 'var(--head)', fontWeight: 700, fontSize: '1.5rem', color: INK, margin: '0 0 .35rem', letterSpacing: '-.02em' }}>
               {session?.isAdmin ? 'Todas las evaluaciones' : 'Tus evaluaciones de Preselección'}
             </h1>
             <p style={{ fontSize: '.82rem', color: '#9aacac', margin: 0 }}>
@@ -580,7 +603,7 @@ export default function MatchGraphPage() {
               ].map(s => (
                 <div key={s.label} style={{ background: 'white', border: '1px solid #e0eaea', borderRadius: 12, padding: '1rem 1.2rem' }}>
                   <div style={{ fontSize: '.65rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em', color: '#9aacac', marginBottom: '.3rem' }}>{s.label}</div>
-                  <div style={{ fontFamily: 'Georgia,serif', fontSize: '1.8rem', fontWeight: 700, color: s.color, lineHeight: 1 }}>{s.value}</div>
+                  <div style={{ fontFamily: 'var(--head)', fontSize: '1.8rem', fontWeight: 700, color: s.color, lineHeight: 1 }}>{s.value}</div>
                 </div>
               ))}
             </div>
@@ -591,7 +614,7 @@ export default function MatchGraphPage() {
           {!engLoading && engagements.length === 0 && (
             <div style={{ textAlign: 'center', padding: '5rem 1rem' }}>
               <div style={{ width: 60, height: 60, borderRadius: 16, background: PALE, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.2rem', fontSize: '1.5rem' }}>📋</div>
-              <div style={{ fontFamily: 'Georgia,serif', fontWeight: 700, fontSize: '1rem', color: INK, marginBottom: '.4rem' }}>Sin evaluaciones aún</div>
+              <div style={{ fontFamily: 'var(--head)', fontWeight: 700, fontSize: '1rem', color: INK, marginBottom: '.4rem' }}>Sin evaluaciones aún</div>
               {session?.isAdmin
                 ? <div style={{ fontSize: '.82rem', color: '#9aacac' }}>Creá la primera evaluación con el botón de arriba.</div>
                 : <div style={{ fontSize: '.82rem', color: '#9aacac', lineHeight: 1.6 }}>Cuando tu consultor abra una evaluación para vos, aparecerá aquí.<br />¿Dudas? <a href="https://wa.me/573205046723" target="_blank" rel="noopener noreferrer" style={{ color: FOREST, fontWeight: 600, textDecoration: 'none' }}>Escribinos por WhatsApp</a></div>
@@ -611,7 +634,7 @@ export default function MatchGraphPage() {
                   <button key={eng.id} onClick={() => openEngagement(eng)}
                     style={{ background: 'white', border: `1.5px solid ${eng.status === 'open' ? 'rgba(27,59,62,.12)' : '#e8e8e8'}`, borderRadius: 14, padding: '1.2rem 1.4rem', cursor: 'pointer', textAlign: 'left', transition: 'all .18s', boxShadow: '0 2px 8px rgba(14,30,32,.03)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '.65rem' }}>
-                      <div style={{ width: 40, height: 40, borderRadius: 11, background: eng.status === 'open' ? PALE : '#efefef', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Georgia,serif', fontWeight: 700, fontSize: '.95rem', color: eng.status === 'open' ? FOREST : '#aaa' }}>
+                      <div style={{ width: 40, height: 40, borderRadius: 11, background: eng.status === 'open' ? PALE : '#efefef', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--head)', fontWeight: 700, fontSize: '.95rem', color: eng.status === 'open' ? FOREST : '#aaa' }}>
                         {eng.company_name?.[0]?.toUpperCase() || '?'}
                       </div>
                       <span style={{ fontSize: '.64rem', fontWeight: 700, padding: '3px 9px', borderRadius: 6, background: eng.status === 'open' ? '#e6f4ec' : '#efefef', color: eng.status === 'open' ? '#2A7E4E' : '#888', textTransform: 'uppercase', letterSpacing: '.07em' }}>
@@ -650,7 +673,7 @@ export default function MatchGraphPage() {
               <textarea style={ta} placeholder="Notas sobre la evaluación…" value={engForm.notes} onChange={e => setEngForm(p => ({ ...p, notes: e.target.value }))} />
             </div>
             <button onClick={saveEngagement} disabled={saving || !engForm.title || !engForm.client_email}
-              style={{ width: '100%', background: !engForm.title || !engForm.client_email ? '#b0c0c0' : FOREST, color: 'white', border: 'none', borderRadius: 10, padding: '12px', fontSize: '.88rem', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', transition: 'background .15s' }}>
+              style={{ width: '100%', background: !engForm.title || !engForm.client_email ? '#b0c0c0' : FOREST, color: 'white', border: 'none', borderRadius: 10, padding: '12px', fontSize: '.88rem', fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--body)', transition: 'background .15s' }}>
               {saving ? 'Guardando…' : 'Crear evaluación →'}
             </button>
           </Modal>
@@ -672,7 +695,7 @@ export default function MatchGraphPage() {
           <div style={{ fontSize: '.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.13em', color: '#9aacac', marginBottom: '.6rem' }}>
             Preselección & Validación
           </div>
-          <h1 style={{ fontFamily: 'Georgia,serif', fontWeight: 700, fontSize: '2rem', color: INK, margin: '0 0 .35rem', letterSpacing: '-.02em', lineHeight: 1.2 }}>{selEng!.title}</h1>
+          <h1 style={{ fontFamily: 'var(--head)', fontWeight: 700, fontSize: '2rem', color: INK, margin: '0 0 .35rem', letterSpacing: '-.02em', lineHeight: 1.2 }}>{selEng!.title}</h1>
           <div style={{ fontSize: '.88rem', color: '#4a6a6a' }}>
             {selEng!.company_name}{selEng!.city ? ` · ${selEng!.city}` : ''}{selEng!.job_area ? ` · ${selEng!.job_area}` : ''}
           </div>
@@ -761,7 +784,7 @@ export default function MatchGraphPage() {
                     {c.photo_url ? (
                       <img src={c.photo_url} alt={c.name} style={{ width: 46, height: 46, borderRadius: '50%', objectFit: 'cover', border: `2px solid ${c.isTop ? FOREST : '#e0eaea'}`, margin: '0 auto .65rem', display: 'block' }} />
                     ) : (
-                      <div style={{ width: 46, height: 46, borderRadius: '50%', background: PALE, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Georgia,serif', fontWeight: 700, fontSize: '.88rem', color: FOREST, margin: '0 auto .65rem' }}>
+                      <div style={{ width: 46, height: 46, borderRadius: '50%', background: PALE, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--head)', fontWeight: 700, fontSize: '.88rem', color: FOREST, margin: '0 auto .65rem' }}>
                         C{i + 1}
                       </div>
                     )}
@@ -863,7 +886,7 @@ export default function MatchGraphPage() {
         {/* Print-only header */}
         <div className="print-only" style={{ display: 'none', marginBottom: '1.5rem', paddingBottom: '1rem', borderBottom: '2px solid #e0eaea' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: '.5rem' }}>
-            <div style={{ fontFamily: 'Georgia,serif', fontWeight: 700, fontSize: '1.1rem', color: FOREST }}>Candidato® Match Graph</div>
+            <div style={{ fontFamily: 'var(--head)', fontWeight: 700, fontSize: '1.1rem', color: FOREST }}>Candidato® Match Graph</div>
           </div>
           <div style={{ fontSize: '.8rem', color: '#4a6a6a' }}>{selEng!.title} · {selEng!.company_name}</div>
         </div>
@@ -874,13 +897,13 @@ export default function MatchGraphPage() {
               {c.photo_url ? (
                 <img src={c.photo_url} alt={c.name} style={{ width: isMobile ? 60 : 82, height: isMobile ? 60 : 82, borderRadius: 13, objectFit: 'cover', border: '2px solid #e0eaea', flexShrink: 0 }} />
               ) : (
-                <div style={{ width: isMobile ? 60 : 82, height: isMobile ? 60 : 82, borderRadius: 13, background: PALE, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Georgia,serif', fontWeight: 700, fontSize: isMobile ? '1.1rem' : '1.4rem', color: FOREST, flexShrink: 0 }}>
+                <div style={{ width: isMobile ? 60 : 82, height: isMobile ? 60 : 82, borderRadius: 13, background: PALE, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--head)', fontWeight: 700, fontSize: isMobile ? '1.1rem' : '1.4rem', color: FOREST, flexShrink: 0 }}>
                   C{candIdx + 1}
                 </div>
               )}
               <div style={{ paddingTop: 4 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem', flexWrap: 'wrap', marginBottom: '.3rem' }}>
-                  <h2 style={{ fontFamily: 'Georgia,serif', fontWeight: 700, fontSize: '1.35rem', color: INK, margin: 0, letterSpacing: '-.01em' }}>{c.name}</h2>
+                  <h2 style={{ fontFamily: 'var(--head)', fontWeight: 700, fontSize: '1.35rem', color: INK, margin: 0, letterSpacing: '-.01em' }}>{c.name}</h2>
                   {c.is_top && <span style={{ fontSize: '.63rem', fontWeight: 700, background: FOREST, color: 'white', borderRadius: 8, padding: '2px 10px', letterSpacing: '.03em' }}>⭐ TOP</span>}
                 </div>
                 {c.salary_expectation && <div style={{ fontSize: '.79rem', color: '#4a6a6a', marginBottom: '.15rem' }}>Aspiración salarial: <strong>{c.salary_expectation}</strong></div>}
@@ -976,7 +999,7 @@ export default function MatchGraphPage() {
       <div style={{ padding: '2rem', maxWidth: 1040, margin: '0 auto' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '.5rem' }}>
           <div>
-            <h2 style={{ fontFamily: 'Georgia,serif', fontWeight: 700, fontSize: '1.3rem', color: INK, margin: '0 0 .2rem', letterSpacing: '-.02em' }}>Comparación de candidatos</h2>
+            <h2 style={{ fontFamily: 'var(--head)', fontWeight: 700, fontSize: '1.3rem', color: INK, margin: '0 0 .2rem', letterSpacing: '-.02em' }}>Comparación de candidatos</h2>
             <p style={{ fontSize: '.8rem', color: '#9aacac', margin: 0 }}>{comps.length} candidatos seleccionados · {selEng!.title}</p>
           </div>
           <button onClick={() => { setShowCompare(false); setCompareMode(false); setCompareIds([]) }}
@@ -1010,7 +1033,7 @@ export default function MatchGraphPage() {
                 {c.photo_url ? (
                   <img src={c.photo_url} alt={c.name} style={{ width: 54, height: 54, borderRadius: '50%', objectFit: 'cover', border: `2px solid ${color}`, margin: '0 auto .7rem', display: 'block' }} />
                 ) : (
-                  <div style={{ width: 54, height: 54, borderRadius: '50%', background: `${color}22`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Georgia,serif', fontWeight: 700, fontSize: '1.1rem', color, margin: '0 auto .7rem' }}>
+                  <div style={{ width: 54, height: 54, borderRadius: '50%', background: `${color}22`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--head)', fontWeight: 700, fontSize: '1.1rem', color, margin: '0 auto .7rem' }}>
                     {c.name.charAt(0)}
                   </div>
                 )}
@@ -1082,7 +1105,7 @@ export default function MatchGraphPage() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: OFF, display: 'flex', flexDirection: 'column' }}>
+    <div style={{ minHeight: '100vh', background: OFF, display: 'flex', flexDirection: 'column', fontFamily: 'var(--body)' }}>
       <ToastProvider />
       <style>{`
         @media print {
@@ -1097,13 +1120,13 @@ export default function MatchGraphPage() {
       <TopBar
         title={selEng!.title}
         actions={session?.isAdmin ? (
-          <div style={{ display: 'flex', gap: '.35rem' }}>
+          <div style={{ display: 'flex', gap: 6 }}>
             <button onClick={() => { setEngForm({ title: selEng!.title, company_name: selEng!.company_name, client_email: selEng!.client_email, job_area: selEng!.job_area || '', city: selEng!.city || '', notes: selEng!.notes || '', status: selEng!.status }); setShowEditEng(true) }}
-              style={{ background: 'rgba(255,255,255,.1)', border: 'none', color: 'rgba(255,255,255,.8)', borderRadius: 7, padding: '4px 11px', cursor: 'pointer', fontSize: '.75rem', transition: 'background .15s' }}>
+              style={{ background: 'rgba(255,255,255,.08)', border: '1px solid rgba(255,255,255,.12)', color: 'rgba(255,255,255,.7)', borderRadius: 8, padding: '6px 13px', cursor: 'pointer', fontSize: '.74rem', fontWeight: 600, fontFamily: 'var(--body)', transition: 'all .15s', letterSpacing: '.01em' }}>
               Editar
             </button>
             <button onClick={openAddCandidate}
-              style={{ background: CORAL, border: 'none', color: 'white', borderRadius: 7, padding: '4px 11px', cursor: 'pointer', fontSize: '.75rem', fontWeight: 700, transition: 'opacity .15s' }}>
+              style={{ background: CORAL, border: '1px solid transparent', color: 'white', borderRadius: 8, padding: '6px 14px', cursor: 'pointer', fontSize: '.74rem', fontWeight: 700, fontFamily: 'var(--body)', letterSpacing: '.01em', transition: 'opacity .15s' }}>
               + Candidato
             </button>
           </div>
@@ -1111,7 +1134,7 @@ export default function MatchGraphPage() {
       />
 
       {/* Tab navigation */}
-      <div className="no-print" style={{ background: 'white', borderBottom: '1px solid #e0eaea', padding: '0 1.5rem', display: 'flex', gap: 0, overflowX: 'auto', flexShrink: 0 }}>
+      <div className="no-print" style={{ background: 'white', borderBottom: '1px solid #e0eaea', padding: '0 1.5rem', display: 'flex', gap: 0, overflowX: 'auto', flexShrink: 0, fontFamily: 'var(--body)' }}>
         <button onClick={() => { setCandIdx(-1); setShowCompare(false); setCompareMode(false); setCompareIds([]) }}
           style={{ padding: '13px 18px', fontSize: '.79rem', fontWeight: !showCompare && candIdx === -1 ? 700 : 500, color: !showCompare && candIdx === -1 ? FOREST : '#9aacac', background: 'none', border: 'none', borderBottom: !showCompare && candIdx === -1 ? `2.5px solid ${FOREST}` : '2.5px solid transparent', cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all .15s' }}>
           Resumen
@@ -1181,7 +1204,7 @@ export default function MatchGraphPage() {
             <textarea style={ta} value={engForm.notes} onChange={e => setEngForm(p => ({ ...p, notes: e.target.value }))} />
           </div>
           <button onClick={saveEngagement} disabled={saving}
-            style={{ width: '100%', background: saving ? '#b0c0c0' : FOREST, color: 'white', border: 'none', borderRadius: 10, padding: '12px', fontSize: '.88rem', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', transition: 'background .15s' }}>
+            style={{ width: '100%', background: saving ? '#b0c0c0' : FOREST, color: 'white', border: 'none', borderRadius: 10, padding: '12px', fontSize: '.88rem', fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--body)', transition: 'background .15s' }}>
             {saving ? 'Guardando…' : 'Guardar cambios'}
           </button>
         </Modal>
@@ -1268,7 +1291,7 @@ export default function MatchGraphPage() {
           </div>
 
           <button onClick={saveCandidate} disabled={saving || !candForm.name}
-            style={{ width: '100%', background: saving || !candForm.name ? '#b0c0c0' : FOREST, color: 'white', border: 'none', borderRadius: 10, padding: '12px', fontSize: '.88rem', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', transition: 'background .15s' }}>
+            style={{ width: '100%', background: saving || !candForm.name ? '#b0c0c0' : FOREST, color: 'white', border: 'none', borderRadius: 10, padding: '12px', fontSize: '.88rem', fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--body)', transition: 'background .15s' }}>
             {saving ? 'Guardando…' : editingCand ? 'Guardar cambios' : 'Agregar candidato'}
           </button>
         </Modal>
