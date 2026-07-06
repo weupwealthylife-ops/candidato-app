@@ -69,6 +69,48 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ engagement: eng, candidates: candidates || [] })
   }
 
+  if (action === 'analytics') {
+    if (!isAdmin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const { data: engagements, error: engErr } = await client
+      .from('matchgraph_engagements')
+      .select('id, title, company_name, status, created_at')
+      .order('created_at', { ascending: false })
+    if (engErr) return NextResponse.json({ error: engErr.message }, { status: 500 })
+    const { data: candidates, error: candErr } = await client
+      .from('matchgraph_candidates')
+      .select('id, engagement_id, score_profession, score_experience, score_sector, score_requirements, score_availability, is_top, pipeline_status, client_feedback')
+    if (candErr) return NextResponse.json({ error: candErr.message }, { status: 500 })
+    const engList = engagements || []
+    const candList = candidates || []
+    const totalEngagements = engList.length
+    const openEngagements = engList.filter((e: { status?: string }) => e.status !== 'closed').length
+    const closedEngagements = engList.filter((e: { status?: string }) => e.status === 'closed').length
+    const totalCandidates = candList.length
+    const fitScores = candList.map((c: { score_profession?: number; score_experience?: number; score_sector?: number; score_requirements?: number; score_availability?: number }) =>
+      Math.round(((c.score_profession ?? 0) + (c.score_experience ?? 0) + (c.score_sector ?? 0) + (c.score_requirements ?? 0) + (c.score_availability ?? 0)) / 5 * 20)
+    )
+    const avgFitScore = totalCandidates > 0 ? Math.round(fitScores.reduce((a: number, b: number) => a + b, 0) / totalCandidates) : 0
+    const topCount = candList.filter((c: { is_top?: boolean }) => c.is_top).length
+    const pipeline = {
+      sent: candList.filter((c: { pipeline_status?: string }) => c.pipeline_status === 'sent').length,
+      interview: candList.filter((c: { pipeline_status?: string }) => c.pipeline_status === 'interview').length,
+      finalist: candList.filter((c: { pipeline_status?: string }) => c.pipeline_status === 'finalist').length,
+      hired: candList.filter((c: { pipeline_status?: string }) => c.pipeline_status === 'hired').length,
+      rejected: candList.filter((c: { pipeline_status?: string }) => c.pipeline_status === 'rejected').length,
+    }
+    const feedback = {
+      interested: candList.filter((c: { client_feedback?: string }) => c.client_feedback === 'interested').length,
+      maybe: candList.filter((c: { client_feedback?: string }) => c.client_feedback === 'maybe').length,
+      no: candList.filter((c: { client_feedback?: string }) => c.client_feedback === 'no').length,
+      none: candList.filter((c: { client_feedback?: string }) => !c.client_feedback || c.client_feedback === 'none').length,
+    }
+    return NextResponse.json({
+      engagements: engList,
+      candidates: candList,
+      stats: { totalEngagements, openEngagements, closedEngagements, totalCandidates, avgFitScore, topCount, pipeline, feedback },
+    })
+  }
+
   return NextResponse.json({ error: 'Unknown action' }, { status: 400 })
 }
 
