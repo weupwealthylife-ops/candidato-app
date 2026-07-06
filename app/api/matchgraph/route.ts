@@ -3,6 +3,7 @@ import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 
 const ADMIN_EMAIL = 'candidatojobs@gmail.com'
 const COOKIE = 'mg_session'
+const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://candidato.com.co'
 
 function baseUrl(raw: string) {
   try { const u = new URL(raw); return `${u.protocol}//${u.host}` } catch { return raw }
@@ -16,6 +17,27 @@ function sb() {
 }
 
 function getEmail(req: NextRequest) { return req.cookies.get(COOKIE)?.value ?? null }
+
+async function logActivity(
+  client: ReturnType<typeof sb>,
+  engagement_id: string,
+  candidate_id: string | null,
+  actor_email: string,
+  action: string,
+  details?: string
+) {
+  try {
+    await client.from('matchgraph_activity').insert([{
+      engagement_id,
+      candidate_id: candidate_id ?? null,
+      actor_email,
+      action,
+      details: details ?? null,
+    }])
+  } catch {
+    // Activity table may not exist yet — fail silently
+  }
+}
 
 export async function GET(req: NextRequest) {
   const email = getEmail(req)
@@ -39,7 +61,11 @@ export async function GET(req: NextRequest) {
     if (!isAdmin) eq = eq.ilike('client_email', email)
     const { data: eng } = await eq.maybeSingle()
     if (!eng) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-    const { data: candidates } = await client.from('matchgraph_candidates').select('*').eq('engagement_id', id).order('sort_order')
+    const { data: candidates } = await client
+      .from('matchgraph_candidates')
+      .select('id, engagement_id, sort_order, name, photo_url, cv_url, score_profession, score_experience, score_sector, score_requirements, score_availability, is_top, formation, relevant_experience, technical_strengths, qa_notes, salary_expectation, mobility, interview_date, client_notes, client_feedback, pipeline_status, created_at')
+      .eq('engagement_id', id)
+      .order('sort_order')
     return NextResponse.json({ engagement: eng, candidates: candidates || [] })
   }
 
@@ -75,6 +101,56 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true })
   }
 
+  // Client or admin: save feedback on a candidate
+  if (action === 'save_feedback' && email) {
+    const { candidateId, client_feedback } = body
+    const { data: cand } = await client
+      .from('matchgraph_candidates')
+      .select('engagement_id')
+      .eq('id', candidateId)
+      .maybeSingle()
+    if (!cand) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+    if (!isAdmin) {
+      const { data: eng } = await client
+        .from('matchgraph_engagements')
+        .select('client_email')
+        .eq('id', cand.engagement_id)
+        .maybeSingle()
+      if (!eng || eng.client_email?.toLowerCase() !== email.toLowerCase()) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      }
+    }
+    await client.from('matchgraph_candidates').update({ client_feedback }).eq('id', candidateId)
+    await logActivity(client, cand.engagement_id, candidateId, email, 'client_feedback', client_feedback)
+    return NextResponse.json({ ok: true })
+  }
+
+  // get_activity: any authenticated user
+  if (action === 'get_activity') {
+    if (!email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const { engagement_id } = body
+    if (!engagement_id) return NextResponse.json({ error: 'Missing engagement_id' }, { status: 400 })
+    // Verify ownership or admin
+    if (!isAdmin) {
+      const { data: eng } = await client
+        .from('matchgraph_engagements')
+        .select('client_email')
+        .eq('id', engagement_id)
+        .maybeSingle()
+      if (!eng || eng.client_email?.toLowerCase() !== email.toLowerCase()) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      }
+    }
+    const { data: activity, error } = await client
+      .from('matchgraph_activity')
+      .select('*')
+      .eq('engagement_id', engagement_id)
+      .order('created_at', { ascending: false })
+      .limit(50)
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ activity: activity || [] })
+  }
+
   if (!isAdmin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   if (action === 'create_engagement') {
@@ -100,6 +176,11 @@ export async function POST(req: NextRequest) {
       }).catch(() => {})
     }
 
+    // Log activity
+    if (data?.id) {
+      await logActivity(client, data.id, null, email || 'admin', 'engagement_created', title)
+    }
+
     return NextResponse.json({ engagement: data })
   }
 
@@ -117,7 +198,69 @@ export async function POST(req: NextRequest) {
     }
     const { data, error } = await client.from('matchgraph_candidates').insert([rest]).select().maybeSingle()
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+    // Log activity for new candidate
+    if (data?.id && data?.engagement_id) {
+      await logActivity(client, data.engagement_id, data.id, email || 'admin', 'candidate_added', data.name || rest.name)
+    }
+
     return NextResponse.json({ candidate: data })
+  }
+
+  if (action === 'update_pipeline_status') {
+    const { candidateId, pipeline_status } = body
+    // Fetch engagement_id from candidate
+    const { data: cand } = await client
+      .from('matchgraph_candidates')
+      .select('engagement_id')
+      .eq('id', candidateId)
+      .maybeSingle()
+    if (!cand) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+    await client.from('matchgraph_candidates').update({ pipeline_status }).eq('id', candidateId)
+    await logActivity(client, cand.engagement_id, candidateId, email || 'admin', 'pipeline_status', pipeline_status)
+    return NextResponse.json({ ok: true })
+  }
+
+  if (action === 'generate_share') {
+    const { engagement_id } = body
+    if (!engagement_id) return NextResponse.json({ error: 'Missing engagement_id' }, { status: 400 })
+    const { data: eng } = await client
+      .from('matchgraph_engagements')
+      .select('share_token')
+      .eq('id', engagement_id)
+      .maybeSingle()
+    if (!eng) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+    if (eng.share_token) return NextResponse.json({ share_token: eng.share_token })
+    const share_token = crypto.randomUUID().replace(/-/g, '').slice(0, 20)
+    await client.from('matchgraph_engagements').update({ share_token }).eq('id', engagement_id)
+    return NextResponse.json({ share_token })
+  }
+
+  if (action === 'notify_client') {
+    const { engagement_id } = body
+    if (!engagement_id) return NextResponse.json({ error: 'Missing engagement_id' }, { status: 400 })
+    const { data: eng } = await client
+      .from('matchgraph_engagements')
+      .select('title, company_name, client_email')
+      .eq('id', engagement_id)
+      .maybeSingle()
+    if (!eng) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+    const origin = req.nextUrl.origin
+    await fetch(`${origin}/api/notify`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        type: 'matchgraph_ready',
+        to: eng.client_email,
+        name: eng.company_name || eng.client_email.split('@')[0],
+        extra: {
+          title: eng.title,
+          company_name: eng.company_name,
+          url: `${BASE_URL}/app/matchgraph`,
+        },
+      }),
+    }).catch(() => {})
+    return NextResponse.json({ ok: true })
   }
 
   return NextResponse.json({ error: 'Unknown action' }, { status: 400 })
