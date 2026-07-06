@@ -91,6 +91,7 @@ function formatDate(dateStr: string) {
 function feedbackLabel(val: string) {
   const map: Record<string, string> = {
     interested: 'Interesado',
+    maybe: 'Dudas',
     doubts: 'Dudas',
     no: 'No sigue',
   }
@@ -103,6 +104,7 @@ function pipelineLabel(val: string) {
     interview: 'Entrevista',
     finalist: 'Finalista',
     hired: 'Contratado',
+    rejected: 'Descartado',
     discarded: 'Descartado',
   }
   return map[val] || val
