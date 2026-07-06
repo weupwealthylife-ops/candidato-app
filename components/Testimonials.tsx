@@ -41,9 +41,9 @@ export default function Testimonials() {
           <span className="sec-eye">{t('Testimonios', 'Testimonials')}</span>
           <h2 className="sec-h2">{t('Lo que dicen quienes ya lo vivieron.', 'What those who\'ve been through it say.')}</h2>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '1.2rem' }}>
+        <div className="testimonials-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '1.2rem' }}>
           {TESTIMONIALS.map((t2, i) => (
-            <div key={i} style={{ background: 'var(--white)', borderRadius: 14, padding: '1.4rem 1.5rem', border: '1px solid var(--line)', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div key={i} className={`testimonial-card${i === 2 ? ' testimonial-card-3' : ''}`} style={{ background: 'var(--white)', borderRadius: 14, padding: '1.4rem 1.5rem', border: '1px solid var(--line)', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div style={{ fontSize: '1.4rem', color: 'var(--forest)', lineHeight: 1 }}>&ldquo;</div>
               <p style={{ fontSize: '.88rem', color: 'var(--ink-70)', lineHeight: 1.7, margin: 0, flex: 1 }}>
                 {t(t2.quote_es, t2.quote_en)}

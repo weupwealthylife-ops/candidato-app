@@ -276,7 +276,7 @@ export default async function SharePage({
 }) {
   const { token } = await params
 
-  let eng: Record<string, unknown> | null = null
+  let eng: Engagement | null = null
   let cands: Candidate[] = []
 
   try {
@@ -289,9 +289,12 @@ export default async function SharePage({
       .maybeSingle()
 
     if (!engData) notFound()
-    if (engData.share_token_expires_at && new Date(engData.share_token_expires_at as string) < new Date()) notFound()
+    if ((engData as { share_token_expires_at?: string }).share_token_expires_at) {
+      const expiry = new Date((engData as { share_token_expires_at: string }).share_token_expires_at)
+      if (expiry < new Date()) notFound()
+    }
 
-    eng = engData
+    eng = engData as unknown as Engagement
 
     const { data: candidates } = await client
       .from('matchgraph_candidates')

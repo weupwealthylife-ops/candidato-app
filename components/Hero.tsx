@@ -80,6 +80,28 @@ export default function Hero() {
             <div className="stat-l">{t('Costo de contratar', 'Cost to hire')}</div>
           </div>
         </div>
+
+        {/* Mobile-only match preview — hidden above 900px, shown below */}
+        <div className="hero-mobile-visual">
+          <div className="hmv-label">
+            {t('✦ Tus matches de hoy', '✦ Your matches today')}
+          </div>
+          <div className="hmv-card">
+            {[
+              { ico: '💻', job: 'Senior UX Designer', co: 'Rappi · Bogotá', pct: '96%' },
+              { ico: '📊', job: 'Product Manager', co: 'Bancolombia · Medellín', pct: '88%' },
+            ].map((m, i) => (
+              <div key={i} className={`hmv-row${i > 0 ? ' hmv-row-sep' : ''}`}>
+                <span className="hmv-ico">{m.ico}</span>
+                <div className="hmv-body">
+                  <div className="hmv-job">{m.job}</div>
+                  <div className="hmv-co">{m.co}</div>
+                </div>
+                <span className="hmv-pct">{m.pct}</span>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
 
       <div className="hero-r">

@@ -251,6 +251,12 @@ export default function AppPage() {
     const params = new URLSearchParams(window.location.search)
     const urlType = params.get('type')
     if (urlType === 'company') setUserType('company')
+    const urlEmail = params.get('email')
+    if (urlEmail) {
+      setGateEmail(urlEmail)
+      if (urlType === 'company') setCoem(urlEmail)
+      else setCem(urlEmail)
+    }
 
     // Demo mode for UI auditing (no Supabase required)
     if (params.get('demo') === 'candidate') {
