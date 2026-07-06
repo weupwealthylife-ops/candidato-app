@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 // Supported notification types
-type NotifyType = 'application_submitted' | 'company_contacted' | 'match_found' | 'application_status_changed' | 'match_confirmed' | 'payment_confirmed' | 'expiry_reminder' | 'welcome_candidate' | 'welcome_company' | 'profile_incomplete' | 'free_job_upsell' | 'free_job_published' | 'matchgraph_engagement_opened'
+type NotifyType = 'application_submitted' | 'company_contacted' | 'match_found' | 'application_status_changed' | 'match_confirmed' | 'payment_confirmed' | 'expiry_reminder' | 'welcome_candidate' | 'welcome_company' | 'profile_incomplete' | 'free_job_upsell' | 'free_job_published' | 'matchgraph_engagement_opened' | 'matchgraph_client_feedback'
 
 interface NotifyPayload {
   type: NotifyType
@@ -329,6 +329,23 @@ function buildHtml(type: NotifyType, name: string, extra: Record<string, string>
         El algoritmo de matching ya está buscando los candidatos más compatibles. Te avisaremos cuando haya resultados.
       </p>
       <a href="https://candidato.com.co/app" style="display:inline-block;background:#1B3B3E;color:white;border-radius:8px;padding:10px 22px;font-size:.85rem;font-weight:600;text-decoration:none">Ver mi vacante →</a>
+    `
+    return { subject, html: base.replace('CONTENT', content) }
+  }
+
+  if (type === 'matchgraph_client_feedback') {
+    const feedbackMap: Record<string, string> = { interested: '👍 Interesado', maybe: '🤔 Dudas', no: '👎 No sigue' }
+    const feedbackLabel = feedbackMap[extra.feedback || ''] || extra.feedback || '—'
+    const subject = `💬 Nuevo feedback — ${extra.candidateName || 'Candidato'} · ${extra.jobTitle || 'Evaluación'}`
+    const content = `
+      <h2 style="color:#0E1E20;font-size:1.05rem;margin:0 0 12px">Nuevo feedback del cliente</h2>
+      <div style="background:#E4F0F1;border-radius:8px;padding:14px 18px;margin-bottom:16px;font-size:.85rem;line-height:1.8">
+        <div><span style="color:#9aacac;font-weight:600">Evaluación:</span> <strong style="color:#1B3B3E">${extra.jobTitle || '—'}</strong></div>
+        <div><span style="color:#9aacac;font-weight:600">Empresa:</span> <strong style="color:#1B3B3E">${extra.companyName || '—'}</strong></div>
+        <div><span style="color:#9aacac;font-weight:600">Candidato:</span> <strong style="color:#1B3B3E">${extra.candidateName || '—'}</strong></div>
+        <div><span style="color:#9aacac;font-weight:600">Feedback:</span> <strong style="color:#1B3B3E;font-size:1rem">${feedbackLabel}</strong></div>
+      </div>
+      <a href="https://candidato.com.co/app/matchgraph" style="display:inline-block;background:#1B3B3E;color:white;border-radius:8px;padding:10px 22px;font-size:.85rem;font-weight:600;text-decoration:none">Ver evaluación →</a>
     `
     return { subject, html: base.replace('CONTENT', content) }
   }

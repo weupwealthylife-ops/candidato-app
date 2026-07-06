@@ -264,7 +264,7 @@ export async function POST(req: NextRequest) {
   }
 
   if (action === 'generate_share') {
-    const { engagement_id } = body
+    const { engagement_id, expires_at } = body
     if (!engagement_id) return NextResponse.json({ error: 'Missing engagement_id' }, { status: 400 })
     const { data: eng } = await client
       .from('matchgraph_engagements')
@@ -272,9 +272,11 @@ export async function POST(req: NextRequest) {
       .eq('id', engagement_id)
       .maybeSingle()
     if (!eng) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-    if (eng.share_token) return NextResponse.json({ share_token: eng.share_token })
-    const share_token = crypto.randomUUID().replace(/-/g, '').slice(0, 20)
-    await client.from('matchgraph_engagements').update({ share_token }).eq('id', engagement_id)
+    // Always regenerate so expiry is updated
+    const share_token = eng.share_token || crypto.randomUUID().replace(/-/g, '').slice(0, 20)
+    const update: Record<string, unknown> = { share_token }
+    if (expires_at !== undefined) update.share_token_expires_at = expires_at
+    await client.from('matchgraph_engagements').update(update).eq('id', engagement_id)
     return NextResponse.json({ share_token })
   }
 

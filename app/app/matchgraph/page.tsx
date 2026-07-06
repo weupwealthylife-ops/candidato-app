@@ -262,6 +262,12 @@ export default function MatchGraphPage() {
   const [savingPipeline, setSavingPipeline] = useState<string | null>(null)
   const [notifying, setNotifying] = useState(false)
 
+  // Share link expiry
+  const [shareExpiryDays, setShareExpiryDays] = useState<number>(30)
+
+  // Touch / swipe state for candidate navigation
+  const [touchStartX, setTouchStartX] = useState<number | null>(null)
+
   // Drag-and-drop reorder (admin only)
   const [dragIndex, setDragIndex] = useState<number | null>(null)
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
@@ -322,6 +328,24 @@ export default function MatchGraphPage() {
     if (res.ok) {
       setCandidates(prev => prev.map(c => c.id === candId ? { ...c, client_feedback: feedback } : c))
       showToast('Feedback guardado', 'success')
+      // Notify admin of client feedback
+      const cand = candidates.find(c => c.id === candId)
+      if (cand && selEng && session && !session.isAdmin) {
+        fetch('/api/notify', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'matchgraph_client_feedback',
+            to: ADMIN_EMAIL,
+            name: 'Equipo Candidato',
+            extra: {
+              jobTitle: selEng.title,
+              companyName: selEng.company_name,
+              candidateName: cand.name,
+              feedback,
+            },
+          }),
+        }).catch(() => {})
+      }
     } else showToast('Error al guardar feedback', 'error')
   }
 
@@ -354,9 +378,12 @@ export default function MatchGraphPage() {
   async function generateShare() {
     if (!selEng) return
     setShareLoading(true)
+    const expiresAt = shareExpiryDays
+      ? new Date(Date.now() + shareExpiryDays * 864e5).toISOString()
+      : null
     const res = await fetch('/api/matchgraph', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'generate_share', engagement_id: selEng.id }),
+      body: JSON.stringify({ action: 'generate_share', engagement_id: selEng.id, expires_at: expiresAt }),
     })
     const data = await res.json()
     setShareLoading(false)
@@ -833,7 +860,7 @@ export default function MatchGraphPage() {
               </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(145px,1fr))', gap: '.75rem', marginBottom: '2rem' }}>
+            <div className="mg-cover-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(145px,1fr))', gap: '.75rem', marginBottom: '2rem' }}>
               {overallAvgs.map((c, i) => {
                 const cand = candidates[i]
                 const isSelected = compareIds.includes(cand.id)
@@ -885,6 +912,24 @@ export default function MatchGraphPage() {
                     <div style={{ fontWeight: 700, fontSize: '.79rem', color: INK, marginBottom: '.3rem', lineHeight: 1.2 }}>{c.name}</div>
                     <div style={{ fontSize: '1.15rem', fontWeight: 800, color: c.score >= 80 ? FOREST : c.score >= 60 ? '#e6a817' : CORAL, lineHeight: 1 }}>{c.score}%</div>
                     <div style={{ fontSize: '.63rem', color: '#9aacac', marginTop: '.1rem' }}>fit score</div>
+                    {(() => {
+                      const cand = candidates[i]
+                      const status = cand?.pipeline_status || 'sent'
+                      if (status === 'sent') return null
+                      const pMap: Record<string, { label: string; color: string; bg: string }> = {
+                        interview: { label: 'Entrevista', color: '#e6a817', bg: '#fffbf0' },
+                        finalist: { label: 'Finalista', color: FOREST, bg: PALE },
+                        hired: { label: 'Contratado', color: '#2A7E4E', bg: '#e6f4ec' },
+                        rejected: { label: 'Descartado', color: CORAL, bg: '#fff4f2' },
+                      }
+                      const p = pMap[status]
+                      if (!p) return null
+                      return (
+                        <div style={{ marginTop: '.4rem', fontSize: '.6rem', fontWeight: 700, padding: '2px 8px', borderRadius: 10, background: p.bg, color: p.color, display: 'inline-block', lineHeight: 1.5 }}>
+                          {p.label}
+                        </div>
+                      )
+                    })()}
                   </div>
                 )
               })}
@@ -929,12 +974,25 @@ export default function MatchGraphPage() {
             )}
           </>
         ) : (
-          <div style={{ textAlign: 'center', padding: '3.5rem', color: '#9aacac', border: '1.5px dashed #d8e4e4', borderRadius: 14 }}>
-            <div style={{ fontSize: '2rem', marginBottom: '.75rem' }}>👥</div>
-            <div style={{ fontWeight: 600, fontSize: '.88rem', marginBottom: '.3rem', color: INK }}>Sin candidatos aún</div>
-            <div style={{ fontSize: '.8rem' }}>
-              {session?.isAdmin ? 'Agregá candidatos con el botón de arriba.' : 'Los candidatos estarán disponibles pronto. Te notificaremos.'}
-            </div>
+          <div style={{ border: '2px dashed #d8e4e4', borderRadius: 16, padding: '3rem 2rem', textAlign: 'center', background: 'white' }}>
+            <div style={{ width: 64, height: 64, borderRadius: 16, background: PALE, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.1rem', fontSize: '1.6rem' }}>👥</div>
+            <div style={{ fontFamily: 'var(--head)', fontWeight: 700, fontSize: '1.05rem', color: INK, marginBottom: '.4rem' }}>Sin candidatos aún</div>
+            {session?.isAdmin ? (
+              <>
+                <p style={{ fontSize: '.82rem', color: '#9aacac', margin: '0 0 1.3rem', lineHeight: 1.6 }}>
+                  Agregá el primer candidato para comenzar la evaluación.
+                </p>
+                <button onClick={openAddCandidate}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '.4rem', background: FOREST, color: 'white', border: 'none', borderRadius: 10, padding: '10px 22px', fontSize: '.85rem', fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--body)' }}>
+                  + Agregar candidato
+                </button>
+              </>
+            ) : (
+              <p style={{ fontSize: '.82rem', color: '#9aacac', margin: 0, lineHeight: 1.6 }}>
+                Los candidatos estarán disponibles pronto.<br />
+                Tu consultor te notificará cuando estén listos.
+              </p>
+            )}
           </div>
         )}
 
@@ -1003,6 +1061,19 @@ export default function MatchGraphPage() {
     )
   }
 
+  function calendarLink(c: Candidate, eng: Engagement | null) {
+    if (!c.interview_date || !eng) return null
+    const dt = new Date(c.interview_date)
+    if (isNaN(dt.getTime())) return null
+    const pad = (n: number) => String(n).padStart(2, '0')
+    const fmt = (d: Date) =>
+      `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}T${pad(d.getHours())}${pad(d.getMinutes())}00`
+    const end = new Date(dt.getTime() + 3600000)
+    const text = encodeURIComponent(`Entrevista — ${c.name} para ${eng.title}`)
+    const details = encodeURIComponent(`Candidato: ${c.name}\nEmpresa: ${eng.company_name}\nCargo: ${eng.title}`)
+    return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${text}&dates=${fmt(dt)}/${fmt(end)}&details=${details}`
+  }
+
   /* Candidate detail view */
   function CandidateView({ c }: { c: Candidate }) {
     const scores = SCORE_KEYS.map(k => Number(c[k]) || 0)
@@ -1041,7 +1112,7 @@ export default function MatchGraphPage() {
           <div style={{ fontSize: '.8rem', color: '#4a6a6a' }}>{selEng!.title} · {selEng!.company_name}</div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 360px', gap: '2rem', alignItems: 'start' }}>
+        <div className="mg-cand-grid" style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 360px', gap: '2rem', alignItems: 'start' }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1.1rem', marginBottom: '1.5rem' }}>
               {c.photo_url ? (
@@ -1058,7 +1129,17 @@ export default function MatchGraphPage() {
                 </div>
                 {c.salary_expectation && <div style={{ fontSize: '.79rem', color: '#4a6a6a', marginBottom: '.15rem' }}>Aspiración salarial: <strong>{c.salary_expectation}</strong></div>}
                 {c.mobility && <div style={{ fontSize: '.79rem', color: '#4a6a6a', marginBottom: '.15rem' }}>Movilidad: <strong>{c.mobility}</strong></div>}
-                {c.interview_date && <div style={{ fontSize: '.79rem', color: '#4a6a6a' }}>Entrevista: <strong style={{ color: FOREST }}>{c.interview_date}</strong></div>}
+                {c.interview_date && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '.6rem', flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: '.79rem', color: '#4a6a6a' }}>Entrevista: <strong style={{ color: FOREST }}>{c.interview_date}</strong></span>
+                    {calendarLink(c, selEng) && (
+                      <a href={calendarLink(c, selEng)!} target="_blank" rel="noopener noreferrer"
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: '.25rem', fontSize: '.68rem', fontWeight: 600, color: '#4a6a6a', textDecoration: 'none', padding: '2px 8px', borderRadius: 6, border: '1px solid #d8e4e4', background: '#f8fbfb' }}>
+                        📅 Google Calendar
+                      </a>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -1329,6 +1410,18 @@ export default function MatchGraphPage() {
           * { box-shadow: none !important; }
         }
         .print-only { display: none; }
+        @media (max-width: 600px) {
+          .mg-cover-grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)) !important; }
+          .mg-cand-grid { grid-template-columns: 1fr !important; }
+          .mg-compare-grid { grid-template-columns: 1fr !important; overflow-x: auto; }
+          .mg-compare-cards { grid-template-columns: 1fr !important; }
+          .mg-tab-bar { gap: 0 !important; }
+          .mg-tab-bar button { padding: 12px 12px !important; font-size: .73rem !important; }
+        }
+        .mg-swipe-hint { display: none; }
+        @media (max-width: 768px) and (hover: none) {
+          .mg-swipe-hint { display: flex; }
+        }
       `}</style>
 
       <TopBar
@@ -1348,7 +1441,7 @@ export default function MatchGraphPage() {
       />
 
       {/* Tab navigation */}
-      <div className="no-print" style={{ background: 'white', borderBottom: '1px solid #e0eaea', padding: '0 1.5rem', display: 'flex', gap: 0, overflowX: 'auto', flexShrink: 0, fontFamily: 'var(--body)' }}>
+      <div className="no-print mg-tab-bar" style={{ background: 'white', borderBottom: '1px solid #e0eaea', padding: '0 1.5rem', display: 'flex', gap: 0, overflowX: 'auto', flexShrink: 0, fontFamily: 'var(--body)' }}>
         <button onClick={() => { setCandIdx(-1); setShowCompare(false); setCompareMode(false); setCompareIds([]) }}
           style={{ padding: '13px 18px', fontSize: '.79rem', fontWeight: !showCompare && candIdx === -1 ? 700 : 500, color: !showCompare && candIdx === -1 ? FOREST : '#9aacac', background: 'none', border: 'none', borderBottom: !showCompare && candIdx === -1 ? `2.5px solid ${FOREST}` : '2.5px solid transparent', cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all .15s' }}>
           Resumen
@@ -1361,6 +1454,13 @@ export default function MatchGraphPage() {
           </button>
         ))}
       </div>
+
+      {/* Swipe hint — touch devices only */}
+      {candIdx >= 0 && (
+        <div className="mg-swipe-hint no-print" style={{ alignItems: 'center', justifyContent: 'center', gap: '.4rem', padding: '5px', background: '#f4f8f8', fontSize: '.68rem', color: '#b0c4c4', letterSpacing: '.03em' }}>
+          ← deslizá para navegar →
+        </div>
+      )}
 
       {/* Prev / Next navigation — shown when viewing a candidate */}
       {candIdx >= 0 && (
@@ -1387,7 +1487,17 @@ export default function MatchGraphPage() {
         </div>
       )}
 
-      <div style={{ flex: 1 }}>
+      <div style={{ flex: 1 }}
+        onTouchStart={e => setTouchStartX(e.touches[0].clientX)}
+        onTouchEnd={e => {
+          if (touchStartX === null || candIdx < 0) return
+          const dx = e.changedTouches[0].clientX - touchStartX
+          if (Math.abs(dx) < 50) return
+          if (dx < 0 && candIdx < candidates.length - 1) setCandIdx(candIdx + 1)
+          else if (dx > 0) setCandIdx(candIdx === 0 ? -1 : candIdx - 1)
+          setTouchStartX(null)
+        }}
+      >
         {showCompare ? <CompareView /> : candIdx === -1 ? <CoverView /> : currentCand ? <CandidateView c={currentCand} /> : null}
       </div>
 
@@ -1426,15 +1536,16 @@ export default function MatchGraphPage() {
 
       {/* Share modal */}
       {showShareModal && shareToken && (
-        <Modal title="Enlace público de la evaluación" onClose={() => setShowShareModal(false)}>
+        <Modal title="Enlace público" onClose={() => setShowShareModal(false)}>
           <p style={{ fontSize: '.83rem', color: '#4a6a6a', lineHeight: 1.65, margin: '0 0 1rem' }}>
             Cualquier persona con este enlace puede ver los candidatos sin iniciar sesión. No se muestran notas ni CVs.
           </p>
-          <div style={{ display: 'flex', gap: '.5rem', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: '.5rem', alignItems: 'center', marginBottom: '.85rem' }}>
             <input
               readOnly
               value={`${typeof window !== 'undefined' ? window.location.origin : ''}/app/matchgraph/share/${shareToken}`}
               style={{ ...inp, fontSize: '.76rem', flex: 1, background: '#f4f8f8', cursor: 'text' }}
+              onFocus={e => e.target.select()}
             />
             <button
               onClick={() => {
@@ -1445,13 +1556,30 @@ export default function MatchGraphPage() {
               Copiar
             </button>
           </div>
-          <div style={{ marginTop: '1.1rem', display: 'flex', gap: '.5rem', justifyContent: 'flex-end' }}>
-            <a
-              href={`/app/matchgraph/share/${shareToken}`}
-              target="_blank"
-              rel="noopener noreferrer"
+          <div style={{ background: OFF, borderRadius: 10, padding: '.85rem 1rem', marginBottom: '1rem' }}>
+            <div style={{ fontSize: '.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em', color: '#9aacac', marginBottom: '.5rem' }}>Vigencia del enlace</div>
+            <div style={{ display: 'flex', gap: '.4rem', flexWrap: 'wrap' }}>
+              {[{ label: '7 días', val: 7 }, { label: '30 días', val: 30 }, { label: '90 días', val: 90 }, { label: 'Sin vencimiento', val: 0 }].map(opt => (
+                <button key={opt.val} onClick={() => setShareExpiryDays(opt.val)}
+                  style={{ fontSize: '.73rem', fontWeight: 700, padding: '5px 12px', borderRadius: 20, border: `1.5px solid ${shareExpiryDays === opt.val ? FOREST : '#e0eaea'}`, background: shareExpiryDays === opt.val ? PALE : 'white', color: shareExpiryDays === opt.val ? FOREST : '#9aacac', cursor: 'pointer', transition: 'all .15s' }}>
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            <p style={{ fontSize: '.72rem', color: '#b0c4c4', margin: '.5rem 0 0' }}>
+              {shareExpiryDays > 0
+                ? `El enlace expira el ${new Date(Date.now() + shareExpiryDays * 864e5).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })}`
+                : 'El enlace no expira automáticamente'}
+            </p>
+          </div>
+          <div style={{ display: 'flex', gap: '.5rem', justifyContent: 'space-between', alignItems: 'center' }}>
+            <button onClick={generateShare} disabled={shareLoading}
+              style={{ fontSize: '.75rem', fontWeight: 600, padding: '7px 14px', borderRadius: 8, border: `1.5px solid ${FOREST}`, background: 'white', color: FOREST, cursor: 'pointer' }}>
+              {shareLoading ? 'Actualizando…' : '🔄 Regenerar enlace'}
+            </button>
+            <a href={`/app/matchgraph/share/${shareToken}`} target="_blank" rel="noopener noreferrer"
               style={{ fontSize: '.78rem', fontWeight: 600, color: FOREST, textDecoration: 'none', padding: '7px 14px', border: `1.5px solid ${FOREST}`, borderRadius: 8 }}>
-              Ver enlace →
+              Abrir enlace →
             </a>
           </div>
         </Modal>
@@ -1480,8 +1608,8 @@ export default function MatchGraphPage() {
               <input style={inp} placeholder="Ej: Transporte propio" value={candForm.mobility || ''} onChange={e => setCandForm(p => ({ ...p, mobility: e.target.value }))} />
             </div>
             <div>
-              <label style={{ fontSize: '.72rem', fontWeight: 700, color: '#4a6a6a', display: 'block', marginBottom: '.28rem', textTransform: 'uppercase', letterSpacing: '.06em' }}>Fecha entrevista</label>
-              <input style={inp} placeholder="Ej: 15 jul · 10 AM" value={candForm.interview_date || ''} onChange={e => setCandForm(p => ({ ...p, interview_date: e.target.value }))} />
+              <label style={{ fontSize: '.72rem', fontWeight: 700, color: '#4a6a6a', display: 'block', marginBottom: '.28rem', textTransform: 'uppercase', letterSpacing: '.06em' }}>Fecha y hora entrevista</label>
+              <input style={inp} type="datetime-local" value={candForm.interview_date || ''} onChange={e => setCandForm(p => ({ ...p, interview_date: e.target.value }))} />
             </div>
           </div>
 

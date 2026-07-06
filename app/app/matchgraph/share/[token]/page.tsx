@@ -285,6 +285,8 @@ export default async function SharePage({
     .maybeSingle()
 
   if (!eng) notFound()
+  // Check expiry
+  if (eng.share_token_expires_at && new Date(eng.share_token_expires_at) < new Date()) notFound()
 
   /* Fetch candidates */
   const { data: candidates } = await client
