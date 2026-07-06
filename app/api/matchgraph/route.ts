@@ -250,13 +250,13 @@ export async function POST(req: NextRequest) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        type: 'matchgraph_ready',
+        type: 'matchgraph_engagement_opened',
         to: eng.client_email,
         name: eng.company_name || eng.client_email.split('@')[0],
         extra: {
-          title: eng.title,
+          jobTitle: eng.title,
           company_name: eng.company_name,
-          url: `${BASE_URL}/app/matchgraph`,
+          to: eng.client_email,
         },
       }),
     }).catch(() => {})
