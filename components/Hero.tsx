@@ -21,11 +21,11 @@ export default function Hero() {
           {t('Matching inteligente · Colombia', 'Intelligent matching · Colombia')}
         </span>
         <h1 className="hero-h1">
-          <span>{t('El Tinder', 'The Tinder')}</span>
+          <span>{t('El trabajo que', 'The job your')}</span>
           <br />
-          <span className="accent">{t('para el trabajo', 'for jobs')}</span>
+          <span className="accent">{t('merece', 'talent')}</span>
           <br />
-          <span>{t('de tu vida.', 'of your life.')}</span>
+          <span>{t('tu talento.', 'deserves.')}</span>
         </h1>
         <p className="hero-sub">
           {t(

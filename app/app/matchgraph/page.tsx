@@ -76,8 +76,7 @@ function BirdLogo({ size = 32, light = false }: { size?: number; light?: boolean
       height={size}
       style={{
         borderRadius: 8,
-        objectFit: 'cover',
-        filter: light ? 'brightness(0) invert(1)' : 'none',
+        objectFit: 'contain',
         flexShrink: 0,
       }}
     />

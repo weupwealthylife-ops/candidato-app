@@ -3847,7 +3847,7 @@ function MyJobsView({ userEmail, coName, onPost, t }: {
 
   const inp: React.CSSProperties = { width: '100%', background: 'var(--off)', border: '1.5px solid transparent', borderRadius: '8px', padding: '8px 10px', color: 'var(--ink)', fontFamily: 'var(--body)', fontSize: '.83rem', outline: 'none' }
 
-  const statusColor: Record<string, string> = { pending: 'var(--ink-45)', reviewed: 'var(--forest)', shortlisted: '#5a3e8a', contacted: '#2A7E4E', rejected: 'var(--coral)' }
+  const statusColor: Record<string, string> = { pending: 'var(--ink-45)', reviewed: 'var(--forest)', shortlisted: 'var(--forest-lt)', contacted: '#2A7E4E', rejected: 'var(--coral)' }
 
   // ── APPLICANTS PANEL ──
   if (viewingJobId) {
@@ -4392,15 +4392,15 @@ function PostJobView({ userEmail, onSuccess, t }: {
         <button
           type="button"
           onClick={() => setPostMode('preseleccion')}
-          style={{ flex: 1, padding: '.9rem 1rem', borderRadius: 12, border: `2px solid ${postMode === 'preseleccion' ? '#5a3e8a' : 'var(--line)'}`, background: postMode === 'preseleccion' ? '#f5f0ff' : '#fafafa', cursor: 'pointer', textAlign: 'left', transition: 'all .15s' }}
+          style={{ flex: 1, padding: '.9rem 1rem', borderRadius: 12, border: `2px solid ${postMode === 'preseleccion' ? 'var(--forest)' : 'var(--line)'}`, background: postMode === 'preseleccion' ? 'var(--pale)' : '#fafafa', cursor: 'pointer', textAlign: 'left', transition: 'all .15s' }}
         >
-          <div style={{ fontWeight: 700, fontSize: '.88rem', color: postMode === 'preseleccion' ? '#5a3e8a' : 'var(--ink)', marginBottom: '.2rem' }}>
+          <div style={{ fontWeight: 700, fontSize: '.88rem', color: postMode === 'preseleccion' ? 'var(--forest)' : 'var(--ink)', marginBottom: '.2rem' }}>
             {t('⬡ Preselección & Validación', '⬡ Screening & Validation')}
           </div>
           <div style={{ fontSize: '.75rem', color: 'var(--ink-45)', lineHeight: 1.45 }}>
             {t('Top 5 candidatos validados por nuestro equipo.', 'Top 5 candidates validated by our team.')}
           </div>
-          <div style={{ marginTop: '.4rem', fontSize: '.72rem', fontWeight: 700, color: '#5a3e8a' }}>
+          <div style={{ marginTop: '.4rem', fontSize: '.72rem', fontWeight: 700, color: 'var(--forest)' }}>
             {t('Desde $800.000 COP/mes', 'From $800,000 COP/mo')}
           </div>
         </button>
@@ -4490,7 +4490,7 @@ function PostJobView({ userEmail, onSuccess, t }: {
           )}
           {postMode === 'preseleccion' && (
             <div className="fg fg-full">
-              <div style={{ background: '#f5f0ff', border: '1.5px solid #c4b0f0', borderRadius: 10, padding: '1rem 1.1rem', fontSize: '.8rem', color: '#3d2970', lineHeight: 1.7 }}>
+              <div style={{ background: 'var(--pale)', border: '1.5px solid var(--mist)', borderRadius: 10, padding: '1rem 1.1rem', fontSize: '.8rem', color: 'var(--forest)', lineHeight: 1.7 }}>
                 <div style={{ fontWeight: 700, marginBottom: '.4rem' }}>🔍 {t('¿Cómo funciona?', 'How does it work?')}</div>
                 {t(
                   'Nuestro equipo valida candidatos: perfil, experiencia, conocimientos y entorno. Te entregamos los top 5 más compatibles listos para entrevistar. Sin revisar cientos de CVs.',
@@ -4571,7 +4571,7 @@ function PostJobView({ userEmail, onSuccess, t }: {
                 target="_blank"
                 rel="noopener noreferrer"
                 className="submit-btn"
-                style={{ background: '#5a3e8a', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '.5rem', textDecoration: 'none' }}
+                style={{ background: 'var(--forest)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '.5rem', textDecoration: 'none' }}
               >
                 {t('Contactar por WhatsApp →', 'Contact via WhatsApp →')}
               </a>
