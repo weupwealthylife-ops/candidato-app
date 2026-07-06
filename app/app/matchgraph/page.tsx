@@ -20,6 +20,7 @@ interface Engagement {
   job_area?: string
   city?: string
   notes?: string
+  share_token?: string
   created_at: string
 }
 
@@ -44,6 +45,18 @@ interface Candidate {
   mobility?: string
   interview_date?: string
   client_notes?: string
+  client_feedback?: string
+  pipeline_status?: string
+}
+
+interface ActivityEntry {
+  id: string
+  engagement_id: string
+  candidate_id?: string
+  actor_email: string
+  action: string
+  details?: string
+  created_at: string
 }
 
 const SCORE_LABELS = ['Profesión', 'Años de experiencia', 'Experiencia en el sector', 'Requer. del cargo', 'Disponibilidad']
@@ -234,6 +247,21 @@ export default function MatchGraphPage() {
   const [compareIds, setCompareIds] = useState<string[]>([])
   const [showCompare, setShowCompare] = useState(false)
 
+  // Activity log
+  const [activity, setActivity] = useState<ActivityEntry[]>([])
+  const [activityLoading, setActivityLoading] = useState(false)
+  const [showActivity, setShowActivity] = useState(false)
+
+  // Share token
+  const [shareToken, setShareToken] = useState<string | null>(null)
+  const [shareLoading, setShareLoading] = useState(false)
+  const [showShareModal, setShowShareModal] = useState(false)
+
+  // Feedback & pipeline saving state
+  const [savingFeedback, setSavingFeedback] = useState<string | null>(null)
+  const [savingPipeline, setSavingPipeline] = useState<string | null>(null)
+  const [notifying, setNotifying] = useState(false)
+
   // Drag-and-drop reorder (admin only)
   const [dragIndex, setDragIndex] = useState<number | null>(null)
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
@@ -278,9 +306,76 @@ export default function MatchGraphPage() {
     const cands = data.candidates || []
     setCandidates(cands)
     setClientNotes(Object.fromEntries(cands.map((c: Candidate) => [c.id, c.client_notes || ''])))
-    setCandIdx(-1)
+    setShareToken(data.engagement?.share_token || null)
+    setCandIdx(-1); setShowActivity(false); setActivity([])
     setView('engagement')
     setEngLoading(false)
+  }
+
+  async function saveFeedback(candId: string, feedback: string) {
+    setSavingFeedback(candId)
+    const res = await fetch('/api/matchgraph', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'save_feedback', candidateId: candId, client_feedback: feedback }),
+    })
+    setSavingFeedback(null)
+    if (res.ok) {
+      setCandidates(prev => prev.map(c => c.id === candId ? { ...c, client_feedback: feedback } : c))
+      showToast('Feedback guardado', 'success')
+    } else showToast('Error al guardar feedback', 'error')
+  }
+
+  async function updatePipelineStatus(candId: string, status: string) {
+    setSavingPipeline(candId)
+    const res = await fetch('/api/matchgraph', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'update_pipeline_status', candidateId: candId, pipeline_status: status }),
+    })
+    setSavingPipeline(null)
+    if (res.ok) {
+      setCandidates(prev => prev.map(c => c.id === candId ? { ...c, pipeline_status: status } : c))
+      showToast('Estado actualizado', 'success')
+    } else showToast('Error al actualizar estado', 'error')
+  }
+
+  async function loadActivity() {
+    if (!selEng) return
+    setActivityLoading(true)
+    const res = await fetch('/api/matchgraph', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'get_activity', engagement_id: selEng.id }),
+    })
+    const data = await res.json()
+    setActivity(data.activity || [])
+    setActivityLoading(false)
+    setShowActivity(true)
+  }
+
+  async function generateShare() {
+    if (!selEng) return
+    setShareLoading(true)
+    const res = await fetch('/api/matchgraph', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'generate_share', engagement_id: selEng.id }),
+    })
+    const data = await res.json()
+    setShareLoading(false)
+    if (res.ok && data.share_token) {
+      setShareToken(data.share_token)
+      setShowShareModal(true)
+    } else showToast('Error al generar enlace', 'error')
+  }
+
+  async function notifyClient() {
+    if (!selEng) return
+    setNotifying(true)
+    const res = await fetch('/api/matchgraph', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'notify_client', engagement_id: selEng.id }),
+    })
+    setNotifying(false)
+    if (res.ok) showToast(`Email enviado a ${selEng.client_email}`, 'success')
+    else showToast('Error al enviar notificación', 'error')
   }
 
   async function logout() {
@@ -848,6 +943,62 @@ export default function MatchGraphPage() {
             <strong>📌 Nota:</strong> {selEng!.notes}
           </div>
         )}
+
+        {/* Admin actions row */}
+        {session?.isAdmin && (
+          <div className="no-print" style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap', marginTop: '1.25rem' }}>
+            <button onClick={generateShare} disabled={shareLoading}
+              style={{ fontSize: '.75rem', fontWeight: 600, padding: '7px 14px', borderRadius: 8, border: `1.5px solid ${FOREST}`, background: shareToken ? PALE : 'white', color: FOREST, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '.35rem' }}>
+              🔗 {shareLoading ? 'Generando…' : shareToken ? 'Ver enlace público' : 'Compartir evaluación'}
+            </button>
+            <button onClick={notifyClient} disabled={notifying}
+              style={{ fontSize: '.75rem', fontWeight: 600, padding: '7px 14px', borderRadius: 8, border: '1.5px solid #e0eaea', background: 'white', color: '#4a6a6a', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '.35rem' }}>
+              📧 {notifying ? 'Enviando…' : 'Notificar cliente'}
+            </button>
+            <button onClick={() => { if (showActivity) { setShowActivity(false) } else { loadActivity() } }}
+              style={{ fontSize: '.75rem', fontWeight: 600, padding: '7px 14px', borderRadius: 8, border: '1.5px solid #e0eaea', background: showActivity ? PALE : 'white', color: '#4a6a6a', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '.35rem' }}>
+              📋 {activityLoading ? 'Cargando…' : showActivity ? 'Ocultar actividad' : 'Ver actividad'}
+            </button>
+            {selEng && (
+              <a href={`/app/matchgraph/print/${selEng.id}`} target="_blank" rel="noopener noreferrer"
+                style={{ fontSize: '.75rem', fontWeight: 600, padding: '7px 14px', borderRadius: 8, border: '1.5px solid #e0eaea', background: 'white', color: '#4a6a6a', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '.35rem', textDecoration: 'none' }}>
+                🖨️ PDF completo
+              </a>
+            )}
+          </div>
+        )}
+
+        {/* Activity log */}
+        {showActivity && (
+          <div style={{ marginTop: '1.25rem', background: 'white', border: '1px solid #e0eaea', borderRadius: 14, overflow: 'hidden' }}>
+            <div style={{ padding: '10px 16px', background: OFF, borderBottom: '1px solid #e0eaea', fontSize: '.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: '#9aacac' }}>
+              Actividad reciente
+            </div>
+            {activityLoading ? (
+              <div style={{ padding: '2rem', textAlign: 'center', color: '#9aacac', fontSize: '.82rem' }}>Cargando…</div>
+            ) : activity.length === 0 ? (
+              <div style={{ padding: '1.5rem', textAlign: 'center', color: '#b0c4c4', fontSize: '.82rem' }}>Sin actividad registrada aún.</div>
+            ) : (
+              <div style={{ padding: '.5rem 0' }}>
+                {activity.map((a, i) => {
+                  const icons: Record<string, string> = { candidate_added: '👤', engagement_created: '📋', client_feedback: '💬', pipeline_status: '🔄', client_notes: '📝' }
+                  const labels: Record<string, string> = { candidate_added: 'Candidato agregado', engagement_created: 'Evaluación creada', client_feedback: 'Feedback del cliente', pipeline_status: 'Estado actualizado', client_notes: 'Nota guardada' }
+                  const d = new Date(a.created_at)
+                  const timeStr = d.toLocaleDateString('es-CO', { day: '2-digit', month: 'short' }) + ' · ' + d.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })
+                  return (
+                    <div key={a.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '.75rem', padding: '.65rem 1rem', borderBottom: i < activity.length - 1 ? '1px solid #f4f8f8' : 'none' }}>
+                      <span style={{ fontSize: '.9rem', flexShrink: 0, marginTop: 1 }}>{icons[a.action] || '•'}</span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: '.8rem', fontWeight: 600, color: INK }}>{labels[a.action] || a.action}{a.details ? `: ${a.details}` : ''}</div>
+                        <div style={{ fontSize: '.7rem', color: '#9aacac', marginTop: '.1rem' }}>{a.actor_email === ADMIN_EMAIL ? 'Candidato®' : 'Cliente'} · {timeStr}</div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     )
   }
@@ -910,6 +1061,70 @@ export default function MatchGraphPage() {
                 {c.interview_date && <div style={{ fontSize: '.79rem', color: '#4a6a6a' }}>Entrevista: <strong style={{ color: FOREST }}>{c.interview_date}</strong></div>}
               </div>
             </div>
+
+            {/* Pipeline status */}
+            {(() => {
+              const PIPELINE = [
+                { key: 'sent', label: 'Enviado', color: '#9aacac', bg: '#f4f8f8' },
+                { key: 'interview', label: 'Entrevista', color: '#e6a817', bg: '#fffbf0' },
+                { key: 'finalist', label: 'Finalista', color: FOREST, bg: PALE },
+                { key: 'hired', label: 'Contratado', color: '#2A7E4E', bg: '#e6f4ec' },
+                { key: 'rejected', label: 'Descartado', color: CORAL, bg: '#fff4f2' },
+              ]
+              const current = PIPELINE.find(p => p.key === (c.pipeline_status || 'sent')) || PIPELINE[0]
+              return (
+                <div className="no-print" style={{ display: 'flex', alignItems: 'center', gap: '.6rem', marginBottom: '1.1rem', flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: '.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em', color: '#9aacac' }}>Estado:</span>
+                  {session?.isAdmin ? (
+                    PIPELINE.map(p => (
+                      <button key={p.key} disabled={savingPipeline === c.id} onClick={() => updatePipelineStatus(c.id, p.key)}
+                        style={{ fontSize: '.72rem', fontWeight: 700, padding: '4px 11px', borderRadius: 20, border: `1.5px solid ${p.key === (c.pipeline_status || 'sent') ? p.color : '#e0eaea'}`, background: p.key === (c.pipeline_status || 'sent') ? p.bg : 'white', color: p.key === (c.pipeline_status || 'sent') ? p.color : '#b0c4c4', cursor: 'pointer', transition: 'all .15s' }}>
+                        {p.label}
+                      </button>
+                    ))
+                  ) : (
+                    <span style={{ fontSize: '.75rem', fontWeight: 700, padding: '4px 12px', borderRadius: 20, background: current.bg, color: current.color, border: `1.5px solid ${current.color}` }}>
+                      {current.label}
+                    </span>
+                  )}
+                </div>
+              )
+            })()}
+
+            {/* Client feedback */}
+            <div className="no-print" style={{ background: 'white', border: '1px solid #e0eaea', borderRadius: 13, padding: '1rem 1.15rem', marginBottom: '1.2rem' }}>
+              <div style={{ fontSize: '.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: '#9aacac', marginBottom: '.65rem' }}>
+                {session?.isAdmin ? '💬 Feedback del cliente' : '💬 Tu evaluación'}
+              </div>
+              <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap' }}>
+                {[
+                  { key: 'interested', label: '👍 Interesado', color: '#2A7E4E', bg: '#e6f4ec', border: '#b6ddc6' },
+                  { key: 'maybe', label: '🤔 Dudas', color: '#e6a817', bg: '#fffbf0', border: '#f5dcb0' },
+                  { key: 'no', label: '👎 No sigue', color: CORAL, bg: '#fff4f2', border: '#fcd0c8' },
+                ].map(opt => (
+                  <button key={opt.key} disabled={savingFeedback === c.id} onClick={() => !session?.isAdmin && saveFeedback(c.id, opt.key)}
+                    style={{ fontSize: '.78rem', fontWeight: 700, padding: '7px 16px', borderRadius: 9, border: `1.5px solid ${c.client_feedback === opt.key ? opt.border : '#e0eaea'}`, background: c.client_feedback === opt.key ? opt.bg : '#fafafa', color: c.client_feedback === opt.key ? opt.color : '#b0c4c4', cursor: session?.isAdmin ? 'default' : 'pointer', transition: 'all .18s', transform: c.client_feedback === opt.key ? 'scale(1.03)' : 'scale(1)' }}>
+                    {opt.label}
+                  </button>
+                ))}
+                {!c.client_feedback && session?.isAdmin && (
+                  <span style={{ fontSize: '.75rem', color: '#b0c4c4', alignSelf: 'center' }}>Sin feedback aún</span>
+                )}
+                {savingFeedback === c.id && <span style={{ fontSize: '.73rem', color: '#9aacac', alignSelf: 'center' }}>Guardando…</span>}
+              </div>
+            </div>
+
+            {/* WhatsApp CTA */}
+            {c.interview_date && (
+              <div className="no-print" style={{ marginBottom: '1.1rem' }}>
+                <a href={`https://wa.me/573205046723?text=${encodeURIComponent(`Hola! Te escribo sobre la entrevista de ${c.name} para el cargo ${selEng?.title} en ${selEng?.company_name}. Fecha coordinada: ${c.interview_date}. ¿Confirmamos los detalles?`)}`}
+                  target="_blank" rel="noopener noreferrer"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '.45rem', fontSize: '.78rem', fontWeight: 700, padding: '8px 16px', borderRadius: 9, background: '#25D366', color: 'white', textDecoration: 'none', transition: 'opacity .15s' }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                  Coordinar entrevista por WhatsApp
+                </a>
+              </div>
+            )}
 
             <div style={{ background: 'white', border: '1px solid #e0eaea', borderRadius: 13, overflow: 'hidden', marginBottom: '1.2rem' }}>
               <div style={{ padding: '10px 15px', background: OFF, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e0eaea' }}>
@@ -1206,6 +1421,39 @@ export default function MatchGraphPage() {
             style={{ width: '100%', background: saving ? '#b0c0c0' : FOREST, color: 'white', border: 'none', borderRadius: 10, padding: '12px', fontSize: '.88rem', fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--body)', transition: 'background .15s' }}>
             {saving ? 'Guardando…' : 'Guardar cambios'}
           </button>
+        </Modal>
+      )}
+
+      {/* Share modal */}
+      {showShareModal && shareToken && (
+        <Modal title="Enlace público de la evaluación" onClose={() => setShowShareModal(false)}>
+          <p style={{ fontSize: '.83rem', color: '#4a6a6a', lineHeight: 1.65, margin: '0 0 1rem' }}>
+            Cualquier persona con este enlace puede ver los candidatos sin iniciar sesión. No se muestran notas ni CVs.
+          </p>
+          <div style={{ display: 'flex', gap: '.5rem', alignItems: 'center' }}>
+            <input
+              readOnly
+              value={`${typeof window !== 'undefined' ? window.location.origin : ''}/app/matchgraph/share/${shareToken}`}
+              style={{ ...inp, fontSize: '.76rem', flex: 1, background: '#f4f8f8', cursor: 'text' }}
+            />
+            <button
+              onClick={() => {
+                const url = `${window.location.origin}/app/matchgraph/share/${shareToken}`
+                navigator.clipboard.writeText(url).then(() => showToast('Enlace copiado', 'success'))
+              }}
+              style={{ padding: '10px 16px', background: FOREST, color: 'white', border: 'none', borderRadius: 9, cursor: 'pointer', fontWeight: 700, fontSize: '.8rem', whiteSpace: 'nowrap', flexShrink: 0, fontFamily: 'var(--body)' }}>
+              Copiar
+            </button>
+          </div>
+          <div style={{ marginTop: '1.1rem', display: 'flex', gap: '.5rem', justifyContent: 'flex-end' }}>
+            <a
+              href={`/app/matchgraph/share/${shareToken}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ fontSize: '.78rem', fontWeight: 600, color: FOREST, textDecoration: 'none', padding: '7px 14px', border: `1.5px solid ${FOREST}`, borderRadius: 8 }}>
+              Ver enlace →
+            </a>
+          </div>
         </Modal>
       )}
 
