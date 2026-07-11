@@ -18,7 +18,29 @@ function sb() {
 export async function GET(req: NextRequest) {
   const cookie = req.cookies.get(COOKIE)
   if (!cookie?.value) return NextResponse.json({ email: null })
-  return NextResponse.json({ email: cookie.value, isAdmin: cookie.value === ADMIN_EMAIL })
+
+  const email = cookie.value
+  const isAdmin = email === ADMIN_EMAIL
+
+  // Re-validate non-admin sessions against the DB on every request.
+  // This ensures stale or tampered cookie values are rejected rather than trusted.
+  if (!isAdmin) {
+    try {
+      const { count } = await sb()
+        .from('matchgraph_engagements')
+        .select('id', { count: 'exact', head: true })
+        .ilike('client_email', email)
+      if (!count || count === 0) {
+        const cleared = NextResponse.json({ email: null })
+        cleared.cookies.delete(COOKIE)
+        return cleared
+      }
+    } catch {
+      // DB unreachable — fail open so existing sessions survive transient errors
+    }
+  }
+
+  return NextResponse.json({ email, isAdmin })
 }
 
 export async function POST(req: NextRequest) {
