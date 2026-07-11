@@ -262,6 +262,12 @@ export default function MatchGraphPage() {
   const [savingPipeline, setSavingPipeline] = useState<string | null>(null)
   const [notifying, setNotifying] = useState(false)
 
+  // Dashboard admin controls
+  const [dashView, setDashView] = useState<'byCompany' | 'byList'>('byCompany')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [notifyingId, setNotifyingId] = useState<string | null>(null)
+  const [notifiedAt, setNotifiedAt] = useState<Record<string, number>>({})
+
   // Share link expiry
   const [shareExpiryDays, setShareExpiryDays] = useState<number>(30)
 
@@ -413,6 +419,39 @@ export default function MatchGraphPage() {
     setNotifying(false)
     if (res.ok) showToast(`Email enviado a ${selEng.client_email}`, 'success')
     else showToast('Error al enviar notificación', 'error')
+  }
+
+  async function notifyClientById(engId: string, clientEmail: string) {
+    setNotifyingId(engId)
+    const res = await fetch('/api/matchgraph', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'notify_client', engagement_id: engId }),
+    })
+    setNotifyingId(null)
+    if (res.ok) {
+      setNotifiedAt(prev => ({ ...prev, [engId]: Date.now() }))
+      showToast(`Notificación enviada a ${clientEmail}`, 'success')
+    } else showToast('Error al enviar notificación', 'error')
+  }
+
+  function companyColor(str: string) {
+    const palette = [FOREST, '#2A7E4E', '#4A6FA5', '#7C3AED', '#D97706', '#0891B2', '#BE185D']
+    let h = 0
+    for (let i = 0; i < str.length; i++) h = str.charCodeAt(i) + ((h << 5) - h)
+    return palette[Math.abs(h) % palette.length]
+  }
+
+  function timeAgo(ts: string) {
+    const diff = Date.now() - new Date(ts).getTime()
+    const m = Math.floor(diff / 60000)
+    if (m < 2) return 'Ahora'
+    if (m < 60) return `Hace ${m}m`
+    const h = Math.floor(m / 60)
+    if (h < 24) return `Hace ${h}h`
+    const d = Math.floor(h / 24)
+    if (d === 1) return 'Ayer'
+    if (d < 30) return `Hace ${d}d`
+    return new Date(ts).toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })
   }
 
   async function logout() {
@@ -788,93 +827,282 @@ export default function MatchGraphPage() {
 
   /* ── DASHBOARD ───────────────────────────────────────────── */
   if (view === 'dashboard') {
+    const isAdmin = session?.isAdmin
     const open = engagements.filter(e => e.status === 'open')
     const closed = engagements.filter(e => e.status === 'closed')
+
+    // Group by company/client for admin view
+    type CompanyGroup = {
+      email: string
+      company_name: string
+      color: string
+      engagements: Engagement[]
+      openCount: number
+      closedCount: number
+      latestAt: string
+    }
+    const groups: CompanyGroup[] = Object.values(
+      engagements.reduce((acc: Record<string, CompanyGroup>, eng) => {
+        const key = eng.client_email.toLowerCase()
+        if (!acc[key]) acc[key] = {
+          email: key,
+          company_name: eng.company_name || key,
+          color: companyColor(eng.company_name || key),
+          engagements: [],
+          openCount: 0,
+          closedCount: 0,
+          latestAt: eng.created_at,
+        }
+        acc[key].engagements.push(eng)
+        if (eng.status === 'open') acc[key].openCount++
+        else acc[key].closedCount++
+        if (eng.created_at > acc[key].latestAt) acc[key].latestAt = eng.created_at
+        return acc
+      }, {})
+    ).sort((a, b) => b.latestAt.localeCompare(a.latestAt))
+
+    const q = searchQuery.trim().toLowerCase()
+    const filteredGroups = q
+      ? groups.filter(g => g.company_name.toLowerCase().includes(q) || g.email.includes(q))
+      : groups
+    const filteredFlat = q
+      ? engagements.filter(e => e.company_name?.toLowerCase().includes(q) || e.client_email.includes(q) || e.title.toLowerCase().includes(q))
+      : engagements
+
+    // Reusable engagement card
+    function EngCard({ eng, showCompany = false }: { eng: Engagement; showCompany?: boolean }) {
+      const color = companyColor(eng.company_name || eng.client_email)
+      const sent = notifiedAt[eng.id]
+      const isSending = notifyingId === eng.id
+      return (
+        <div style={{ background: 'white', border: `1.5px solid ${eng.status === 'open' ? 'rgba(27,59,62,.1)' : '#eaeaea'}`, borderRadius: 14, overflow: 'hidden', transition: 'box-shadow .18s', boxShadow: '0 1px 6px rgba(14,30,32,.04)' }}>
+          {/* Clickable main area */}
+          <button
+            onClick={() => openEngagement(eng)}
+            style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: '1.1rem 1.25rem .75rem' }}
+          >
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '.5rem', marginBottom: '.55rem' }}>
+              {showCompany && (
+                <div style={{ width: 36, height: 36, borderRadius: 10, background: `${color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--head)', fontWeight: 800, fontSize: '.85rem', color, flexShrink: 0 }}>
+                  {eng.company_name?.[0]?.toUpperCase() || '?'}
+                </div>
+              )}
+              <span style={{ flex: 1, fontWeight: 700, fontSize: '.88rem', color: INK, lineHeight: 1.3 }}>{eng.title}</span>
+              <span style={{ fontSize: '.6rem', fontWeight: 700, padding: '3px 8px', borderRadius: 6, background: eng.status === 'open' ? '#e6f4ec' : '#f0f0ef', color: eng.status === 'open' ? '#2A7E4E' : '#999', textTransform: 'uppercase', letterSpacing: '.07em', flexShrink: 0, whiteSpace: 'nowrap' }}>
+                {eng.status === 'open' ? 'Activa' : 'Cerrada'}
+              </span>
+            </div>
+            {showCompany && <div style={{ fontSize: '.78rem', color: '#4a6a6a', marginBottom: '.15rem', fontWeight: 500 }}>{eng.company_name}</div>}
+            {(eng.job_area || eng.city) && (
+              <div style={{ fontSize: '.71rem', color: '#9aacac' }}>{[eng.job_area, eng.city].filter(Boolean).join(' · ')}</div>
+            )}
+            <div style={{ fontSize: '.66rem', color: '#b8caca', marginTop: '.4rem' }}>
+              {timeAgo(eng.created_at)}
+            </div>
+          </button>
+          {/* Admin footer: notify button */}
+          {isAdmin && (
+            <div style={{ borderTop: '1px solid #f0f4f4', padding: '.55rem 1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '.5rem' }}>
+              <span style={{ fontSize: '.67rem', color: '#9aacac', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{eng.client_email}</span>
+              <button
+                onClick={(e) => { e.stopPropagation(); notifyClientById(eng.id, eng.client_email) }}
+                disabled={isSending}
+                style={{ background: sent ? '#e6f4ec' : PALE, color: sent ? '#2A7E4E' : FOREST, border: 'none', borderRadius: 7, padding: '4px 10px', cursor: isSending ? 'not-allowed' : 'pointer', fontSize: '.67rem', fontWeight: 700, fontFamily: 'var(--body)', whiteSpace: 'nowrap', flexShrink: 0, transition: 'all .15s', opacity: isSending ? 0.6 : 1 }}
+              >
+                {isSending ? '…' : sent ? `✓ Enviado ${timeAgo(new Date(sent).toISOString())}` : '📧 Notificar'}
+              </button>
+            </div>
+          )}
+        </div>
+      )
+    }
+
     return (
       <div style={{ minHeight: '100vh', background: OFF, display: 'flex', flexDirection: 'column', fontFamily: 'var(--body)' }}>
-        <TopBar actions={session?.isAdmin ? (
-          <button onClick={() => { setEngForm({ title: '', company_name: '', client_email: '', job_area: '', city: '', notes: '', status: 'open' }); setShowCreateEng(true) }}
-            style={{ background: CORAL, border: 'none', color: 'white', borderRadius: 8, padding: '6px 16px', cursor: 'pointer', fontSize: '.78rem', fontWeight: 700, fontFamily: 'var(--body)', letterSpacing: '.01em', transition: 'opacity .15s' }}>
-            + Nueva evaluación
+        <TopBar actions={isAdmin ? (
+          <button
+            onClick={() => { setEngForm({ title: '', company_name: '', client_email: '', job_area: '', city: '', notes: '', status: 'open' }); setShowCreateEng(true) }}
+            style={{ background: CORAL, border: 'none', color: 'white', borderRadius: 8, padding: '6px 14px', cursor: 'pointer', fontSize: '.78rem', fontWeight: 700, fontFamily: 'var(--body)', letterSpacing: '.01em', whiteSpace: 'nowrap' }}>
+            + {isMobile ? 'Nueva' : 'Nueva evaluación'}
           </button>
         ) : undefined} />
 
-        <div style={{ maxWidth: 960, margin: '0 auto', padding: '2rem 1.5rem', width: '100%' }}>
-          <div style={{ marginBottom: '2rem' }}>
-            <h1 style={{ fontFamily: 'var(--head)', fontWeight: 700, fontSize: '1.5rem', color: INK, margin: '0 0 .35rem', letterSpacing: '-.02em' }}>
-              {session?.isAdmin ? 'Todas las evaluaciones' : 'Tus evaluaciones de Preselección'}
-            </h1>
-            <p style={{ fontSize: '.82rem', color: '#9aacac', margin: 0 }}>
-              {session?.isAdmin ? `${engagements.length} evaluaciones en total` : `${engagements.length} evaluacion${engagements.length !== 1 ? 'es' : ''} disponible${engagements.length !== 1 ? 's' : ''}`}
-            </p>
+        <div style={{ maxWidth: 1020, margin: '0 auto', padding: isMobile ? '1.5rem 1rem' : '2rem 1.5rem', width: '100%' }}>
+
+          {/* ── Page header ── */}
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+            <div>
+              <h1 style={{ fontFamily: 'var(--head)', fontWeight: 700, fontSize: isMobile ? '1.3rem' : '1.55rem', color: INK, margin: '0 0 .3rem', letterSpacing: '-.02em' }}>
+                {isAdmin ? 'Clientes & Evaluaciones' : 'Tus evaluaciones de Preselección'}
+              </h1>
+              <p style={{ fontSize: '.8rem', color: '#9aacac', margin: 0 }}>
+                {isAdmin
+                  ? `${groups.length} cliente${groups.length !== 1 ? 's' : ''} · ${engagements.length} evaluacion${engagements.length !== 1 ? 'es' : ''}`
+                  : `${engagements.length} evaluacion${engagements.length !== 1 ? 'es' : ''} disponible${engagements.length !== 1 ? 's' : ''}`
+                }
+              </p>
+            </div>
+            {/* Admin: view toggle */}
+            {isAdmin && engagements.length > 0 && !isMobile && (
+              <div style={{ display: 'flex', background: '#eaeae6', borderRadius: 9, padding: 3, gap: 3, flexShrink: 0 }}>
+                {([['byCompany', '🏢 Empresas'], ['byList', '📋 Lista']] as const).map(([v, label]) => (
+                  <button key={v} onClick={() => setDashView(v)}
+                    style={{ padding: '5px 12px', borderRadius: 6, border: 'none', cursor: 'pointer', fontSize: '.72rem', fontWeight: 700, fontFamily: 'var(--body)', background: dashView === v ? 'white' : 'transparent', color: dashView === v ? FOREST : '#9aacac', boxShadow: dashView === v ? '0 1px 4px rgba(0,0,0,.1)' : 'none', transition: 'all .15s' }}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
-          {/* Stats row — admin only */}
-          {session?.isAdmin && engagements.length > 0 && (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '.75rem', marginBottom: '2rem' }}>
+          {/* ── Admin KPI row ── */}
+          {isAdmin && engagements.length > 0 && (
+            <div style={{ display: 'grid', gridTemplateColumns: `repeat(${isMobile ? 2 : 4}, 1fr)`, gap: '.65rem', marginBottom: '1.5rem' }}>
               {[
-                { label: 'Total', value: engagements.length, color: FOREST },
-                { label: 'Activas', value: open.length, color: '#2A7E4E' },
-                { label: 'Cerradas', value: closed.length, color: '#888' },
+                { label: 'Clientes', value: groups.length, color: '#4A6FA5', icon: '🏢' },
+                { label: 'Evaluaciones', value: engagements.length, color: FOREST, icon: '📋' },
+                { label: 'Activas', value: open.length, color: '#2A7E4E', icon: '🟢' },
+                { label: 'Cerradas', value: closed.length, color: '#888', icon: '⬜' },
               ].map(s => (
-                <div key={s.label} style={{ background: 'white', border: '1px solid #e0eaea', borderRadius: 12, padding: '1rem 1.2rem' }}>
-                  <div style={{ fontSize: '.65rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em', color: '#9aacac', marginBottom: '.3rem' }}>{s.label}</div>
-                  <div style={{ fontFamily: 'var(--head)', fontSize: '1.8rem', fontWeight: 700, color: s.color, lineHeight: 1 }}>{s.value}</div>
+                <div key={s.label} style={{ background: 'white', border: '1px solid #e4eaea', borderRadius: 12, padding: '.85rem 1rem' }}>
+                  <div style={{ fontSize: '.62rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.09em', color: '#9aacac', marginBottom: '.25rem', display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <span>{s.icon}</span>{s.label}
+                  </div>
+                  <div style={{ fontFamily: 'var(--head)', fontSize: '1.7rem', fontWeight: 700, color: s.color, lineHeight: 1 }}>{s.value}</div>
                 </div>
               ))}
             </div>
           )}
 
-          {engLoading && <div style={{ textAlign: 'center', padding: '3rem', color: '#9aacac', fontSize: '.85rem' }}>Cargando…</div>}
+          {/* ── Search bar (admin) ── */}
+          {isAdmin && engagements.length > 0 && (
+            <div style={{ position: 'relative', marginBottom: '1.5rem' }}>
+              <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', fontSize: '.85rem', color: '#9aacac', pointerEvents: 'none' }}>🔍</span>
+              <input
+                type="text"
+                placeholder="Buscar empresa, email o cargo…"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                style={{ ...inp, paddingLeft: 36, borderRadius: 10, fontSize: '.85rem' }}
+              />
+              {searchQuery && (
+                <button onClick={() => setSearchQuery('')} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#9aacac', fontSize: '1rem', lineHeight: 1, padding: 4 }}>×</button>
+              )}
+            </div>
+          )}
 
+          {/* ── Loading ── */}
+          {engLoading && (
+            <div style={{ textAlign: 'center', padding: '4rem', color: '#9aacac', fontSize: '.85rem' }}>
+              <div style={{ width: 28, height: 28, border: `3px solid ${FOREST}22`, borderTopColor: FOREST, borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 1rem' }} />
+              <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
+              Cargando evaluaciones…
+            </div>
+          )}
+
+          {/* ── Empty state ── */}
           {!engLoading && engagements.length === 0 && (
-            <div style={{ textAlign: 'center', padding: '5rem 1rem' }}>
+            <div style={{ textAlign: 'center', padding: '5rem 1rem', background: 'white', borderRadius: 16, border: '1px solid #e8eded' }}>
               <div style={{ width: 60, height: 60, borderRadius: 16, background: PALE, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.2rem', fontSize: '1.5rem' }}>📋</div>
-              <div style={{ fontFamily: 'var(--head)', fontWeight: 700, fontSize: '1rem', color: INK, marginBottom: '.4rem' }}>Sin evaluaciones aún</div>
-              {session?.isAdmin
-                ? <div style={{ fontSize: '.82rem', color: '#9aacac' }}>Creá la primera evaluación con el botón de arriba.</div>
-                : <div style={{ fontSize: '.82rem', color: '#9aacac', lineHeight: 1.6 }}>Cuando tu consultor abra una evaluación para vos, aparecerá aquí.<br />¿Dudas? <a href="https://wa.me/573205046723" target="_blank" rel="noopener noreferrer" style={{ color: FOREST, fontWeight: 600, textDecoration: 'none' }}>Escribinos por WhatsApp</a></div>
+              <div style={{ fontFamily: 'var(--head)', fontWeight: 700, fontSize: '1.05rem', color: INK, marginBottom: '.5rem' }}>Sin evaluaciones aún</div>
+              {isAdmin
+                ? <div style={{ fontSize: '.83rem', color: '#9aacac' }}>Creá la primera evaluación con el botón de arriba.</div>
+                : <div style={{ fontSize: '.83rem', color: '#9aacac', lineHeight: 1.7 }}>Cuando tu consultor abra una evaluación para vos, aparecerá aquí.<br />¿Dudas? <a href="https://wa.me/573205046723" target="_blank" rel="noopener noreferrer" style={{ color: FOREST, fontWeight: 600, textDecoration: 'none' }}>Escribinos por WhatsApp →</a></div>
               }
             </div>
           )}
 
-          {[{ label: 'Abiertas', items: open }, { label: 'Cerradas', items: closed }].map(({ label, items }) => items.length > 0 && (
-            <div key={label} style={{ marginBottom: '2.5rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem', marginBottom: '.85rem' }}>
-                <div style={{ fontSize: '.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: '#9aacac' }}>{label}</div>
-                <div style={{ height: 1, flex: 1, background: '#e8eded' }} />
-                <div style={{ fontSize: '.7rem', color: '#9aacac' }}>{items.length}</div>
+          {/* ── No search results ── */}
+          {!engLoading && engagements.length > 0 && searchQuery && filteredGroups.length === 0 && filteredFlat.length === 0 && (
+            <div style={{ textAlign: 'center', padding: '3rem 1rem', background: 'white', borderRadius: 14, border: '1px solid #e8eded' }}>
+              <div style={{ fontSize: '1.5rem', marginBottom: '.75rem' }}>🔍</div>
+              <div style={{ fontFamily: 'var(--head)', fontWeight: 700, color: INK, marginBottom: '.4rem' }}>Sin resultados</div>
+              <div style={{ fontSize: '.82rem', color: '#9aacac' }}>No encontramos nada para "{searchQuery}"</div>
+            </div>
+          )}
+
+          {/* ── ADMIN: BY COMPANY VIEW ── */}
+          {isAdmin && !engLoading && (dashView === 'byCompany' || isMobile) && filteredGroups.map(group => (
+            <div key={group.email} style={{ marginBottom: '2rem' }}>
+              {/* Company header */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '.85rem', marginBottom: '.75rem', padding: '.9rem 1.1rem', background: 'white', borderRadius: 13, border: '1px solid #e8edf0', flexWrap: 'wrap' }}>
+                {/* Avatar */}
+                <div style={{ width: 42, height: 42, borderRadius: 12, background: `${group.color}18`, border: `1.5px solid ${group.color}30`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--head)', fontWeight: 800, fontSize: '1rem', color: group.color, flexShrink: 0 }}>
+                  {group.company_name[0]?.toUpperCase() || '?'}
+                </div>
+                {/* Name + email */}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontFamily: 'var(--head)', fontWeight: 700, fontSize: '.97rem', color: INK, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{group.company_name}</div>
+                  <div style={{ fontSize: '.72rem', color: '#9aacac', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{group.email}</div>
+                </div>
+                {/* Eval pills */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '.4rem', flexShrink: 0 }}>
+                  {group.openCount > 0 && (
+                    <span style={{ fontSize: '.62rem', fontWeight: 700, padding: '3px 8px', borderRadius: 6, background: '#e6f4ec', color: '#2A7E4E', whiteSpace: 'nowrap' }}>
+                      {group.openCount} activa{group.openCount !== 1 ? 's' : ''}
+                    </span>
+                  )}
+                  {group.closedCount > 0 && (
+                    <span style={{ fontSize: '.62rem', fontWeight: 700, padding: '3px 8px', borderRadius: 6, background: '#f0f0ef', color: '#888', whiteSpace: 'nowrap' }}>
+                      {group.closedCount} cerrada{group.closedCount !== 1 ? 's' : ''}
+                    </span>
+                  )}
+                </div>
+                {/* Last activity */}
+                {!isMobile && (
+                  <span style={{ fontSize: '.67rem', color: '#b8caca', flexShrink: 0 }}>{timeAgo(group.latestAt)}</span>
+                )}
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(290px,1fr))', gap: '1rem' }}>
-                {items.map(eng => (
-                  <button key={eng.id} onClick={() => openEngagement(eng)}
-                    style={{ background: 'white', border: `1.5px solid ${eng.status === 'open' ? 'rgba(27,59,62,.12)' : '#e8e8e8'}`, borderRadius: 14, padding: '1.2rem 1.4rem', cursor: 'pointer', textAlign: 'left', transition: 'all .18s', boxShadow: '0 2px 8px rgba(14,30,32,.03)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '.65rem' }}>
-                      <div style={{ width: 40, height: 40, borderRadius: 11, background: eng.status === 'open' ? PALE : '#efefef', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--head)', fontWeight: 700, fontSize: '.95rem', color: eng.status === 'open' ? FOREST : '#aaa' }}>
-                        {eng.company_name?.[0]?.toUpperCase() || '?'}
-                      </div>
-                      <span style={{ fontSize: '.64rem', fontWeight: 700, padding: '3px 9px', borderRadius: 6, background: eng.status === 'open' ? '#e6f4ec' : '#efefef', color: eng.status === 'open' ? '#2A7E4E' : '#888', textTransform: 'uppercase', letterSpacing: '.07em' }}>
-                        {eng.status === 'open' ? 'Activa' : 'Cerrada'}
-                      </span>
-                    </div>
-                    <div style={{ fontWeight: 700, fontSize: '.9rem', color: INK, marginBottom: '.2rem', lineHeight: 1.3 }}>{eng.title}</div>
-                    <div style={{ fontSize: '.79rem', color: '#4a6a6a', marginBottom: '.15rem' }}>{eng.company_name}</div>
-                    {(eng.job_area || eng.city) && (
-                      <div style={{ fontSize: '.72rem', color: '#9aacac' }}>{[eng.job_area, eng.city].filter(Boolean).join(' · ')}</div>
-                    )}
-                    {session?.isAdmin && <div style={{ fontSize: '.67rem', color: '#b0c4c4', marginTop: '.4rem' }}>{eng.client_email}</div>}
-                  </button>
-                ))}
+              {/* Engagement cards */}
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill,minmax(280px,1fr))', gap: '.75rem', paddingLeft: isMobile ? 0 : '3.2rem' }}>
+                {group.engagements.map(eng => <EngCard key={eng.id} eng={eng} />)}
               </div>
             </div>
           ))}
+
+          {/* ── ADMIN: FLAT LIST VIEW ── */}
+          {isAdmin && !engLoading && dashView === 'byList' && !isMobile && (
+            <>
+              {[{ label: 'Abiertas', items: filteredFlat.filter(e => e.status === 'open') }, { label: 'Cerradas', items: filteredFlat.filter(e => e.status === 'closed') }].map(({ label, items }) => items.length > 0 && (
+                <div key={label} style={{ marginBottom: '2rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem', marginBottom: '.75rem' }}>
+                    <div style={{ fontSize: '.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: '#9aacac' }}>{label}</div>
+                    <div style={{ height: 1, flex: 1, background: '#e8eded' }} />
+                    <div style={{ fontSize: '.68rem', color: '#b8caca' }}>{items.length}</div>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(280px,1fr))', gap: '.75rem' }}>
+                    {items.map(eng => <EngCard key={eng.id} eng={eng} showCompany />)}
+                  </div>
+                </div>
+              ))}
+            </>
+          )}
+
+          {/* ── CLIENT VIEW ── */}
+          {!isAdmin && !engLoading && engagements.length > 0 && (
+            <>
+              {[{ label: 'Abiertas', items: engagements.filter(e => e.status === 'open') }, { label: 'Cerradas', items: engagements.filter(e => e.status === 'closed') }].map(({ label, items }) => items.length > 0 && (
+                <div key={label} style={{ marginBottom: '2rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem', marginBottom: '.75rem' }}>
+                    <div style={{ fontSize: '.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: '#9aacac' }}>{label}</div>
+                    <div style={{ height: 1, flex: 1, background: '#e8eded' }} />
+                    <div style={{ fontSize: '.68rem', color: '#b8caca' }}>{items.length}</div>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill,minmax(280px,1fr))', gap: '.75rem' }}>
+                    {items.map(eng => <EngCard key={eng.id} eng={eng} showCompany />)}
+                  </div>
+                </div>
+              ))}
+            </>
+          )}
         </div>
 
+        {/* ── Create engagement modal ── */}
         {showCreateEng && (
           <Modal title="Nueva evaluación" onClose={() => setShowCreateEng(false)}>
             {[
               { label: 'Cargo / Vacante *', key: 'title', placeholder: 'Ej: Analista de Calidad' },
-              { label: 'Empresa cliente', key: 'company_name', placeholder: 'Nombre de la empresa' },
+              { label: 'Empresa cliente *', key: 'company_name', placeholder: 'Nombre de la empresa' },
               { label: 'Email del cliente *', key: 'client_email', placeholder: 'contacto@empresa.com' },
               { label: 'Área', key: 'job_area', placeholder: 'Ej: Tecnología / IT' },
               { label: 'Ciudad', key: 'city', placeholder: 'Ej: Cali' },
@@ -888,8 +1116,10 @@ export default function MatchGraphPage() {
               <label style={{ fontSize: '.72rem', fontWeight: 700, color: '#4a6a6a', display: 'block', marginBottom: '.28rem', textTransform: 'uppercase', letterSpacing: '.06em' }}>Notas internas</label>
               <textarea style={ta} placeholder="Notas sobre la evaluación…" value={engForm.notes} onChange={e => setEngForm(p => ({ ...p, notes: e.target.value }))} />
             </div>
-            <button onClick={saveEngagement} disabled={saving || !engForm.title || !engForm.client_email}
-              style={{ width: '100%', background: !engForm.title || !engForm.client_email ? '#b0c0c0' : FOREST, color: 'white', border: 'none', borderRadius: 10, padding: '12px', fontSize: '.88rem', fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--body)', transition: 'background .15s' }}>
+            <button
+              onClick={saveEngagement}
+              disabled={saving || !engForm.title || !engForm.client_email || !engForm.company_name}
+              style={{ width: '100%', background: !engForm.title || !engForm.client_email || !engForm.company_name ? '#b0c0c0' : FOREST, color: 'white', border: 'none', borderRadius: 10, padding: '12px', fontSize: '.88rem', fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--body)', transition: 'background .15s' }}>
               {saving ? 'Guardando…' : 'Crear evaluación →'}
             </button>
           </Modal>
