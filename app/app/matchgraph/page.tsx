@@ -225,8 +225,8 @@ export default function MatchGraphPage() {
   const [engLoading, setEngLoading] = useState(false)
 
   const [loginEmail, setLoginEmail] = useState('')
-  const [loginErr, setLoginErr] = useState('')
   const [loginLoading, setLoginLoading] = useState(false)
+  const [loginModal, setLoginModal] = useState<{ type: 'error' | 'welcome'; companyName?: string } | null>(null)
 
   const [showCreateEng, setShowCreateEng] = useState(false)
   const [showEditEng, setShowEditEng] = useState(false)
@@ -290,18 +290,28 @@ export default function MatchGraphPage() {
   }, [loadEngagements])
 
   async function handleLogin() {
-    if (!loginEmail.trim()) return
-    setLoginLoading(true); setLoginErr('')
+    const email = loginEmail.trim().toLowerCase()
+    if (!email) return
+    setLoginLoading(true)
     const res = await fetch('/api/matchgraph-auth', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: loginEmail.trim() }),
+      body: JSON.stringify({ email }),
     })
     const data = await res.json()
-    if (!res.ok) { setLoginErr(data.error || 'Error al verificar'); setLoginLoading(false); return }
-    setSession({ email: loginEmail.toLowerCase().trim(), isAdmin: data.isAdmin })
-    setView('dashboard')
-    await loadEngagements()
     setLoginLoading(false)
+    if (!res.ok) {
+      setLoginModal({ type: 'error' })
+      return
+    }
+    // Show welcome modal for client users, skip for admin
+    if (!data.isAdmin) {
+      setLoginModal({ type: 'welcome', companyName: data.companyName })
+    }
+    setSession({ email, isAdmin: data.isAdmin })
+    if (data.isAdmin) {
+      setView('dashboard')
+      await loadEngagements()
+    }
   }
 
   async function openEngagement(eng: Engagement) {
@@ -614,11 +624,7 @@ export default function MatchGraphPage() {
             autoFocus
           />
 
-          {loginErr && (
-            <div style={{ background: '#fff4f2', border: '1px solid #fcd0c8', borderRadius: 9, padding: '10px 14px', fontSize: '.8rem', color: '#c0392b', marginBottom: '.85rem', lineHeight: 1.55 }}>
-              {loginErr}
-            </div>
-          )}
+          {/* Modals live outside the form; handled below */}
 
           <button
             onClick={handleLogin}
@@ -636,60 +642,149 @@ export default function MatchGraphPage() {
           </p>
         </div>
       </div>
+
+      {/* ── Error modal: email not registered ── */}
+      {loginModal?.type === 'error' && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(14,30,32,.6)', zIndex: 9000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem', backdropFilter: 'blur(3px)' }}>
+          <div style={{ background: 'white', borderRadius: 20, padding: '2rem 2rem 1.75rem', maxWidth: 400, width: '100%', boxShadow: '0 24px 64px rgba(14,30,32,.25)', textAlign: 'center' }}>
+            <div style={{ width: 56, height: 56, borderRadius: 16, background: '#fff4f2', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.25rem', fontSize: '1.5rem' }}>🔒</div>
+            <div style={{ fontFamily: 'var(--head)', fontWeight: 700, fontSize: '1.15rem', color: INK, marginBottom: '.6rem' }}>
+              Empresa no encontrada
+            </div>
+            <p style={{ fontFamily: 'var(--body)', fontSize: '.87rem', color: '#6a8a8a', lineHeight: 1.7, marginBottom: '1.75rem' }}>
+              No encontramos ninguna empresa registrada con el email <strong style={{ color: INK }}>{loginEmail.trim().toLowerCase()}</strong>.<br /><br />
+              Si ya contrataste el servicio de Preselección &amp; Validación, contactá a tu consultor para que active tu acceso.
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '.65rem' }}>
+              <a
+                href="https://wa.me/573205046723"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ display: 'block', background: '#25D366', color: 'white', borderRadius: 10, padding: '.8rem', fontSize: '.9rem', fontWeight: 700, fontFamily: 'var(--body)', textDecoration: 'none', textAlign: 'center' }}
+              >
+                💬 Contactar por WhatsApp
+              </a>
+              <button
+                onClick={() => setLoginModal(null)}
+                style={{ background: 'none', border: '1.5px solid #d8e0e1', borderRadius: 10, padding: '.75rem', fontSize: '.87rem', color: FOREST, fontWeight: 600, fontFamily: 'var(--body)', cursor: 'pointer' }}
+              >
+                Intentar con otro email
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Welcome modal: client recognized ── */}
+      {loginModal?.type === 'welcome' && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(14,30,32,.6)', zIndex: 9000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem', backdropFilter: 'blur(3px)' }}>
+          <div style={{ background: 'white', borderRadius: 20, padding: '2rem 2rem 1.75rem', maxWidth: 380, width: '100%', boxShadow: '0 24px 64px rgba(14,30,32,.25)', textAlign: 'center' }}>
+            <div style={{ width: 56, height: 56, borderRadius: 16, background: PALE, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.25rem', fontSize: '1.5rem' }}>👋</div>
+            <div style={{ fontFamily: 'var(--head)', fontWeight: 700, fontSize: '1.15rem', color: INK, marginBottom: '.5rem' }}>
+              ¡Bienvenido de vuelta{loginModal.companyName ? `, ${loginModal.companyName}` : ''}!
+            </div>
+            <p style={{ fontFamily: 'var(--body)', fontSize: '.87rem', color: '#6a8a8a', lineHeight: 1.7, marginBottom: '1.75rem' }}>
+              Accediste como <strong style={{ color: FOREST }}>{loginEmail.trim().toLowerCase()}</strong>. Tus evaluaciones de Preselección &amp; Validación están listas.
+            </p>
+            <button
+              onClick={async () => {
+                setLoginModal(null)
+                setView('dashboard')
+                await loadEngagements()
+              }}
+              style={{ width: '100%', background: FOREST, color: 'white', border: 'none', borderRadius: 10, padding: '.85rem', fontSize: '.95rem', fontWeight: 700, fontFamily: 'var(--body)', cursor: 'pointer' }}
+            >
+              Ver mis evaluaciones →
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 
   /* ── TOP BAR ─────────────────────────────────────────────── */
-  const TopBar = ({ title, actions }: { title?: string; actions?: React.ReactNode }) => (
-    <div className="no-print" style={{ background: FOREST, padding: '0 max(1.5rem, 2vw)', height: 60, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, position: 'sticky', top: 0, zIndex: 100, borderBottom: '1px solid rgba(255,255,255,.07)' }}>
+  const TopBar = ({ title, actions }: { title?: string; actions?: React.ReactNode }) => {
+    const isAdmin = session?.isAdmin
+    const userInitial = session?.email?.[0]?.toUpperCase() || '?'
+    const shortEmail = session?.email ? (session.email.length > 26 ? session.email.slice(0, 24) + '…' : session.email) : ''
+    return (
+      <div className="no-print" style={{ background: FOREST, padding: '0 max(1.5rem, 2vw)', height: 60, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, position: 'sticky', top: 0, zIndex: 100, boxShadow: '0 1px 0 rgba(255,255,255,.07), 0 2px 12px rgba(0,0,0,.18)' }}>
 
-      {/* Left: back + logo */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 0, minWidth: 0 }}>
-        {view === 'engagement' && (
-          <button onClick={() => setView('dashboard')} style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'none', border: 'none', color: 'rgba(255,255,255,.55)', borderRadius: 8, padding: '5px 10px 5px 4px', cursor: 'pointer', fontSize: '.76rem', fontWeight: 500, fontFamily: 'var(--body)', marginRight: 8, transition: 'color .15s', letterSpacing: '.01em', whiteSpace: 'nowrap' }}
-            onMouseEnter={e => (e.currentTarget.style.color = 'rgba(255,255,255,.9)')}
-            onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,.55)')}>
-            ← Evaluaciones
-          </button>
-        )}
+        {/* Left: back nav + logo */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 0, minWidth: 0 }}>
+          {view === 'engagement' && (
+            <button
+              onClick={() => setView('dashboard')}
+              style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'none', border: 'none', color: 'rgba(255,255,255,.5)', borderRadius: 8, padding: '5px 10px 5px 2px', cursor: 'pointer', fontSize: '.76rem', fontWeight: 500, fontFamily: 'var(--body)', marginRight: 10, transition: 'color .15s', whiteSpace: 'nowrap' }}
+              onMouseEnter={e => (e.currentTarget.style.color = 'rgba(255,255,255,.9)')}
+              onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,.5)')}>
+              ← {isMobile ? '' : 'Evaluaciones'}
+            </button>
+          )}
 
-        {/* Logo lockup */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 9, flexShrink: 0 }}>
-          <BirdLogo size={28} light />
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
-            <span style={{ color: 'white', fontFamily: 'var(--head)', fontWeight: 700, fontSize: '.97rem', letterSpacing: '-.02em', lineHeight: 1 }}>Candidato®</span>
-            <span style={{ background: 'rgba(255,255,255,.12)', color: 'rgba(255,255,255,.65)', fontSize: '.6rem', fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase', borderRadius: 5, padding: '2px 7px', fontFamily: 'var(--body)' }}>Match Graph</span>
+          {/* Logo lockup */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 9, flexShrink: 0 }}>
+            <BirdLogo size={28} light />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+              <span style={{ color: 'white', fontFamily: 'var(--head)', fontWeight: 700, fontSize: '.97rem', letterSpacing: '-.02em' }}>
+                Candidato®
+              </span>
+              <span style={{ background: 'rgba(255,255,255,.1)', color: 'rgba(255,255,255,.55)', fontSize: '.58rem', fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase', borderRadius: 5, padding: '2px 7px', fontFamily: 'var(--body)', border: '1px solid rgba(255,255,255,.08)' }}>
+                Match Graph
+              </span>
+            </div>
           </div>
+
+          {/* Breadcrumb */}
+          {title && !isMobile && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 18, paddingLeft: 18, borderLeft: '1px solid rgba(255,255,255,.1)', minWidth: 0, overflow: 'hidden' }}>
+              <span style={{ color: 'rgba(255,255,255,.6)', fontSize: '.8rem', fontFamily: 'var(--body)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 220 }}>{title}</span>
+            </div>
+          )}
         </div>
 
-        {/* Breadcrumb: engagement title */}
-        {title && !isMobile && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 18, paddingLeft: 18, borderLeft: '1px solid rgba(255,255,255,.12)', minWidth: 0 }}>
-            <span style={{ color: 'rgba(255,255,255,.7)', fontSize: '.82rem', fontWeight: 500, fontFamily: 'var(--body)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 260 }}>{title}</span>
-          </div>
-        )}
-      </div>
+        {/* Right: actions + user chip + logout */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+          {/* Admin shortcut actions */}
+          {isAdmin && view === 'dashboard' && !isMobile && (
+            <a href="/app/matchgraph/admin" style={{ display: 'flex', alignItems: 'center', gap: 5, color: 'rgba(255,255,255,.55)', textDecoration: 'none', fontSize: '.74rem', fontWeight: 600, fontFamily: 'var(--body)', background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.1)', borderRadius: 8, padding: '5px 10px', transition: 'all .15s' }}
+              onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.color = 'white'; (e.currentTarget as HTMLAnchorElement).style.background = 'rgba(255,255,255,.12)' }}
+              onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.color = 'rgba(255,255,255,.55)'; (e.currentTarget as HTMLAnchorElement).style.background = 'rgba(255,255,255,.06)' }}>
+              📊 Métricas
+            </a>
+          )}
 
-      {/* Right: actions + user */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-        {actions}
-        {!isMobile && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 10px', background: 'rgba(255,255,255,.07)', borderRadius: 8, border: '1px solid rgba(255,255,255,.1)' }}>
-            <div style={{ width: 20, height: 20, borderRadius: '50%', background: 'rgba(255,255,255,.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '.65rem', fontWeight: 700, color: 'white', flexShrink: 0 }}>
-              {session?.email?.[0]?.toUpperCase() || '?'}
+          {/* Slot for page-specific actions (e.g. "+ Nueva evaluación") */}
+          {actions}
+
+          {/* User chip */}
+          {!isMobile && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '4px 10px 4px 6px', background: 'rgba(255,255,255,.07)', borderRadius: 9, border: '1px solid rgba(255,255,255,.1)', maxWidth: 220, overflow: 'hidden' }}>
+              <div style={{ width: 24, height: 24, borderRadius: '50%', background: isAdmin ? CORAL : 'rgba(255,255,255,.22)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '.65rem', fontWeight: 800, color: 'white', flexShrink: 0, letterSpacing: '-.01em' }}>
+                {userInitial}
+              </div>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: '.68rem', color: 'rgba(255,255,255,.85)', fontFamily: 'var(--body)', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', letterSpacing: '-.01em' }}>{shortEmail}</div>
+                {isAdmin && (
+                  <div style={{ fontSize: '.56rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: CORAL, lineHeight: 1 }}>Super Admin</div>
+                )}
+              </div>
             </div>
-            <span style={{ fontSize: '.7rem', color: 'rgba(255,255,255,.55)', fontFamily: 'var(--body)', maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{session?.email}</span>
-          </div>
-        )}
-        <button onClick={logout}
-          style={{ background: 'rgba(255,255,255,.08)', border: '1px solid rgba(255,255,255,.12)', color: 'rgba(255,255,255,.7)', borderRadius: 8, padding: '6px 13px', cursor: 'pointer', fontSize: '.74rem', fontWeight: 600, fontFamily: 'var(--body)', transition: 'all .15s', letterSpacing: '.01em' }}
-          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,.14)'; e.currentTarget.style.color = 'white' }}
-          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,.08)'; e.currentTarget.style.color = 'rgba(255,255,255,.7)' }}>
-          Salir
-        </button>
+          )}
+
+          {/* Logout */}
+          <button
+            onClick={logout}
+            title="Cerrar sesión"
+            style={{ background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.1)', color: 'rgba(255,255,255,.6)', borderRadius: 8, padding: '6px 13px', cursor: 'pointer', fontSize: '.74rem', fontWeight: 600, fontFamily: 'var(--body)', transition: 'all .15s', display: 'flex', alignItems: 'center', gap: 5 }}
+            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,.13)'; (e.currentTarget as HTMLButtonElement).style.color = 'white' }}
+            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,.06)'; (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,.6)' }}>
+            {isMobile ? '→' : 'Salir'}
+          </button>
+        </div>
       </div>
-    </div>
-  )
+    )
+  }
 
   /* ── DASHBOARD ───────────────────────────────────────────── */
   if (view === 'dashboard') {

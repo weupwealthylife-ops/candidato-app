@@ -26,19 +26,30 @@ export async function POST(req: NextRequest) {
   try { email = ((await req.json()).email || '').toLowerCase().trim() } catch { /* */ }
   if (!email || !email.includes('@')) return NextResponse.json({ error: 'Email inválido' }, { status: 400 })
 
-  if (email !== ADMIN_EMAIL) {
-    const { count } = await sb()
+  const isAdmin = email === ADMIN_EMAIL
+
+  if (!isAdmin) {
+    const client = sb()
+    const { data: engagements, count } = await client
       .from('matchgraph_engagements')
-      .select('id', { count: 'exact', head: true })
+      .select('company_name', { count: 'exact' })
       .ilike('client_email', email)
+      .limit(1)
+
     if (!count || count === 0) {
       return NextResponse.json({
-        error: 'No encontramos accesos para este email. Contactá a tu consultor de Candidato®.',
+        error: 'no_access',
+        message: 'No encontramos ninguna empresa registrada con este email. Contactá a tu consultor de Candidato®.',
       }, { status: 404 })
     }
+
+    const companyName = engagements?.[0]?.company_name || null
+    const res = NextResponse.json({ ok: true, isAdmin: false, companyName })
+    res.cookies.set(COOKIE, email, { httpOnly: true, sameSite: 'lax', path: '/', maxAge: 60 * 60 * 24 * 7 })
+    return res
   }
 
-  const res = NextResponse.json({ ok: true, isAdmin: email === ADMIN_EMAIL })
+  const res = NextResponse.json({ ok: true, isAdmin: true, companyName: null })
   res.cookies.set(COOKIE, email, { httpOnly: true, sameSite: 'lax', path: '/', maxAge: 60 * 60 * 24 * 7 })
   return res
 }
