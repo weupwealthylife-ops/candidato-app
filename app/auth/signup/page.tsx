@@ -126,7 +126,7 @@ export default function SignupPage() {
 
               {/* Type toggle */}
               <div style={{ marginBottom: '1.75rem' }}>
-                <div style={{ fontSize: '.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: '#6a8a8a', marginBottom: '.6rem', fontFamily: 'var(--body)' }}>
+                <div style={{ fontSize: '.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: '#6a8a8a', marginBottom: '.6rem', fontFamily: 'var(--body)' }}>
                   Ingresá como
                 </div>
                 <div style={{ display: 'flex', background: '#f0f0ed', borderRadius: 10, padding: 4, gap: 4 }}>
@@ -135,7 +135,7 @@ export default function SignupPage() {
                       key={t}
                       onClick={() => setUserType(t)}
                       style={{
-                        flex: 1, padding: '.55rem', borderRadius: 7, border: 'none', cursor: 'pointer',
+                        flex: 1, padding: '.75rem', borderRadius: 7, border: 'none', cursor: 'pointer',
                         fontFamily: 'var(--body)', fontWeight: 600, fontSize: '.85rem', transition: 'all .15s',
                         background: userType === t ? '#fff' : 'transparent',
                         color: userType === t ? FOREST : '#6a8a8a',
@@ -150,7 +150,7 @@ export default function SignupPage() {
 
               {/* Email input */}
               <div style={{ marginBottom: '1.25rem' }}>
-                <label style={{ display: 'block', fontSize: '.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: '#6a8a8a', marginBottom: '.5rem', fontFamily: 'var(--body)' }}>
+                <label style={{ display: 'block', fontSize: '.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: '#6a8a8a', marginBottom: '.5rem', fontFamily: 'var(--body)' }}>
                   Tu email
                 </label>
                 <input

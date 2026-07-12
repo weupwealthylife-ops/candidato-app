@@ -45,7 +45,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,.btn:focus-visible
 ════════════════════════════════════ */
 .nav{
   position:fixed;top:0;left:0;right:0;z-index:100;
-  height:66px;display:flex;align-items:center;justify-content:space-between;
+  height:60px;display:flex;align-items:center;justify-content:space-between;
   padding:0 max(5vw,28px);
   background:rgba(250,250,248,.92);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
   border-bottom:1px solid var(--line);transition:box-shadow .3s;
@@ -108,7 +108,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,.btn:focus-visible
 .hero-actions{display:flex;align-items:flex-start;gap:1rem;flex-wrap:wrap;margin-bottom:2.2rem}
 
 /* Hamburger button */
-.nav-hamburger{display:none;flex-direction:column;justify-content:center;gap:5px;width:36px;height:36px;background:none;border:none;cursor:pointer;padding:4px;border-radius:7px;transition:background .15s}
+.nav-hamburger{display:none;flex-direction:column;justify-content:center;gap:5px;width:44px;height:44px;background:none;border:none;cursor:pointer;padding:4px;border-radius:7px;transition:background .15s}
 .nav-hamburger:hover{background:var(--off)}
 .nav-hamburger span{display:block;width:20px;height:2px;background:var(--forest);border-radius:2px;transition:all .25s;transform-origin:center}
 .nav-hamburger span.open:nth-child(1){transform:translateY(7px) rotate(45deg)}
@@ -327,7 +327,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,.btn:focus-visible
 }
 
 .trust-lbl{
-  font-size:.6rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;
+  font-size:.75rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;
   color:var(--ink-45);flex-shrink:0;white-space:nowrap;
   writing-mode:horizontal-tb;
 }
@@ -1465,9 +1465,9 @@ footer{
   .mobile-nav-btn{
     display:flex;flex-direction:column;align-items:center;gap:2px;
     flex:1;padding:.4rem 0;border:none;background:transparent;
-    font-family:var(--body);font-size:.54rem;font-weight:600;
+    font-family:var(--body);font-size:.65rem;font-weight:600;
     color:var(--ink-45);cursor:pointer;transition:color .15s;
-    letter-spacing:.04em;text-transform:uppercase;
+    letter-spacing:.03em;text-transform:uppercase;
   }
   .mobile-nav-btn.active{color:var(--forest)}
   .mobile-nav-ico{font-size:1.1rem;line-height:1}
@@ -1566,4 +1566,12 @@ footer{
 }
 
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+/* ── ACCESSIBILITY: minimum touch targets on mobile ── */
+@media(max-width:900px){
+  /* Ensure type-toggle buttons in auth/signup meet 44px touch target */
+  .signup-wrap button{min-height:44px}
+  /* Ensure MatchGraph label text is readable */
+  .mg-login label{font-size:.75rem!important}
+}
 

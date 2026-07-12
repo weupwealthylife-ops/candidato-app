@@ -575,7 +575,12 @@ export default function MatchGraphPage() {
       <style>{`
         .mg-panel { display: flex; }
         .mg-mobile-brand { display: none; }
-        @media (max-width: 820px) { .mg-panel { display: none !important; } .mg-mobile-brand { display: flex !important; } }
+        .mg-desktop-logo { display: flex; }
+        @media (max-width: 820px) {
+          .mg-panel { display: none !important; }
+          .mg-mobile-brand { display: flex !important; }
+          .mg-desktop-logo { display: none !important; }
+        }
         @media print { .no-print { display: none !important; } }
       `}</style>
 
@@ -638,7 +643,7 @@ export default function MatchGraphPage() {
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: '1.5rem' }}>
+          <div className="mg-desktop-logo" style={{ alignItems: 'center', gap: 8, marginBottom: '1.5rem' }}>
             <BirdLogo size={28} />
             <span style={{ fontFamily: 'var(--head)', fontWeight: 700, fontSize: '.95rem', color: FOREST, letterSpacing: '-.01em' }}>Candidato®</span>
           </div>
@@ -650,7 +655,7 @@ export default function MatchGraphPage() {
             Ingresá el email corporativo con el que coordinaste el servicio de Preselección &amp; Validación.
           </p>
 
-          <label style={{ fontSize: '.7rem', fontWeight: 700, color: '#4a6a6a', display: 'block', marginBottom: '.35rem', textTransform: 'uppercase', letterSpacing: '.08em' }}>
+          <label style={{ fontSize: '.75rem', fontWeight: 700, color: '#4a6a6a', display: 'block', marginBottom: '.35rem', textTransform: 'uppercase', letterSpacing: '.08em' }}>
             Tu email para continuar
           </label>
           <input
