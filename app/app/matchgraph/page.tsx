@@ -680,7 +680,7 @@ export default function MatchGraphPage() {
 
           <p style={{ textAlign: 'center', fontSize: '.75rem', color: '#b0c4c4', margin: '1.2rem 0 0', lineHeight: 1.5 }}>
             ¿Aún no tenés acceso?{' '}
-            <a href="https://wa.me/573205046723" target="_blank" rel="noopener noreferrer" style={{ color: FOREST, fontWeight: 600, textDecoration: 'none' }}>
+            <a href="https://wa.me/573205046723" target="_blank" rel="noopener noreferrer" style={{ color: FOREST, fontWeight: 600, textDecoration: 'none', display: 'inline-block', padding: '.5rem 0' }}>
               Contactá a tu consultor →
             </a>
           </p>
@@ -773,9 +773,11 @@ export default function MatchGraphPage() {
               <span style={{ color: 'white', fontFamily: 'var(--head)', fontWeight: 700, fontSize: '.97rem', letterSpacing: '-.02em' }}>
                 Candidato®
               </span>
-              <span style={{ background: 'rgba(255,255,255,.1)', color: 'rgba(255,255,255,.55)', fontSize: '.58rem', fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase', borderRadius: 5, padding: '2px 7px', fontFamily: 'var(--body)', border: '1px solid rgba(255,255,255,.08)' }}>
-                Match Graph
-              </span>
+              {!isMobile && (
+                <span style={{ background: 'rgba(255,255,255,.1)', color: 'rgba(255,255,255,.55)', fontSize: '.58rem', fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase', borderRadius: 5, padding: '2px 7px', fontFamily: 'var(--body)', border: '1px solid rgba(255,255,255,.08)' }}>
+                  Match Graph
+                </span>
+              )}
             </div>
           </div>
 

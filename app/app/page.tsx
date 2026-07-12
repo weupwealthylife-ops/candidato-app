@@ -855,7 +855,7 @@ export default function AppPage() {
                     <button
                       type="button"
                       onClick={sendMagicLink}
-                      style={{ background: 'none', border: 'none', color: 'var(--ink-45)', fontSize: '.75rem', cursor: 'pointer', marginTop: '.4rem', textDecoration: 'underline', padding: 0 }}
+                      style={{ background: 'none', border: 'none', color: 'var(--ink-45)', fontSize: '.75rem', cursor: 'pointer', marginTop: '.4rem', textDecoration: 'underline', padding: '.75rem 0', display: 'inline-block' }}
                     >
                       {t('¿Olvidaste tu acceso? Recibir enlace por email →', 'Forgot your access? Get a login link by email →')}
                     </button>

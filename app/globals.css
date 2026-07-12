@@ -97,7 +97,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,.btn:focus-visible
 .hero-sub{font-family:var(--body);font-size:.97rem;color:var(--ink-70);line-height:1.78;max-width:410px;margin-bottom:2.6rem;font-weight:400}
 /* Hero badge row */
 .hero-badge-row{display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1.8rem}
-.hero-badge{font-size:.72rem;font-weight:600;color:var(--ink-45);background:var(--off);border:1px solid var(--line);border-radius:50px;padding:4px 12px;letter-spacing:.01em}
+.hero-badge{font-size:.75rem;font-weight:600;color:var(--ink-45);background:var(--off);border:1px solid var(--line);border-radius:50px;padding:4px 12px;letter-spacing:.01em}
 
 /* Dual CTA */
 .hero-dual-cta{align-items:flex-start}
@@ -1030,6 +1030,7 @@ footer{
   .cc-btn{width:56px;height:56px}
   .testimonials-grid{grid-template-columns:1fr}
   .testimonial-card-3{display:none}
+  .btn-sm{min-height:36px}
 }
 @media(max-width:380px){
   .hero-h1{font-size:2rem}
