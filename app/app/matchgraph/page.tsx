@@ -63,6 +63,13 @@ interface ActivityEntry {
 
 const SCORE_LABELS = ['Profesión', 'Años de experiencia', 'Experiencia en el sector', 'Requer. del cargo', 'Disponibilidad']
 const SCORE_KEYS: (keyof Candidate)[] = ['score_profession', 'score_experience', 'score_sector', 'score_requirements', 'score_availability']
+const SCORE_DESCRIPTIONS = [
+  'Coincidencia entre la profesión del candidato y el perfil buscado (1 = no coincide · 5 = coincide perfectamente)',
+  'Años de experiencia laboral versus los requisitos del cargo (1 = muy por debajo · 5 = supera lo requerido)',
+  'Experiencia previa en el mismo sector o industria (1 = sin experiencia sectorial · 5 = amplia experiencia)',
+  'Cumplimiento de los requisitos técnicos y específicos del cargo (1 = no cumple · 5 = cumple todos)',
+  'Disponibilidad para incorporarse al cargo (1 = no disponible · 5 = disponibilidad inmediata)',
+]
 
 function avgScore(c: Candidate) {
   const vals = SCORE_KEYS.map(k => Number(c[k]) || 0)
@@ -284,6 +291,8 @@ function MatchGraphInner() {
   const [showProfileMenu, setShowProfileMenu] = useState(false)
 
   const [engLoadError, setEngLoadError] = useState(false)
+  const [sortByScore, setSortByScore] = useState(false)
+  const [dismissedOnboarding, setDismissedOnboarding] = useState(false)
 
   const loadEngagements = useCallback(async () => {
     try {
@@ -1163,6 +1172,22 @@ function MatchGraphInner() {
           )}
 
           {/* ── CLIENT VIEW ── */}
+          {!isAdmin && !engLoading && engagements.length > 0 && !dismissedOnboarding && (
+            <div style={{ background: FOREST, borderRadius: 14, padding: '1.1rem 1.3rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'flex-start', gap: '1rem' }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontFamily: 'var(--head)', fontWeight: 700, fontSize: '.92rem', color: 'white', marginBottom: '.35rem' }}>Bienvenido a tu evaluación de talento</div>
+                <div style={{ fontSize: '.78rem', color: 'rgba(255,255,255,.65)', lineHeight: 1.7 }}>
+                  Cada candidato incluye un <strong style={{ color: 'white' }}>fit score</strong>, perfil completo y CV descargable. Podés dejar tu feedback directamente en el perfil de cada uno y tu consultor lo verá en tiempo real.
+                </div>
+              </div>
+              <button onClick={() => setDismissedOnboarding(true)}
+                style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,.4)', cursor: 'pointer', fontSize: '1.1rem', padding: '2px 4px', lineHeight: 1, flexShrink: 0, borderRadius: 4, transition: 'color .12s' }}
+                onMouseEnter={e => (e.currentTarget.style.color = 'rgba(255,255,255,.8)')}
+                onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,.4)')}>
+                ×
+              </button>
+            </div>
+          )}
           {!isAdmin && !engLoading && engagements.length > 0 && (
             <>
               {[{ label: 'Abiertas', items: engagements.filter(e => e.status === 'open') }, { label: 'Cerradas', items: engagements.filter(e => e.status === 'closed') }].map(({ label, items }) => items.length > 0 && (
@@ -1218,7 +1243,10 @@ function MatchGraphInner() {
 
   /* Cover summary view */
   function CoverView() {
-    const overallAvgs = candidates.map(c => ({ name: c.name.split(' ')[0], score: avgScore(c), isTop: c.is_top, photo_url: c.photo_url }))
+    const displayCands = sortByScore
+      ? [...candidates].sort((a, b) => avgScore(b) - avgScore(a))
+      : candidates
+    const overallAvgs = displayCands.map(c => ({ name: c.name.split(' ')[0], score: avgScore(c), isTop: c.is_top, photo_url: c.photo_url }))
     return (
       <div style={{ padding: '2.5rem 2rem', maxWidth: 860, margin: '0 auto' }}>
         <div style={{ marginBottom: '2.5rem' }}>
@@ -1238,10 +1266,18 @@ function MatchGraphInner() {
                 {candidates.length} candidato{candidates.length !== 1 ? 's' : ''} evaluado{candidates.length !== 1 ? 's' : ''}
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem', flexWrap: 'wrap' }}>
-                {session?.isAdmin && candidates.length > 1 && !compareMode && (
+                {session?.isAdmin && candidates.length > 1 && !compareMode && !sortByScore && (
                   <div style={{ fontSize: '.7rem', color: '#b0c4c4', display: 'flex', alignItems: 'center', gap: '.35rem' }}>
                     <span>⠿</span> Arrastrá para reordenar
                   </div>
+                )}
+                {candidates.length >= 2 && !compareMode && (
+                  <button
+                    onClick={() => setSortByScore(s => !s)}
+                    style={{ fontSize: '.72rem', fontWeight: 700, padding: '5px 13px', borderRadius: 8, border: `1.5px solid ${sortByScore ? FOREST : '#d8e4e4'}`, background: sortByScore ? PALE : 'white', color: sortByScore ? FOREST : '#9aacac', cursor: 'pointer', transition: 'all .15s', display: 'flex', alignItems: 'center', gap: '.3rem' }}>
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M7 12h10M11 18h2"/></svg>
+                    {sortByScore ? 'Por fit score' : 'Ordenar'}
+                  </button>
                 )}
                 {candidates.length >= 2 && !compareMode && (
                   <button onClick={() => { setCompareMode(true); setCompareIds([]) }}
@@ -1271,37 +1307,38 @@ function MatchGraphInner() {
 
             <div className="mg-cover-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(145px,1fr))', gap: '.75rem', marginBottom: '2rem' }}>
               {overallAvgs.map((c, i) => {
-                const cand = candidates[i]
+                const cand = displayCands[i]
+                const origIdx = candidates.findIndex(x => x.id === cand.id)
                 const isSelected = compareIds.includes(cand.id)
                 const canSelect = compareIds.length < 3 || isSelected
                 return (
                   <div
-                    key={i}
-                    draggable={session?.isAdmin && !compareMode}
-                    onDragStart={() => setDragIndex(i)}
-                    onDragOver={e => { e.preventDefault(); setDragOverIndex(i) }}
-                    onDrop={() => { if (dragIndex !== null) handleReorder(dragIndex, i) }}
+                    key={cand.id}
+                    draggable={session?.isAdmin && !compareMode && !sortByScore}
+                    onDragStart={() => setDragIndex(origIdx)}
+                    onDragOver={e => { e.preventDefault(); setDragOverIndex(origIdx) }}
+                    onDrop={() => { if (dragIndex !== null) handleReorder(dragIndex, origIdx) }}
                     onDragEnd={() => { setDragIndex(null); setDragOverIndex(null) }}
                     onClick={() => {
                       if (compareMode) {
                         if (!canSelect && !isSelected) return
                         setCompareIds(prev => isSelected ? prev.filter(id => id !== cand.id) : [...prev, cand.id])
                       } else {
-                        setCandIdx(i)
+                        setCandIdx(origIdx)
                       }
                     }}
                     style={{
                       background: compareMode && isSelected ? PALE : 'white',
-                      border: `1.5px solid ${compareMode ? (isSelected ? FOREST : canSelect ? '#d0e4e4' : '#efefef') : dragOverIndex === i ? FOREST : c.isTop ? `${FOREST}55` : '#e0eaea'}`,
+                      border: `1.5px solid ${compareMode ? (isSelected ? FOREST : canSelect ? '#d0e4e4' : '#efefef') : dragOverIndex === origIdx ? FOREST : c.isTop ? `${FOREST}55` : '#e0eaea'}`,
                       borderRadius: 13,
                       padding: '1.1rem .8rem',
-                      cursor: compareMode ? (canSelect || isSelected ? 'pointer' : 'not-allowed') : session?.isAdmin ? 'grab' : 'pointer',
+                      cursor: compareMode ? (canSelect || isSelected ? 'pointer' : 'not-allowed') : (session?.isAdmin && !sortByScore) ? 'grab' : 'pointer',
                       textAlign: 'center',
                       transition: 'all .15s',
                       position: 'relative',
-                      opacity: dragIndex === i ? 0.45 : compareMode && !canSelect && !isSelected ? 0.4 : 1,
-                      transform: dragOverIndex === i && dragIndex !== i ? 'scale(1.02)' : 'scale(1)',
-                      boxShadow: compareMode && isSelected ? `0 4px 16px rgba(27,59,62,.15)` : dragOverIndex === i ? `0 4px 16px rgba(27,59,62,.15)` : '0 2px 6px rgba(14,30,32,.04)',
+                      opacity: dragIndex === origIdx ? 0.45 : compareMode && !canSelect && !isSelected ? 0.4 : 1,
+                      transform: dragOverIndex === origIdx && dragIndex !== origIdx ? 'scale(1.02)' : 'scale(1)',
+                      boxShadow: compareMode && isSelected ? `0 4px 16px rgba(27,59,62,.15)` : dragOverIndex === origIdx ? `0 4px 16px rgba(27,59,62,.15)` : '0 2px 6px rgba(14,30,32,.04)',
                       userSelect: 'none',
                     }}
                   >
@@ -1322,7 +1359,6 @@ function MatchGraphInner() {
                     <div style={{ fontSize: '1.15rem', fontWeight: 800, color: c.score >= 80 ? FOREST : c.score >= 60 ? '#e6a817' : CORAL, lineHeight: 1 }}>{c.score}%</div>
                     <div style={{ fontSize: '.63rem', color: '#9aacac', marginTop: '.1rem' }}>fit score</div>
                     {(() => {
-                      const cand = candidates[i]
                       const status = cand?.pipeline_status || 'sent'
                       if (status === 'sent') return null
                       const pMap: Record<string, { label: string; color: string; bg: string }> = {
@@ -1623,7 +1659,10 @@ function MatchGraphInner() {
               </div>
               {SCORE_LABELS.map((label, i) => (
                 <div key={label} style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 220px', gap: isMobile ? '.3rem' : '1rem', alignItems: 'center', padding: '10px 15px', borderBottom: i < 4 ? '1px solid #f4f8f8' : 'none' }}>
-                  <span style={{ fontSize: '.83rem', color: INK, fontWeight: 600 }}>{label}</span>
+                  <span style={{ fontSize: '.83rem', color: INK, fontWeight: 600, display: 'flex', alignItems: 'center', gap: '.4rem' }}>
+                    {label}
+                    <span title={SCORE_DESCRIPTIONS[i]} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 15, height: 15, borderRadius: '50%', background: '#e8edf0', color: '#7a9a9a', fontSize: '.58rem', fontWeight: 700, cursor: 'help', flexShrink: 0 }}>?</span>
+                  </span>
                   <ScoreBar score={scores[i]} />
                 </div>
               ))}
@@ -1984,14 +2023,21 @@ function MatchGraphInner() {
                 : 'El enlace no expira automáticamente'}
             </p>
           </div>
-          <div style={{ display: 'flex', gap: '.5rem', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
             <button onClick={generateShare} disabled={shareLoading}
               style={{ fontSize: '.75rem', fontWeight: 600, padding: '7px 14px', borderRadius: 8, border: `1.5px solid ${FOREST}`, background: 'white', color: FOREST, cursor: 'pointer' }}>
               {shareLoading ? 'Actualizando…' : 'Regenerar enlace'}
             </button>
             <a href={`/app/matchgraph/share/${shareToken}`} target="_blank" rel="noopener noreferrer"
               style={{ fontSize: '.78rem', fontWeight: 600, color: FOREST, textDecoration: 'none', padding: '7px 14px', border: `1.5px solid ${FOREST}`, borderRadius: 8 }}>
-              Abrir enlace
+              Abrir
+            </a>
+            <a
+              href={`https://wa.me/?text=${encodeURIComponent(`Te comparto los candidatos preseleccionados para el cargo ${selEng?.title} en ${selEng?.company_name}: ${typeof window !== 'undefined' ? window.location.origin : ''}/app/matchgraph/share/${shareToken}`)}`}
+              target="_blank" rel="noopener noreferrer"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '.35rem', fontSize: '.78rem', fontWeight: 700, padding: '7px 14px', borderRadius: 8, background: '#25D366', color: 'white', textDecoration: 'none', marginLeft: 'auto' }}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+              WhatsApp
             </a>
           </div>
         </Modal>
