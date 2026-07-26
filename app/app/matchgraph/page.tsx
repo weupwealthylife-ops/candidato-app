@@ -281,9 +281,14 @@ function MatchGraphInner() {
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
 
   const loadEngagements = useCallback(async () => {
-    const res = await fetch('/api/matchgraph?action=list')
-    const data = await res.json()
-    setEngagements(data.engagements || [])
+    try {
+      const res = await fetch('/api/matchgraph?action=list')
+      const data = await res.json().catch(() => ({}))
+      setEngagements(data.engagements || [])
+      if (!res.ok) console.error('[MG] loadEngagements error:', data.error || res.status)
+    } catch (e) {
+      console.error('[MG] loadEngagements exception:', e)
+    }
   }, [])
 
   useEffect(() => {
@@ -465,19 +470,32 @@ function MatchGraphInner() {
   async function logout() {
     await fetch('/api/matchgraph-auth', { method: 'DELETE' })
     setSession(null); setView('login'); setEngagements([]); setSelEng(null); setCandidates([])
+    setLoginModal(null)
   }
 
   async function saveEngagement() {
     setSaving(true)
     const action = showEditEng ? 'update_engagement' : 'create_engagement'
     const body = showEditEng ? { action, id: selEng!.id, ...engForm } : { action, ...engForm }
-    const res = await fetch('/api/matchgraph', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
-    const data = await res.json()
-    setSaving(false)
-    setShowCreateEng(false); setShowEditEng(false)
-    await loadEngagements()
-    if (data.engagement) openEngagement(data.engagement)
-    else if (selEng) openEngagement({ ...selEng, ...engForm })
+    try {
+      const res = await fetch('/api/matchgraph', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+      const data = await res.json().catch(() => ({}))
+      setSaving(false)
+      setShowCreateEng(false); setShowEditEng(false)
+      if (!res.ok) {
+        console.error('[MG] saveEngagement error:', data.error || res.status)
+        showToast(data.error ? `Error: ${data.error}` : 'Error al guardar evaluación', 'error')
+        return
+      }
+      await loadEngagements()
+      if (data.engagement) openEngagement(data.engagement)
+      else if (selEng) openEngagement({ ...selEng, ...engForm })
+    } catch (e) {
+      setSaving(false)
+      setShowCreateEng(false); setShowEditEng(false)
+      console.error('[MG] saveEngagement exception:', e)
+      showToast('Error de red al guardar evaluación', 'error')
+    }
   }
 
   async function saveCandidate() {
