@@ -67,12 +67,12 @@ export async function POST(req: NextRequest) {
 
     const companyName = engagements?.[0]?.company_name || null
     const res = NextResponse.json({ ok: true, isAdmin: false, companyName })
-    res.cookies.set(COOKIE, email, { httpOnly: true, sameSite: 'lax', path: '/', maxAge: 60 * 60 * 24 * 7 })
+    res.cookies.set(COOKIE, email, { httpOnly: true, sameSite: 'lax', path: '/', maxAge: 60 * 60 * 24 * 30 })
     return res
   }
 
   const res = NextResponse.json({ ok: true, isAdmin: true, companyName: null })
-  res.cookies.set(COOKIE, email, { httpOnly: true, sameSite: 'lax', path: '/', maxAge: 60 * 60 * 24 * 7 })
+  res.cookies.set(COOKIE, email, { httpOnly: true, sameSite: 'lax', path: '/', maxAge: 60 * 60 * 24 * 30 })
   return res
 }
 
