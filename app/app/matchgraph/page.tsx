@@ -483,6 +483,7 @@ export default function MatchGraphPage() {
     const res = await fetch(`/api/matchgraph?action=detail&id=${selEng!.id}`)
     const data = await res.json()
     setCandidates(data.candidates || [])
+    if (showActivity) loadActivity()
   }
 
   async function deleteCandidate(id: string) {
@@ -611,21 +612,21 @@ export default function MatchGraphPage() {
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '.65rem' }}>
             {[
-              { icon: '⚡', text: 'Scores de compatibilidad por dimensión' },
-              { icon: '📊', text: 'Match Graph radar comparativo' },
-              { icon: '✅', text: 'Perfiles validados + CV descargable' },
-              { icon: '📝', text: 'Notas privadas por candidato' },
-              { icon: '📅', text: 'Entrevistas coordinadas en un clic' },
-            ].map(f => (
-              <div key={f.text} style={{ display: 'flex', alignItems: 'center', gap: '.75rem' }}>
-                <span style={{ fontSize: '.88rem', flexShrink: 0 }}>{f.icon}</span>
-                <span style={{ color: 'rgba(255,255,255,.65)', fontSize: '.81rem' }}>{f.text}</span>
+              'Scores de compatibilidad por dimensión',
+              'Match Graph radar comparativo',
+              'Perfiles validados + CV descargable',
+              'Notas privadas por candidato',
+              'Entrevistas coordinadas en un clic',
+            ].map(text => (
+              <div key={text} style={{ display: 'flex', alignItems: 'center', gap: '.75rem' }}>
+                <span style={{ color: CORAL, fontWeight: 800, fontSize: '.85rem', flexShrink: 0 }}>✓</span>
+                <span style={{ color: 'rgba(255,255,255,.65)', fontSize: '.81rem' }}>{text}</span>
               </div>
             ))}
           </div>
 
           <div style={{ marginTop: '2.5rem', paddingTop: '1.5rem', borderTop: '1px solid rgba(255,255,255,.1)', display: 'flex', alignItems: 'center', gap: '.6rem' }}>
-            <span style={{ fontSize: '.88rem' }}>🔒</span>
+            <span style={{ color: 'rgba(255,255,255,.4)', fontSize: '.73rem' }}>—</span>
             <span style={{ color: 'rgba(255,255,255,.35)', fontSize: '.73rem', lineHeight: 1.5 }}>Acceso privado por email · datos cifrados en tránsito</span>
           </div>
         </div>
@@ -675,13 +676,13 @@ export default function MatchGraphPage() {
             disabled={loginLoading || !loginEmail.trim()}
             style={{ width: '100%', background: loginLoading || !loginEmail.trim() ? '#b0c0c0' : FOREST, color: 'white', border: 'none', borderRadius: 10, padding: '14px', fontSize: '.92rem', fontWeight: 700, cursor: loginLoading || !loginEmail.trim() ? 'not-allowed' : 'pointer', fontFamily: 'var(--body)', transition: 'all .15s', letterSpacing: '-.01em' }}
           >
-            {loginLoading ? 'Verificando…' : 'Continuar →'}
+            {loginLoading ? 'Verificando…' : 'Continuar'}
           </button>
 
           <p style={{ textAlign: 'center', fontSize: '.75rem', color: '#b0c4c4', margin: '1.2rem 0 0', lineHeight: 1.5 }}>
             ¿Aún no tenés acceso?{' '}
             <a href="https://wa.me/573205046723" target="_blank" rel="noopener noreferrer" style={{ color: FOREST, fontWeight: 600, textDecoration: 'none', display: 'inline-block', padding: '.5rem 0' }}>
-              Contactá a tu consultor →
+              Contactá a tu consultor
             </a>
           </p>
         </div>
@@ -691,7 +692,7 @@ export default function MatchGraphPage() {
       {loginModal?.type === 'error' && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(14,30,32,.6)', zIndex: 9000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem', backdropFilter: 'blur(3px)' }}>
           <div style={{ background: 'white', borderRadius: 20, padding: '2rem 2rem 1.75rem', maxWidth: 400, width: '100%', boxShadow: '0 24px 64px rgba(14,30,32,.25)', textAlign: 'center' }}>
-            <div style={{ width: 56, height: 56, borderRadius: 16, background: '#fff4f2', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.25rem', fontSize: '1.5rem' }}>🔒</div>
+            <div style={{ width: 56, height: 56, borderRadius: 16, background: '#fff4f2', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.25rem', fontWeight: 700, fontSize: '1.3rem', color: CORAL, fontFamily: 'var(--head)' }}>!</div>
             <div style={{ fontFamily: 'var(--head)', fontWeight: 700, fontSize: '1.15rem', color: INK, marginBottom: '.6rem' }}>
               Empresa no encontrada
             </div>
@@ -706,7 +707,7 @@ export default function MatchGraphPage() {
                 rel="noopener noreferrer"
                 style={{ display: 'block', background: '#25D366', color: 'white', borderRadius: 10, padding: '.8rem', fontSize: '.9rem', fontWeight: 700, fontFamily: 'var(--body)', textDecoration: 'none', textAlign: 'center' }}
               >
-                💬 Contactar por WhatsApp
+                Contactar por WhatsApp
               </a>
               <button
                 onClick={() => setLoginModal(null)}
@@ -723,7 +724,7 @@ export default function MatchGraphPage() {
       {loginModal?.type === 'welcome' && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(14,30,32,.6)', zIndex: 9000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem', backdropFilter: 'blur(3px)' }}>
           <div style={{ background: 'white', borderRadius: 20, padding: '2rem 2rem 1.75rem', maxWidth: 380, width: '100%', boxShadow: '0 24px 64px rgba(14,30,32,.25)', textAlign: 'center' }}>
-            <div style={{ width: 56, height: 56, borderRadius: 16, background: PALE, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.25rem', fontSize: '1.5rem' }}>👋</div>
+            <div style={{ width: 56, height: 56, borderRadius: 16, background: PALE, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.25rem', fontFamily: 'var(--head)', fontWeight: 800, fontSize: '1.3rem', color: FOREST }}>✓</div>
             <div style={{ fontFamily: 'var(--head)', fontWeight: 700, fontSize: '1.15rem', color: INK, marginBottom: '.5rem' }}>
               ¡Bienvenido de vuelta{loginModal.companyName ? `, ${loginModal.companyName}` : ''}!
             </div>
@@ -738,7 +739,7 @@ export default function MatchGraphPage() {
               }}
               style={{ width: '100%', background: FOREST, color: 'white', border: 'none', borderRadius: 10, padding: '.85rem', fontSize: '.95rem', fontWeight: 700, fontFamily: 'var(--body)', cursor: 'pointer' }}
             >
-              Ver mis evaluaciones →
+              Ver mis evaluaciones
             </button>
           </div>
         </div>
@@ -1127,7 +1128,7 @@ export default function MatchGraphPage() {
               onClick={saveEngagement}
               disabled={saving || !engForm.title || !engForm.client_email || !engForm.company_name}
               style={{ width: '100%', background: !engForm.title || !engForm.client_email || !engForm.company_name ? '#b0c0c0' : FOREST, color: 'white', border: 'none', borderRadius: 10, padding: '12px', fontSize: '.88rem', fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--body)', transition: 'background .15s' }}>
-              {saving ? 'Guardando…' : 'Crear evaluación →'}
+              {saving ? 'Guardando…' : 'Crear evaluación'}
             </button>
           </Modal>
         )}
@@ -1180,7 +1181,7 @@ export default function MatchGraphPage() {
                     {compareIds.length >= 2 && (
                       <button onClick={() => setShowCompare(true)}
                         style={{ fontSize: '.72rem', fontWeight: 700, padding: '5px 13px', borderRadius: 8, border: 'none', background: FOREST, color: 'white', cursor: 'pointer' }}>
-                        Ver comparación →
+                        Ver comparación
                       </button>
                     )}
                     <button onClick={() => { setCompareMode(false); setCompareIds([]) }}
@@ -1575,7 +1576,7 @@ export default function MatchGraphPage() {
               {c.cv_url ? (
                 <a href={c.cv_url} target="_blank" rel="noreferrer"
                   style={{ display: 'inline-flex', alignItems: 'center', gap: '.4rem', background: FOREST, color: 'white', borderRadius: 9, padding: '8px 18px', textDecoration: 'none', fontSize: '.83rem', fontWeight: 600, transition: 'opacity .15s' }}>
-                  Descargar CV →
+                  Descargar CV
                 </a>
               ) : (
                 <div style={{ fontSize: '.8rem', color: '#b0c4c4' }}>CV no disponible aún</div>
@@ -1672,7 +1673,7 @@ export default function MatchGraphPage() {
                 {c.mobility && <div style={{ fontSize: '.72rem', color: '#9aacac', marginTop: '.2rem' }}>🚗 {c.mobility}</div>}
                 <button onClick={() => { setShowCompare(false); setCompareMode(false); setCompareIds([]); setCandIdx(candidates.findIndex(x => x.id === c.id)) }}
                   style={{ marginTop: '.85rem', fontSize: '.72rem', fontWeight: 700, padding: '6px 14px', borderRadius: 8, border: `1.5px solid ${color}`, background: 'white', color, cursor: 'pointer', width: '100%' }}>
-                  Ver perfil completo →
+                  Ver perfil completo
                 </button>
               </div>
             )
@@ -1911,7 +1912,7 @@ export default function MatchGraphPage() {
             </button>
             <a href={`/app/matchgraph/share/${shareToken}`} target="_blank" rel="noopener noreferrer"
               style={{ fontSize: '.78rem', fontWeight: 600, color: FOREST, textDecoration: 'none', padding: '7px 14px', border: `1.5px solid ${FOREST}`, borderRadius: 8 }}>
-              Abrir enlace →
+              Abrir enlace
             </a>
           </div>
         </Modal>

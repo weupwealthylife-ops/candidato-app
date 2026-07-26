@@ -16,7 +16,7 @@ export default function Process() {
     },
     {
       n: '02',
-      t: t('La IA analiza tu perfil', 'AI analyses your profile'),
+      t: t('El algoritmo analiza tu perfil', 'The algorithm analyses your profile'),
       d: t(
         'Nuestro algoritmo cruza tu información con cientos de vacantes activas en tiempo real.',
         'Our algorithm matches your data against hundreds of active job listings in real time.',

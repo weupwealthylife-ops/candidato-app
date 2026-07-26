@@ -123,7 +123,7 @@ export default function Metrics() {
             )}
           </div>
           <a href="/app" className="btn btn-forest btn-lg">
-            {t('Unirme →', 'Join us →')}
+            {t('Unirme', 'Join us')}
           </a>
         </div>
       </div>

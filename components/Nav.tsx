@@ -74,10 +74,10 @@ export default function Nav() {
             </nav>
             <div style={{ marginTop: '1.5rem', display: 'flex', flexDirection: 'column', gap: '.65rem' }}>
               <a href="/app" className="btn btn-forest" style={{ width: '100%', justifyContent: 'center' }} onClick={close}>
-                {t('Crear mi perfil gratis →', 'Create my free profile →')}
+                {t('Crear mi perfil gratis', 'Create my free profile')}
               </a>
               <a href="#for-companies" className="btn btn-outline" style={{ width: '100%', justifyContent: 'center' }} onClick={close}>
-                {t('Soy una empresa →', "I'm a company →")}
+                {t('Soy una empresa', "I'm a company")}
               </a>
             </div>
             <div style={{ display: 'flex', gap: '.5rem', marginTop: '1.2rem', justifyContent: 'center' }}>

@@ -12,11 +12,11 @@ const MATCHING_PLANS = [
     label: { es: '1 vacante', en: '1 listing' },
     badge: null,
     features: {
-      es: ['Matching inteligente con IA', 'Candidatos preseleccionados', 'Score de compatibilidad', 'Activa por 1 mes', 'Soporte por WhatsApp'],
-      en: ['AI-powered smart matching', 'Pre-screened candidates', 'Compatibility score', 'Active for 1 month', 'WhatsApp support'],
+      es: ['Matching inteligente', 'Candidatos preseleccionados', 'Score de compatibilidad', 'Activa por 1 mes', 'Soporte por WhatsApp'],
+      en: ['Smart matching', 'Pre-screened candidates', 'Compatibility score', 'Active for 1 month', 'WhatsApp support'],
     },
     featured: false,
-    cta: { es: 'Publicar vacante →', en: 'Post a listing →' },
+    cta: { es: 'Publicar vacante', en: 'Post a listing' },
     href: '/app',
   },
   {
@@ -29,7 +29,7 @@ const MATCHING_PLANS = [
       en: ['Everything in 1 listing', 'Second listing at a discount', '2× automatic matching', 'Results in 24 h', 'Save $100,000 COP'],
     },
     featured: true,
-    cta: { es: 'Publicar 2 vacantes →', en: 'Post 2 listings →' },
+    cta: { es: 'Publicar 2 vacantes', en: 'Post 2 listings' },
     href: '/app',
   },
   {
@@ -42,7 +42,7 @@ const MATCHING_PLANS = [
       en: ['Everything in 2 listings', 'Third listing included', 'Priority support', 'Access to Top 1% candidates', 'Save $200,000 COP'],
     },
     featured: false,
-    cta: { es: 'Publicar 3 vacantes →', en: 'Post 3 listings →' },
+    cta: { es: 'Publicar 3 vacantes', en: 'Post 3 listings' },
     href: '/app',
   },
 ]
@@ -73,7 +73,7 @@ const PRESELECCION_PLANS = [
       ],
     },
     featured: false,
-    cta: { es: 'Contratar servicio →', en: 'Get started →' },
+    cta: { es: 'Contratar servicio', en: 'Get started' },
     href: 'https://wa.me/573205046723?text=Hola%2C%20me%20interesa%20el%20servicio%20de%20Preselección%20y%20Validación%20para%201%20vacante%20en%20candidato.com.co',
   },
   {
@@ -101,7 +101,7 @@ const PRESELECCION_PLANS = [
       ],
     },
     featured: true,
-    cta: { es: 'Contratar 2 vacantes →', en: 'Get 2 listings →' },
+    cta: { es: 'Contratar 2 vacantes', en: 'Get 2 listings' },
     href: 'https://wa.me/573205046723?text=Hola%2C%20me%20interesa%20el%20servicio%20de%20Preselección%20y%20Validación%20para%202%20vacantes%20en%20candidato.com.co',
   },
   {
@@ -129,7 +129,7 @@ const PRESELECCION_PLANS = [
       ],
     },
     featured: false,
-    cta: { es: 'Contratar 3 vacantes →', en: 'Get 3 listings →' },
+    cta: { es: 'Contratar 3 vacantes', en: 'Get 3 listings' },
     href: 'https://wa.me/573205046723?text=Hola%2C%20me%20interesa%20el%20servicio%20de%20Preselección%20y%20Validación%20para%203%20vacantes%20en%20candidato.com.co',
   },
 ]
@@ -147,8 +147,8 @@ export default function Pricing() {
         <h2 className="sec-h2">{t('Empezá gratis. Escalá cuando estés listo.', 'Start free. Scale when you\'re ready.')}</h2>
         <p className="sec-sub" style={{ margin: '.5rem auto 0' }}>
           {t(
-            'Publicá una vacante gratuita, activá el matching con IA o delegá la preselección completa a nuestro equipo.',
-            'Post a free listing, activate AI matching, or delegate full candidate screening to our team.',
+            'Publicá una vacante gratuita, activá el matching o delegá la preselección completa a nuestro equipo.',
+            'Post a free listing, activate matching, or delegate full candidate screening to our team.',
           )}
         </p>
       </div>
@@ -167,7 +167,7 @@ export default function Pricing() {
               boxShadow: tab === 'matching' ? '0 2px 8px rgba(27,59,62,.25)' : 'none',
             }}
           >
-            {t('✦ Matching con IA', '✦ AI Matching')}
+            {t('✦ Matching', '✦ Matching')}
           </button>
           <button
             onClick={() => setTab('preseleccion')}
@@ -228,7 +228,7 @@ export default function Pricing() {
               boxShadow: '0 2px 8px rgba(27,59,62,.2)',
               transition: 'opacity .15s',
             }}>
-              {t('Publicar vacante gratis →', 'Post free listing →')}
+              {t('Publicar vacante gratis', 'Post free listing')}
             </a>
           </div>
         ) : (
@@ -277,7 +277,7 @@ export default function Pricing() {
                   transition: 'opacity .15s', textAlign: 'center',
                 }}
               >
-                {t('Consultar servicio →', 'Inquire about service →')}
+                {t('Consultar servicio', 'Inquire about service')}
               </a>
               <a
                 href="/app/matchgraph"
@@ -291,7 +291,7 @@ export default function Pricing() {
                 }}
               >
                 <span style={{ fontSize: '.85rem' }}>⬡</span>
-                {t('Ver Match Graph →', 'View Match Graph →')}
+                {t('Ver Match Graph', 'View Match Graph')}
               </a>
             </div>
           </div>
@@ -349,7 +349,7 @@ export default function Pricing() {
               target="_blank"
               rel="noopener noreferrer"
             >
-              {t('Hablemos por WhatsApp →', 'Let\'s talk on WhatsApp →')}
+              {t('Hablemos por WhatsApp', 'Let\'s talk on WhatsApp')}
             </a>
           </>
         ) : (
@@ -364,7 +364,7 @@ export default function Pricing() {
               target="_blank"
               rel="noopener noreferrer"
             >
-              {t('Solicitá una demo →', 'Request a demo →')}
+              {t('Solicitá una demo', 'Request a demo')}
             </a>
           </>
         )}

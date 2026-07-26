@@ -85,7 +85,7 @@ export default function Register() {
           <h2 className="sec-h2">
             {t('Registrate.', 'Sign up.')}
             <br />
-            {t('La IA trabaja por vos.', 'AI works for you.')}
+            {t('El algoritmo trabaja por vos.', 'The algorithm works for you.')}
           </h2>
           <p className="sec-sub" style={{ marginBottom: 0 }}>
             {t(
@@ -102,21 +102,21 @@ export default function Register() {
               </span>
             </div>
             <div className="proof-item in">
-              <span className="proof-ico">⚡</span>
+              <span className="proof-ico">✓</span>
               <span className="proof-txt">
                 <strong>{t('Match en 24h', 'Match in 24h')}</strong>{' '}
                 <span>{t('— tus primeras oportunidades al día siguiente.', '— your first opportunities the next day.')}</span>
               </span>
             </div>
             <div className="proof-item in">
-              <span className="proof-ico">🎯</span>
+              <span className="proof-ico">✓</span>
               <span className="proof-txt">
                 <strong>{t('Solo lo relevante', 'Only what matters')}</strong>{' '}
                 <span>{t('— sin spam, sin ofertas genéricas.', '— no spam, no generic offers.')}</span>
               </span>
             </div>
             <div className="proof-item in">
-              <span className="proof-ico">🔒</span>
+              <span className="proof-ico">✓</span>
               <span className="proof-txt">
                 <strong>{t('Perfil privado', 'Private profile')}</strong>{' '}
                 <span>{t('— nunca compartimos tus datos sin permiso.', '— we never share your data without permission.')}</span>
@@ -224,7 +224,7 @@ export default function Register() {
                 <p style={{ color: 'var(--coral)', fontSize: '.8rem', marginBottom: '.5rem' }}>{error}</p>
               )}
               <button type="button" className="sub-btn" onClick={doSub} disabled={loading}>
-                <span>{loading ? t('Enviando…', 'Sending…') : t('Encontrar mis matches →', 'Find my matches →')}</span>
+                <span>{loading ? t('Enviando…', 'Sending…') : t('Encontrar mis matches', 'Find my matches')}</span>
               </button>
               <p className="form-note">
                 {t(
@@ -235,7 +235,7 @@ export default function Register() {
             </div>
           ) : (
             <div className="success-box" style={{ display: 'block' }}>
-              <div className="success-ico">🎉</div>
+              <div className="success-ico" style={{ background: 'var(--pale)', color: 'var(--forest)', fontSize: '1.6rem', borderRadius: '50%', width: 64, height: 64, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem' }}>✓</div>
               <div className="success-title">{t('¡Perfil creado!', 'Profile created!')}</div>
               <p className="success-sub">
                 {t(
@@ -244,7 +244,7 @@ export default function Register() {
                 )}
               </p>
               <div className="success-note">
-                📧 <span>{t('Revisá tu bandeja de entrada — también el spam.', 'Check your inbox — including spam.')}</span>
+                <span>{t('Revisá tu bandeja de entrada — también el spam.', 'Check your inbox — including spam.')}</span>
               </div>
             </div>
           )}

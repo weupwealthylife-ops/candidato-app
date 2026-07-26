@@ -7,7 +7,7 @@ export default function ForCompanies() {
 
   const BENEFITS = [
     {
-      ico: '⚡',
+      n: '01',
       title: t('Candidatos en 2 horas', 'Candidates in 2 hours'),
       desc: t(
         'Publicás la vacante, el algoritmo identifica fits reales y los notifica automáticamente.',
@@ -15,7 +15,7 @@ export default function ForCompanies() {
       ),
     },
     {
-      ico: '🎯',
+      n: '02',
       title: t('Solo entrevistás fits reales', 'Only interview real fits'),
       desc: t(
         'El motor de scoring filtra por área, modalidad, ciudad, experiencia y habilidades. Vos solo ves los que superan el 70% de compatibilidad.',
@@ -23,7 +23,7 @@ export default function ForCompanies() {
       ),
     },
     {
-      ico: '📧',
+      n: '03',
       title: t('Match = contacto directo', 'Match = direct contact'),
       desc: t(
         'Cuando un candidato confirma interés, recibís su CV, WhatsApp y LinkedIn en un email. Sin intermediarios.',
@@ -31,7 +31,7 @@ export default function ForCompanies() {
       ),
     },
     {
-      ico: '📉',
+      n: '04',
       title: t('−90% en costo de contratación', '−90% hiring cost'),
       desc: t(
         'Sin honorarios de agencia. Sin tiempo perdido en CVs irrelevantes. Solo el talento correcto.',
@@ -42,9 +42,6 @@ export default function ForCompanies() {
 
   return (
     <section id="for-companies" style={{ background: 'var(--forest)', padding: '5rem max(5vw,24px)', position: 'relative', overflow: 'hidden' }}>
-      {/* Decorative blob */}
-      <div style={{ position: 'absolute', top: -80, right: -80, width: 320, height: 320, borderRadius: '50%', background: 'rgba(234,100,64,.12)', pointerEvents: 'none' }} />
-      <div style={{ position: 'absolute', bottom: -60, left: -60, width: 240, height: 240, borderRadius: '50%', background: 'rgba(255,255,255,.04)', pointerEvents: 'none' }} />
 
       <div style={{ maxWidth: 1100, margin: '0 auto', position: 'relative', zIndex: 1 }}>
         {/* Header */}
@@ -69,7 +66,7 @@ export default function ForCompanies() {
         <div className="for-co-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '1.2rem', marginBottom: '3rem' }}>
           {BENEFITS.map((b, i) => (
             <div key={i} className="for-co-card" style={{ background: 'rgba(255,255,255,.07)', borderRadius: 14, padding: '1.6rem 1.8rem', border: '1px solid rgba(255,255,255,.1)', backdropFilter: 'blur(4px)' }}>
-              <div style={{ fontSize: '1.5rem', marginBottom: '.6rem' }}>{b.ico}</div>
+              <div style={{ fontFamily: 'var(--head)', fontWeight: 800, fontSize: '1.1rem', color: 'var(--coral)', marginBottom: '.5rem', lineHeight: 1 }}>{b.n}</div>
               <div style={{ fontFamily: 'var(--head)', fontWeight: 700, color: 'white', fontSize: '.95rem', marginBottom: '.4rem' }}>{b.title}</div>
               <div style={{ color: 'rgba(255,255,255,.6)', fontSize: '.82rem', lineHeight: 1.65 }}>{b.desc}</div>
             </div>
@@ -102,7 +99,7 @@ export default function ForCompanies() {
         {/* CTA */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem', textAlign: 'center' }}>
           <a href="/app" className="btn btn-coral btn-xl" style={{ fontSize: '1rem', padding: '14px 36px' }}>
-            {t('Publicar vacante gratis →', 'Post free listing →')}
+            {t('Publicar vacante gratis', 'Post free listing')}
           </a>
           <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap', justifyContent: 'center' }}>
             <span style={{ color: 'rgba(255,255,255,.5)', fontSize: '.78rem' }}>✓ {t('Sin tarjeta de crédito', 'No credit card')}</span>

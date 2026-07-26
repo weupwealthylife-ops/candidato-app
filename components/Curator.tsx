@@ -8,7 +8,7 @@ export default function Curator() {
   const JOBS = [
     {
       bg: '#e8f5ff',
-      ico: '🏢',
+      ico: 'RP',
       title: 'Senior UX Designer',
       meta: `Rappi · Bogotá · ${t('Remoto', 'Remote')}`,
       tags: ['Figma', 'Design Systems', '$8–12M'],
@@ -18,7 +18,7 @@ export default function Curator() {
     },
     {
       bg: '#fff3e0',
-      ico: '🏦',
+      ico: 'BC',
       title: 'Product Manager',
       meta: `Bancolombia · Medellín · ${t('Híbrido', 'Hybrid')}`,
       tags: ['Roadmaps', 'Agile', '$10–15M'],
@@ -28,7 +28,7 @@ export default function Curator() {
     },
     {
       bg: '#f3e8ff',
-      ico: '🎨',
+      ico: 'MG',
       title: 'Brand Designer',
       meta: `Mango · Cali · ${t('Presencial', 'On-site')}`,
       tags: ['Branding', 'Motion', '$6–9M'],
@@ -80,7 +80,7 @@ export default function Curator() {
                 className="btn btn-forest btn-lg"
                 style={{ marginTop: '.8rem' }}
               >
-                {t('Hablar con asesor →', 'Talk to an advisor →')}
+                {t('Hablar con asesor', 'Talk to an advisor')}
               </a>
             </div>
           </div>
@@ -118,7 +118,7 @@ export default function Curator() {
                 </div>
                 <div className="mac-search-section">
                   <div className="mac-search-bar">
-                    <span className="mac-search-ico">🔍</span>
+                    <span className="mac-search-ico" style={{ fontStyle: 'normal', opacity: .5 }}>⌕</span>
                     <div className="mac-search-input">
                       <span className="mac-search-hint">
                         {t('Cargo, habilidad o empresa…', 'Role, skill or company…')}
@@ -134,8 +134,8 @@ export default function Curator() {
                   </div>
                   <div className="mac-search-meta">
                     {t(
-                      '247 vacantes activas · Ordenadas por compatibilidad IA',
-                      '247 active jobs · Sorted by AI compatibility',
+                      '247 vacantes activas · Ordenadas por compatibilidad',
+                      '247 active jobs · Sorted by compatibility',
                     )}
                   </div>
                 </div>
@@ -143,7 +143,7 @@ export default function Curator() {
                   {JOBS.map((j, idx) => (
                     <div key={idx} className={`mac-job-card${j.top ? ' mac-job-featured' : ''}`}>
                       <div className="mac-job-left">
-                        <div className="mac-co-logo" style={{ background: j.bg }}>{j.ico}</div>
+                        <div className="mac-co-logo" style={{ background: j.bg, fontSize: '.58rem', fontWeight: 800, color: '#1B3B3E', letterSpacing: '-.01em' }}>{j.ico}</div>
                         <div>
                           <div className="mac-job-title">{j.title}</div>
                           <div className="mac-job-meta">{j.meta}</div>
@@ -163,10 +163,10 @@ export default function Curator() {
                 </div>
                 <div className="mac-status-bar">
                   <span>
-                    ✅ <span>{t('Tu perfil está activo · Recibirás matches por email', 'Your profile is active · You will receive matches by email')}</span>
+                    <span style={{ color: 'var(--forest)', fontWeight: 700 }}>·</span> <span>{t('Tu perfil está activo · Recibirás matches por email', 'Your profile is active · You will receive matches by email')}</span>
                   </span>
                   <span className="mac-status-ai">
-                    ⚡ <span>{t('IA analizando 12 nuevas vacantes…', 'AI analysing 12 new jobs…')}</span>
+                    <span>{t('Analizando 12 nuevas vacantes…', 'Analysing 12 new jobs…')}</span>
                   </span>
                 </div>
               </div>

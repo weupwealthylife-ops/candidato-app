@@ -62,7 +62,7 @@ export default function Testimonials() {
         </div>
         <div style={{ textAlign: 'center', marginTop: '2.5rem' }}>
           <a href="/app" className="btn btn-forest btn-lg">
-            {t('Unirme gratis →', 'Join for free →')}
+            {t('Unirme gratis', 'Join for free')}
           </a>
         </div>
       </div>

@@ -34,29 +34,29 @@ export default function Hero() {
           )}
         </p>
         <div className="hero-badge-row">
-          <span className="hero-badge">{t('⚡ Match en 2h', '⚡ Match in 2h')}</span>
-          <span className="hero-badge">{t('🎯 Solo fits reales', '🎯 Only real fits')}</span>
+          <span className="hero-badge">{t('Match en 2h', 'Match in 2h')}</span>
+          <span className="hero-badge">{t('Solo fits reales', 'Only real fits')}</span>
           <span className="hero-badge">{t('🇨🇴 Hecho en Colombia', '🇨🇴 Made in Colombia')}</span>
         </div>
         <div className="hero-actions hero-dual-cta">
           <div className="hero-cta-group">
             <div className="hero-cta-label">{t('Soy candidato', "I'm a candidate")}</div>
             <a href="/app" className="btn btn-forest btn-xl">
-              {t('Crear mi perfil gratis →', 'Create my free profile →')}
+              {t('Crear mi perfil gratis', 'Create my free profile')}
             </a>
           </div>
           <div className="hero-cta-divider">{t('o', 'or')}</div>
           <div className="hero-cta-group">
             <div className="hero-cta-label">{t('Soy empresa', "I'm a company")}</div>
             <a href="/app" className="btn btn-outline btn-xl">
-              {t('Publicar vacante gratis →', 'Post free listing →')}
+              {t('Publicar vacante gratis', 'Post free listing')}
             </a>
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '.6rem', marginBottom: '1.2rem', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', alignItems: 'center' }}>
-            {['👩‍💼','👨‍💻','👩‍🎨','👨‍🔬'].map((e, i) => (
-              <span key={i} style={{ width: 28, height: 28, borderRadius: '50%', background: 'var(--forest)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '.9rem', marginLeft: i > 0 ? -8 : 0, border: '2px solid white', zIndex: 4 - i, position: 'relative' }}>{e}</span>
+            {[['D','#EA6440'],['A','#1B3B3E'],['C','#264D51'],['M','#4A6FA5']].map(([init, bg], i) => (
+              <span key={i} style={{ width: 28, height: 28, borderRadius: '50%', background: bg, color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '.62rem', fontWeight: 800, marginLeft: i > 0 ? -8 : 0, border: '2px solid white', zIndex: 4 - i, position: 'relative', fontFamily: 'var(--body)' }}>{init}</span>
             ))}
           </div>
           <span style={{ fontSize: '.78rem', color: 'var(--ink-70)', lineHeight: 1.4 }}>
@@ -88,11 +88,11 @@ export default function Hero() {
           </div>
           <div className="hmv-card">
             {[
-              { ico: '💻', job: 'Senior UX Designer', co: 'Rappi · Bogotá', pct: '96%' },
-              { ico: '📊', job: 'Product Manager', co: 'Bancolombia · Medellín', pct: '88%' },
+              { ico: 'UX', bg: '#e8f5ff', job: 'Senior UX Designer', co: 'Rappi · Bogotá', pct: '96%' },
+              { ico: 'PM', bg: '#fff3e0', job: 'Product Manager', co: 'Bancolombia · Medellín', pct: '88%' },
             ].map((m, i) => (
               <div key={i} className={`hmv-row${i > 0 ? ' hmv-row-sep' : ''}`}>
-                <span className="hmv-ico">{m.ico}</span>
+                <span className="hmv-ico" style={{ background: m.bg, fontSize: '.62rem', fontWeight: 800, color: '#1B3B3E' }}>{m.ico}</span>
                 <div className="hmv-body">
                   <div className="hmv-job">{m.job}</div>
                   <div className="hmv-co">{m.co}</div>
@@ -106,7 +106,7 @@ export default function Hero() {
 
       <div className="hero-r">
         <div className="hero-r-fade"></div>
-        <div className="phone-pill top">✅ <span>{t('Match encontrado', 'Match found')}</span></div>
+        <div className="phone-pill top"><span style={{ color: 'var(--forest)', fontWeight: 800 }}>✓</span> <span>{t('Match encontrado', 'Match found')}</span></div>
         <div className="iphone-wrap">
           <div className="iphone">
             <div className="iphone-notch"></div>
@@ -124,7 +124,7 @@ export default function Hero() {
                     <span className="phone-badge">{t('3 nuevos', '3 new')}</span>
                   </div>
                   <div className="phone-row top">
-                    <div className="phone-ico">💻</div>
+                    <div className="phone-ico" style={{ background: '#e8f5ff', color: '#1B3B3E', fontSize: '.65rem', fontWeight: 800 }}>UX</div>
                     <div className="phone-body">
                       <div className="phone-job">Senior UX Designer</div>
                       <div className="phone-co">Rappi · Bogotá</div>
@@ -132,7 +132,7 @@ export default function Hero() {
                     <span className="phone-pct">96%</span>
                   </div>
                   <div className="phone-row">
-                    <div className="phone-ico">📊</div>
+                    <div className="phone-ico" style={{ background: '#fff3e0', color: '#7a4a1a', fontSize: '.65rem', fontWeight: 800 }}>PM</div>
                     <div className="phone-body">
                       <div className="phone-job">Product Manager</div>
                       <div className="phone-co">Bancolombia · Medellín</div>
@@ -140,7 +140,7 @@ export default function Hero() {
                     <span className="phone-pct">88%</span>
                   </div>
                   <div className="phone-row">
-                    <div className="phone-ico">🎨</div>
+                    <div className="phone-ico" style={{ background: '#f3e8ff', color: '#5a2d82', fontSize: '.65rem', fontWeight: 800 }}>BD</div>
                     <div className="phone-body">
                       <div className="phone-job">Brand Designer</div>
                       <div className="phone-co">Mango · {t('Remoto', 'Remote')}</div>
@@ -148,7 +148,7 @@ export default function Hero() {
                     <span className="phone-pct">81%</span>
                   </div>
                   <div className="phone-email">
-                    <span className="phone-email-ico">📧</span>
+                    <span className="phone-email-ico" style={{ fontSize: '.75rem' }}>@</span>
                     <div>
                       <div className="phone-email-title">{t('Email enviado', 'Email sent')}</div>
                       <div className="phone-email-sub">{t('Revisá tu bandeja', 'Check your inbox')}</div>
@@ -156,7 +156,7 @@ export default function Hero() {
                   </div>
                 </div>
                 <div className="phone-insight">
-                  <div className="insight-label">IA INSIGHT</div>
+                  <div className="insight-label">MATCH INSIGHT</div>
                   <div className="insight-text">
                     <span>{t('Salvaste ', 'You saved ')}</span>
                     <strong>{t('34% esta semana', '34% this week')}</strong>
