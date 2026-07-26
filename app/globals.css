@@ -509,14 +509,14 @@ button:focus-visible,input:focus-visible,select:focus-visible,.btn:focus-visible
 /* ════════════════════════════════════
    CURATOR — Mac desktop mockup
 ════════════════════════════════════ */
-#curator{background:var(--off);padding:5.5rem max(5vw,28px)}
+#curator{background:var(--off);padding:5.5rem max(5vw,28px);overflow:hidden}
 .curator-inner{max-width:1200px;margin:0 auto}
 /* 2-col: copy left, mac right */
 .curator-split{
   display:grid;grid-template-columns:360px 1fr;
   gap:3rem;align-items:center;
 }
-.curator-copy{display:flex;flex-direction:column;justify-content:center}
+.curator-copy{display:flex;flex-direction:column;justify-content:center;min-width:0}
 .curator-copy .sec-h2{margin-bottom:.8rem}
 .curator-copy .sec-sub{margin-bottom:2rem}
 
@@ -962,6 +962,11 @@ footer{
 .reveal.animated[data-d="2"]{transition-delay:.14s}
 .reveal.animated[data-d="3"]{transition-delay:.21s}
 .reveal.animated[data-d="4"]{transition-delay:.28s}
+
+/* ════════════════════════════════════
+   TESTIMONIALS GRID
+════════════════════════════════════ */
+.testimonials-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.2rem}
 
 /* ════════════════════════════════════
    ACCESSIBILITY

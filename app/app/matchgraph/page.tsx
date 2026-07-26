@@ -299,24 +299,29 @@ export default function MatchGraphPage() {
     const email = loginEmail.trim().toLowerCase()
     if (!email) return
     setLoginLoading(true)
-    const res = await fetch('/api/matchgraph-auth', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email }),
-    })
-    const data = await res.json()
-    setLoginLoading(false)
-    if (!res.ok) {
+    try {
+      const res = await fetch('/api/matchgraph-auth', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      })
+      setLoginLoading(false)
+      if (!res.ok) {
+        setLoginModal({ type: 'error' })
+        return
+      }
+      const data = await res.json()
+      // Show welcome modal for client users, skip for admin
+      if (!data.isAdmin) {
+        setLoginModal({ type: 'welcome', companyName: data.companyName })
+      }
+      setSession({ email, isAdmin: data.isAdmin })
+      if (data.isAdmin) {
+        setView('dashboard')
+        await loadEngagements()
+      }
+    } catch {
+      setLoginLoading(false)
       setLoginModal({ type: 'error' })
-      return
-    }
-    // Show welcome modal for client users, skip for admin
-    if (!data.isAdmin) {
-      setLoginModal({ type: 'welcome', companyName: data.companyName })
-    }
-    setSession({ email, isAdmin: data.isAdmin })
-    if (data.isAdmin) {
-      setView('dashboard')
-      await loadEngagements()
     }
   }
 

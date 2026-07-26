@@ -845,7 +845,7 @@ export default function AppPage() {
                       </div>
                       <div className="fg fg-full">
                         <button className="submit-btn" disabled={gateLoading} onClick={checkEmailExists}>
-                          {gateLoading ? t('Verificando…', 'Checking…') : t('Continuar →', 'Continue →')}
+                          {gateLoading ? t('Verificando…', 'Checking…') : t('Continuar', 'Continue')}
                         </button>
                       </div>
                     </div>
@@ -857,7 +857,7 @@ export default function AppPage() {
                       onClick={sendMagicLink}
                       style={{ background: 'none', border: 'none', color: 'var(--ink-45)', fontSize: '.75rem', cursor: 'pointer', marginTop: '.4rem', textDecoration: 'underline', padding: '.75rem 0', display: 'inline-block' }}
                     >
-                      {t('¿Olvidaste tu acceso? Recibir enlace por email →', 'Forgot your access? Get a login link by email →')}
+                      {t('¿Olvidaste tu acceso? Recibir enlace por email', 'Forgot your access? Get a login link by email')}
                     </button>
                   </div>
                 )}
@@ -897,8 +897,8 @@ export default function AppPage() {
                       onClick={() => enterApp({ name: foundName, email: gateEmail, type: userType, companyName: userType === 'company' ? coname : undefined })}
                     >
                       {userType === 'company'
-                        ? t('Ver mis vacantes →', 'Go to my listings →')
-                        : t('Ver mis matches →', 'See my matches →')}
+                        ? t('Ver mis vacantes', 'Go to my listings')
+                        : t('Ver mis matches', 'See my matches')}
                     </button>
 
                     {/* Secondary actions */}
@@ -981,7 +981,7 @@ export default function AppPage() {
                       </div>
                     </div>
                     <button className="submit-btn" style={{ marginTop: '1.4rem' }} onClick={() => { goToApp() }}>
-                      {t('Ya verifiqué — ir a mi panel →', 'I verified — go to my dashboard →')}
+                      {t('Ya verifiqué — ir a mi panel', 'I verified — go to my dashboard')}
                     </button>
                     <p className="ob-gate-hint">
                       {t('¿No llegó? Revisá la carpeta de spam.', "Didn't arrive? Check your spam folder.")}
@@ -1043,7 +1043,7 @@ export default function AppPage() {
                           </div>
                           <div className="fg fg-full" style={{ marginTop: '.4rem' }}>
                             <button className="submit-btn" onClick={() => nextCStep(2)}>
-                              {t('Continuar →', 'Continue →')}
+                              {t('Continuar', 'Continue')}
                             </button>
                           </div>
                         </div>
@@ -1095,7 +1095,7 @@ export default function AppPage() {
                           <div className="fg fg-full" style={{ display: 'flex', gap: '.6rem', marginTop: '.4rem', alignItems: 'center' }}>
                             <button className="ob-back-link" onClick={() => nextCStep(1)}>{t('← Atrás', '← Back')}</button>
                             <button className="submit-btn" onClick={() => nextCStep(3)} style={{ flex: 1, marginTop: 0 }}>
-                              {t('Continuar →', 'Continue →')}
+                              {t('Continuar', 'Continue')}
                             </button>
                           </div>
                         </div>
@@ -1159,7 +1159,7 @@ export default function AppPage() {
                           <div className="fg fg-full" style={{ display: 'flex', gap: '.6rem', marginTop: '.4rem', alignItems: 'center' }}>
                             <button className="ob-back-link" onClick={() => nextCStep(2)}>{t('← Atrás', '← Back')}</button>
                             <button className="submit-btn" disabled={submitting || cvUploading} onClick={submitCandidate} style={{ flex: 1, marginTop: 0 }}>
-                              {cvUploading ? t('Subiendo CV…', 'Uploading CV…') : submitting ? t('Guardando…', 'Saving…') : t('Crear mi perfil →', 'Create my profile →')}
+                              {cvUploading ? t('Subiendo CV…', 'Uploading CV…') : submitting ? t('Guardando…', 'Saving…') : t('Crear mi perfil', 'Create my profile')}
                             </button>
                           </div>
                           <div className="fg fg-full">
@@ -1227,7 +1227,7 @@ export default function AppPage() {
                           </div>
                           <div className="fg fg-full" style={{ marginTop: '.4rem' }}>
                             <button className="submit-btn" onClick={() => nextCoStep(2)}>
-                              {t('Continuar →', 'Continue →')}
+                              {t('Continuar', 'Continue')}
                             </button>
                           </div>
                         </div>
@@ -1354,7 +1354,7 @@ export default function AppPage() {
                                 ? t('Redirigiendo…', 'Redirecting…')
                                 : jobtitle.trim()
                                   ? t(`Continuar al pago · $${({ 1: 300000, 2: 500000, 3: 700000 } as Record<number,number>)[coQty].toLocaleString('es-CO')} COP →`, `Continue to payment · $${({ 1: 300000, 2: 500000, 3: 700000 } as Record<number,number>)[coQty].toLocaleString('es-CO')} COP →`)
-                                  : t('Crear cuenta →', 'Create account →')}
+                                  : t('Crear cuenta', 'Create account')}
                             </button>
                           </div>
                           <div className="fg fg-full">
