@@ -15,16 +15,16 @@ const RESEND_API = 'https://api.resend.com/emails'
 
 function buildHtml(type: NotifyType, name: string, extra: Record<string, string> = {}): { subject: string; html: string } {
   const base = `
-    <div style="font-family:'Helvetica Neue',Arial,sans-serif;max-width:520px;margin:0 auto;background:#fff;border:1px solid #e8eded;border-radius:12px;overflow:hidden">
-      <div style="background:#2A5558;padding:20px 28px">
-        <img src="https://candidato.com.co/bird-logo.png" width="32" height="32" alt="" style="display:inline-block;vertical-align:middle;margin-right:10px;border-radius:6px">
-        <span style="color:white;font-weight:700;font-size:1.05rem;letter-spacing:-.01em;vertical-align:middle">Candidato®</span>
+    <div style="font-family:'Helvetica Neue',Arial,sans-serif;max-width:540px;margin:0 auto;background:#ffffff">
+      <div style="background:#1B3B3E;padding:22px 32px;border-radius:12px 12px 0 0">
+        <img src="https://candidato.com.co/bird-logo.png" width="28" height="28" alt="" style="display:inline-block;vertical-align:middle;margin-right:10px;border-radius:5px">
+        <span style="color:#ffffff;font-weight:800;font-size:1rem;letter-spacing:-.01em;vertical-align:middle">Candidato®</span>
       </div>
-      <div style="padding:28px 28px 24px">
+      <div style="background:#fff;border:1px solid #e4eced;border-top:none;border-radius:0 0 12px 12px;padding:32px 32px 28px">
         CONTENT
       </div>
-      <div style="padding:16px 28px;border-top:1px solid #f0f4f4;font-size:.75rem;color:#9aacac;text-align:center">
-        Candidato® · Colombia · <a href="https://candidato.com.co" style="color:#1B3B3E">candidato.com.co</a>
+      <div style="padding:18px 32px;font-size:.73rem;color:#9aacac;text-align:center;line-height:1.6">
+        Candidato® · Cali, Colombia · <a href="https://candidato.com.co" style="color:#1B3B3E;text-decoration:none;font-weight:600">candidato.com.co</a>
       </div>
     </div>
   `
@@ -155,42 +155,44 @@ function buildHtml(type: NotifyType, name: string, extra: Record<string, string>
   }
 
   if (type === 'welcome_candidate') {
-    const subject = `¡Bienvenido/a a Candidato®, ${name}! 🎉`
+    const subject = `Bienvenido/a a Candidato®, ${name}`
+    const areaLine = extra.area ? `<p style="color:#4a6a6a;font-size:.85rem;line-height:1.65;margin:0 0 18px">Registraste tu perfil en <strong style="color:#1B3B3E">${extra.area}</strong>${extra.city ? ` · ${extra.city}` : ''}. Nuestro equipo revisará tu perfil y te notificará cuando haya una oportunidad real.</p>` : ''
     const content = `
-      <h2 style="color:#0E1E20;font-size:1.15rem;margin:0 0 12px">¡Hola ${name}, ya sos parte de Candidato®! 🎉</h2>
-      <p style="color:#4a6a6a;font-size:.88rem;line-height:1.65;margin:0 0 16px">
-        Tu perfil fue creado exitosamente. El algoritmo ya está analizando las vacantes disponibles para encontrar tu match ideal.
-      </p>
-      <div style="background:#E4F0F1;border-radius:8px;padding:14px 18px;margin-bottom:16px">
-        <p style="color:#1B3B3E;font-size:.83rem;font-weight:600;margin:0 0 8px">3 pasos para conseguir tu próximo trabajo:</p>
-        <ol style="color:#264D51;font-size:.82rem;line-height:1.8;margin:0;padding-left:18px">
-          <li><strong>Completá tu perfil</strong> — cuanto más completo, mejores matches.</li>
-          <li><strong>Revisá tus sugerencias</strong> — el algoritmo te notifica cuando hay un match real.</li>
-          <li><strong>Postulate en 1 clic</strong> — sin CV genérico, sin carta de presentación.</li>
-        </ol>
+      <p style="color:#6b8f8f;font-size:.75rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin:0 0 10px">Tu perfil está activo</p>
+      <h2 style="color:#0E1E20;font-size:1.2rem;font-weight:800;margin:0 0 10px;line-height:1.3">Hola ${name}, ya sos parte de Candidato®</h2>
+      ${areaLine}
+      <div style="background:#E4F0F1;border-radius:10px;padding:18px 20px;margin-bottom:20px">
+        <p style="color:#1B3B3E;font-size:.8rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;margin:0 0 12px">Qué pasa ahora</p>
+        <table role="presentation" cellpadding="0" cellspacing="0" style="border-collapse:collapse;width:100%">
+          <tr><td style="padding:5px 0;vertical-align:top;width:22px"><span style="color:#EA6440;font-weight:800;font-size:.88rem">1.</span></td><td style="padding:5px 0;color:#264D51;font-size:.83rem;line-height:1.6"><strong>Revisamos tu perfil</strong> y lo comparamos con las vacantes activas.</td></tr>
+          <tr><td style="padding:5px 0;vertical-align:top"><span style="color:#EA6440;font-weight:800;font-size:.88rem">2.</span></td><td style="padding:5px 0;color:#264D51;font-size:.83rem;line-height:1.6"><strong>Te notificamos por email</strong> cuando hay un match real — no antes.</td></tr>
+          <tr><td style="padding:5px 0;vertical-align:top"><span style="color:#EA6440;font-weight:800;font-size:.88rem">3.</span></td><td style="padding:5px 0;color:#264D51;font-size:.83rem;line-height:1.6"><strong>Conectamos directamente</strong> con la empresa si hay interés mutuo.</td></tr>
+        </table>
       </div>
-      <a href="https://candidato.com.co/app" style="display:inline-block;background:#EA6440;color:white;border-radius:8px;padding:12px 26px;font-size:.88rem;font-weight:700;text-decoration:none">Ir a mi perfil →</a>
-      <p style="color:#9aacac;font-size:.75rem;margin-top:16px">Solo te contactamos cuando hay matches reales. Sin spam.</p>
+      <a href="https://candidato.com.co/app" style="display:inline-block;background:#EA6440;color:white;border-radius:8px;padding:13px 28px;font-size:.9rem;font-weight:700;text-decoration:none">Ver mi perfil</a>
+      <p style="color:#9aacac;font-size:.75rem;margin-top:20px;line-height:1.6">Solo te escribimos cuando hay algo concreto para vos. Sin spam, sin seguimiento forzado.</p>
     `
     return { subject, html: base.replace('CONTENT', content) }
   }
 
   if (type === 'welcome_company') {
-    const subject = `Bienvenido/a a Candidato® — Tu primera vacante en minutos`
+    const subject = `Bienvenido/a a Candidato®, ${name} — publicá tu primera vacante`
     const content = `
-      <h2 style="color:#0E1E20;font-size:1.15rem;margin:0 0 12px">¡Hola ${name}, gracias por unirte a Candidato®!</h2>
-      <p style="color:#4a6a6a;font-size:.88rem;line-height:1.65;margin:0 0 16px">
-        Candidato® conecta empresas con el top 1% del talento colombiano mediante matching inteligente. Sin CV genéricos ni pérdida de tiempo.
+      <p style="color:#6b8f8f;font-size:.75rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin:0 0 10px">Cuenta de empresa activa</p>
+      <h2 style="color:#0E1E20;font-size:1.2rem;font-weight:800;margin:0 0 10px;line-height:1.3">Hola ${name}, bienvenido/a a Candidato®</h2>
+      <p style="color:#4a6a6a;font-size:.88rem;line-height:1.65;margin:0 0 20px">
+        Candidato® conecta empresas con talento colombiano validado. Sin CV genéricos ni semanas de revisión.
       </p>
-      <div style="background:#E4F0F1;border-radius:8px;padding:14px 18px;margin-bottom:16px">
-        <p style="color:#1B3B3E;font-size:.83rem;font-weight:600;margin:0 0 8px">Publicar tu primera vacante es simple:</p>
-        <ol style="color:#264D51;font-size:.82rem;line-height:1.8;margin:0;padding-left:18px">
-          <li>Describí el perfil que buscás (2 minutos).</li>
-          <li>El algoritmo analiza +2.400 candidatos automáticamente.</li>
-          <li>Recibís solo los perfiles que realmente encajan.</li>
-        </ol>
+      <div style="background:#E4F0F1;border-radius:10px;padding:18px 20px;margin-bottom:20px">
+        <p style="color:#1B3B3E;font-size:.8rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;margin:0 0 12px">Publicar tu primera vacante</p>
+        <table role="presentation" cellpadding="0" cellspacing="0" style="border-collapse:collapse;width:100%">
+          <tr><td style="padding:5px 0;vertical-align:top;width:22px"><span style="color:#EA6440;font-weight:800;font-size:.88rem">1.</span></td><td style="padding:5px 0;color:#264D51;font-size:.83rem;line-height:1.6"><strong>Describís el perfil</strong> que buscás — tarda 2 minutos.</td></tr>
+          <tr><td style="padding:5px 0;vertical-align:top"><span style="color:#EA6440;font-weight:800;font-size:.88rem">2.</span></td><td style="padding:5px 0;color:#264D51;font-size:.83rem;line-height:1.6"><strong>El algoritmo cruza</strong> tu vacante con +2.400 candidatos activos.</td></tr>
+          <tr><td style="padding:5px 0;vertical-align:top"><span style="color:#EA6440;font-weight:800;font-size:.88rem">3.</span></td><td style="padding:5px 0;color:#264D51;font-size:.83rem;line-height:1.6"><strong>Recibís solo los perfiles</strong> que realmente encajan — con CV y contacto.</td></tr>
+        </table>
       </div>
-      <a href="https://candidato.com.co/app" style="display:inline-block;background:#1B3B3E;color:white;border-radius:8px;padding:12px 26px;font-size:.88rem;font-weight:700;text-decoration:none">Publicar mi primera vacante →</a>
+      <a href="https://candidato.com.co/app" style="display:inline-block;background:#1B3B3E;color:white;border-radius:8px;padding:13px 28px;font-size:.9rem;font-weight:700;text-decoration:none">Publicar mi primera vacante</a>
+      <p style="color:#9aacac;font-size:.75rem;margin-top:20px;line-height:1.6">¿Tenés preguntas? Respondé este email y te ayudamos.</p>
     `
     return { subject, html: base.replace('CONTENT', content) }
   }
@@ -271,7 +273,7 @@ function buildHtml(type: NotifyType, name: string, extra: Record<string, string>
   if (type === 'free_job_upsell') {
     const jobTitle = extra.jobTitle || 'tu vacante'
     const views = extra.views || '5'
-    const subject = `Tu señal "${jobTitle}" tiene ${views} visitas — activá el matching con IA`
+    const subject = `Tu señal "${jobTitle}" tiene ${views} visitas — activá el matching`
     const content = `
       <h2 style="color:#0E1E20;font-size:1.15rem;margin:0 0 12px">¡Tu señal está generando interés, ${name}! 🚀</h2>
       <p style="color:#4a6a6a;font-size:.88rem;line-height:1.65;margin:0 0 16px">
@@ -281,7 +283,7 @@ function buildHtml(type: NotifyType, name: string, extra: Record<string, string>
       <div style="background:#E4F0F1;border-radius:8px;padding:14px 18px;margin-bottom:16px">
         <p style="color:#1B3B3E;font-size:.83rem;font-weight:700;margin:0 0 8px">¿Qué ganás activando el matching automático?</p>
         <ul style="color:#264D51;font-size:.82rem;line-height:1.9;margin:0;padding-left:18px">
-          <li>El algoritmo identifica candidatos con score ≥70% de compatibilidad</li>
+          <li>El algoritmo cruza tu vacante con candidatos con score ≥70% de compatibilidad</li>
           <li>Los candidatos reciben una notificación personalizada de tu vacante</li>
           <li>Recibís el CV + WhatsApp + LinkedIn de cada match directo en tu email</li>
           <li>Resultados en menos de 24 horas</li>

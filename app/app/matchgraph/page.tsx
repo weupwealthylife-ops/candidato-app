@@ -3,6 +3,8 @@
 import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { ToastProvider, showToast } from '@/components/Toast'
+import ErrorBoundary from '@/components/ErrorBoundary'
+import { track } from '@/lib/analytics'
 
 const ADMIN_EMAIL = 'candidatojobs@gmail.com'
 const FOREST = '#1B3B3E'
@@ -212,7 +214,7 @@ const inp: React.CSSProperties = { width: '100%', border: '1.5px solid #d8e4e4',
 const ta: React.CSSProperties = { ...inp, resize: 'vertical', minHeight: 76, lineHeight: 1.6 }
 
 /* ── Main Page ────────────────────────────────────────────── */
-export default function MatchGraphPage() {
+function MatchGraphInner() {
   type View = 'login' | 'dashboard' | 'engagement'
   const isMobile = useIsMobile()
   const [view, setView] = useState<View>('login')
@@ -314,6 +316,7 @@ export default function MatchGraphPage() {
       if (!data.isAdmin) {
         setLoginModal({ type: 'welcome', companyName: data.companyName })
       }
+      track('matchgraph_login', { is_admin: data.isAdmin })
       setSession({ email, isAdmin: data.isAdmin })
       if (data.isAdmin) {
         setView('dashboard')
@@ -1030,7 +1033,7 @@ export default function MatchGraphPage() {
             <div style={{ textAlign: 'center', padding: '3rem 1rem', background: 'white', borderRadius: 14, border: '1px solid #e8eded' }}>
               <div style={{ fontSize: '1.5rem', marginBottom: '.75rem' }}>🔍</div>
               <div style={{ fontFamily: 'var(--head)', fontWeight: 700, color: INK, marginBottom: '.4rem' }}>Sin resultados</div>
-              <div style={{ fontSize: '.82rem', color: '#9aacac' }}>No encontramos nada para "{searchQuery}"</div>
+              <div style={{ fontSize: '.82rem', color: '#9aacac' }}>No encontramos nada para &ldquo;{searchQuery}&rdquo;</div>
             </div>
           )}
 
@@ -2010,5 +2013,13 @@ export default function MatchGraphPage() {
         </Modal>
       )}
     </div>
+  )
+}
+
+export default function MatchGraphPage() {
+  return (
+    <ErrorBoundary>
+      <MatchGraphInner />
+    </ErrorBoundary>
   )
 }

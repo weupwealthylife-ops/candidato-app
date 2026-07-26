@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, KeyboardEvent } from 'react'
+import Link from 'next/link'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 
@@ -188,9 +189,9 @@ export default function SignupPage() {
               </p>
 
               <div style={{ textAlign: 'center', marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid #eaeae6' }}>
-                <a href="/" style={{ fontFamily: 'var(--body)', fontSize: '.83rem', color: '#6a8a8a', textDecoration: 'none' }}>
+                <Link href="/" style={{ fontFamily: 'var(--body)', fontSize: '.83rem', color: '#6a8a8a', textDecoration: 'none' }}>
                   ← Volver al inicio
-                </a>
+                </Link>
               </div>
             </>
           )}

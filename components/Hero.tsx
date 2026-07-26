@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useLang } from '@/lib/LangContext'
+import { track } from '@/lib/analytics'
 
 export default function Hero() {
   const { t } = useLang()
@@ -41,14 +42,14 @@ export default function Hero() {
         <div className="hero-actions hero-dual-cta">
           <div className="hero-cta-group">
             <div className="hero-cta-label">{t('Soy candidato', "I'm a candidate")}</div>
-            <a href="/app" className="btn btn-forest btn-xl">
+            <a href="/app" className="btn btn-forest btn-xl" onClick={() => track('hero_cta_click', { cta: 'candidate' })}>
               {t('Crear mi perfil gratis', 'Create my free profile')}
             </a>
           </div>
           <div className="hero-cta-divider">{t('o', 'or')}</div>
           <div className="hero-cta-group">
             <div className="hero-cta-label">{t('Soy empresa', "I'm a company")}</div>
-            <a href="/app" className="btn btn-outline btn-xl">
+            <a href="/app" className="btn btn-outline btn-xl" onClick={() => track('hero_cta_click', { cta: 'company' })}>
               {t('Publicar vacante gratis', 'Post free listing')}
             </a>
           </div>

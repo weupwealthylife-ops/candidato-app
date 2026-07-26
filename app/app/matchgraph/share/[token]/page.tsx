@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation'
 import { createClient } from '@supabase/supabase-js'
 import type { Metadata } from 'next'
+import AnalyticsBeacon from '@/components/AnalyticsBeacon'
 
 /* ── Design tokens ────────────────────────────────────────── */
 const FOREST = '#1B3B3E'
@@ -319,6 +320,7 @@ export default async function SharePage({
         fontFamily: 'var(--body)',
       }}
     >
+      <AnalyticsBeacon event="matchgraph_share_viewed" properties={{ engagement_id: eng.id, company: eng.company_name }} />
       {/* ── Header ── */}
       <header
         style={{
@@ -391,29 +393,49 @@ export default async function SharePage({
 
       {/* ── Main content ── */}
       <main style={{ maxWidth: 960, margin: '0 auto', padding: '2rem 1.25rem' }}>
-        {/* Engagement info strip */}
+        {/* Engagement summary card */}
         <div
           style={{
-            background: PALE,
-            borderRadius: 12,
-            padding: '0.85rem 1.2rem',
+            background: 'white',
+            border: `1px solid ${PALE}`,
+            borderRadius: 14,
+            padding: '1.25rem 1.5rem',
             marginBottom: '2rem',
             display: 'flex',
             flexWrap: 'wrap',
-            gap: '1rem',
+            gap: '1.5rem',
             alignItems: 'center',
+            justifyContent: 'space-between',
           }}
         >
-          <div style={{ fontSize: 13, color: INK, fontFamily: 'var(--body)' }}>
-            <strong>{cands.length}</strong> candidato{cands.length !== 1 ? 's' : ''} evaluado
-            {cands.length !== 1 ? 's' : ''}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1.5rem' }}>
+            <div>
+              <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.07em', color: '#8aacac', fontFamily: 'var(--body)', marginBottom: 3 }}>Vacante</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: INK, fontFamily: 'var(--head)' }}>{eng.title}</div>
+            </div>
+            {eng.job_area && (
+              <div>
+                <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.07em', color: '#8aacac', fontFamily: 'var(--body)', marginBottom: 3 }}>Área</div>
+                <div style={{ fontSize: 13, color: '#264D51', fontFamily: 'var(--body)' }}>{eng.job_area}</div>
+              </div>
+            )}
+            {eng.city && (
+              <div>
+                <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.07em', color: '#8aacac', fontFamily: 'var(--body)', marginBottom: 3 }}>Ciudad</div>
+                <div style={{ fontSize: 13, color: '#264D51', fontFamily: 'var(--body)' }}>{eng.city}</div>
+              </div>
+            )}
           </div>
-          {eng.city && (
-            <div style={{ fontSize: 13, color: '#4a6a6a' }}>📍 {eng.city}</div>
-          )}
-          {eng.job_area && (
-            <div style={{ fontSize: 13, color: '#4a6a6a' }}>🏷 {eng.job_area}</div>
-          )}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '1.5rem', fontWeight: 800, color: FOREST, fontFamily: 'var(--head)', lineHeight: 1 }}>{cands.length}</div>
+              <div style={{ fontSize: 11, color: '#8aacac', fontFamily: 'var(--body)', marginTop: 2 }}>candidatos</div>
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '1.5rem', fontWeight: 800, color: CORAL, fontFamily: 'var(--head)', lineHeight: 1 }}>{cands.filter(c => c.is_top).length}</div>
+              <div style={{ fontSize: 11, color: '#8aacac', fontFamily: 'var(--body)', marginTop: 2 }}>top picks</div>
+            </div>
+          </div>
         </div>
 
         {/* Candidate cards */}
@@ -612,19 +634,56 @@ export default async function SharePage({
         )}
       </main>
 
-      {/* ── Footer ── */}
+      {/* ── Footer CTA ── */}
+      <div style={{ maxWidth: 960, margin: '2.5rem auto 0', padding: '0 1.25rem 3rem' }}>
+        <div style={{
+          background: FOREST,
+          borderRadius: 16,
+          padding: '1.75rem 2rem',
+          display: 'flex',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '1rem',
+        }}>
+          <div>
+            <div style={{ fontFamily: 'var(--head)', fontWeight: 800, fontSize: '1.05rem', color: 'white', letterSpacing: '-0.02em', marginBottom: 4 }}>
+              ¿Preguntas sobre los candidatos?
+            </div>
+            <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.65)', fontFamily: 'var(--body)' }}>
+              Contactá a tu consultor de Candidato® para avanzar con el proceso.
+            </div>
+          </div>
+          <a
+            href={`mailto:candidatojobs@gmail.com?subject=Consulta sobre evaluación: ${encodeURIComponent(eng.title)}`}
+            style={{
+              display: 'inline-block',
+              background: CORAL,
+              color: 'white',
+              borderRadius: 10,
+              padding: '10px 22px',
+              fontSize: '.85rem',
+              fontWeight: 700,
+              textDecoration: 'none',
+              fontFamily: 'var(--body)',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            Contactar al equipo
+          </a>
+        </div>
+      </div>
+
       <footer
         style={{
           textAlign: 'center',
-          padding: '1.5rem 1rem',
+          padding: '1.25rem 1rem 2rem',
           color: '#8a9a9a',
-          fontSize: 12,
+          fontSize: 11.5,
           fontFamily: 'var(--body)',
-          borderTop: `1px solid #d8e4e4`,
-          marginTop: '2rem',
         }}
       >
-        Generado por Candidato® · candidato.com.co
+        Candidato® · <a href="https://candidato.com.co" style={{ color: '#5a8a8a', textDecoration: 'none' }}>candidato.com.co</a> · Vista confidencial — no compartir externamente
       </footer>
     </div>
   )
