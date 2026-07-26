@@ -810,7 +810,7 @@ export default function AppPage() {
                           <div className="ob-role-ico-wrap">👤</div>
                           <div className="ob-role-body">
                             <div className="ob-role-title">{t('Soy candidato', "I'm a candidate")}</div>
-                            <div className="ob-role-desc">{t('Encontrá trabajo con IA · Gratis', 'Find jobs with AI · Free')}</div>
+                            <div className="ob-role-desc">{t('Encontrá trabajo · Gratis', 'Find jobs · Free')}</div>
                           </div>
                           <div className={`ob-role-dot${isC ? ' on' : ''}`}></div>
                         </button>

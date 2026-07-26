@@ -345,7 +345,7 @@ export default function Pricing() {
             )}
             <a
               href="https://wa.me/573205046723?text=Hola%2C%20vengo%20de%20candidato.com.co%20y%20me%20interesa%20un%20plan%20enterprise"
-              style={{ color: 'var(--forest)', fontWeight: 600, textDecoration: 'underline', textUnderlineOffset: 3 }}
+              style={{ color: 'var(--forest)', fontWeight: 600, textDecoration: 'underline', textUnderlineOffset: 3, display: 'inline-block', padding: '.5rem 0' }}
               target="_blank"
               rel="noopener noreferrer"
             >
@@ -360,7 +360,7 @@ export default function Pricing() {
             )}
             <a
               href="https://wa.me/573205046723?text=Hola%2C%20me%20interesa%20una%20demo%20del%20servicio%20de%20Preselección%20de%20candidato.com.co"
-              style={{ color: 'var(--forest)', fontWeight: 600, textDecoration: 'underline', textUnderlineOffset: 3 }}
+              style={{ color: 'var(--forest)', fontWeight: 600, textDecoration: 'underline', textUnderlineOffset: 3, display: 'inline-block', padding: '.5rem 0' }}
               target="_blank"
               rel="noopener noreferrer"
             >
