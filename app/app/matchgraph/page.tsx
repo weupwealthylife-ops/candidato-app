@@ -283,14 +283,22 @@ function MatchGraphInner() {
   // Profile menu dropdown
   const [showProfileMenu, setShowProfileMenu] = useState(false)
 
+  const [engLoadError, setEngLoadError] = useState(false)
+
   const loadEngagements = useCallback(async () => {
     try {
       const res = await fetch('/api/matchgraph?action=list')
       const data = await res.json().catch(() => ({}))
-      setEngagements(data.engagements || [])
-      if (!res.ok) console.error('[MG] loadEngagements error:', data.error || res.status)
+      if (!res.ok) {
+        console.error('[MG] loadEngagements error:', data.error || res.status)
+        setEngLoadError(true)
+      } else {
+        setEngLoadError(false)
+        setEngagements(data.engagements || [])
+      }
     } catch (e) {
       console.error('[MG] loadEngagements exception:', e)
+      setEngLoadError(true)
     }
   }, [])
 
@@ -490,18 +498,17 @@ function MatchGraphInner() {
       const res = await fetch('/api/matchgraph', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
       const data = await res.json().catch(() => ({}))
       setSaving(false)
-      setShowCreateEng(false); setShowEditEng(false)
       if (!res.ok) {
         console.error('[MG] saveEngagement error:', data.error || res.status)
         showToast(data.error ? `Error: ${data.error}` : 'Error al guardar evaluación', 'error')
         return
       }
+      setShowCreateEng(false); setShowEditEng(false)
       await loadEngagements()
       if (data.engagement) openEngagement(data.engagement)
       else if (selEng) openEngagement({ ...selEng, ...engForm })
     } catch (e) {
       setSaving(false)
-      setShowCreateEng(false); setShowEditEng(false)
       console.error('[MG] saveEngagement exception:', e)
       showToast('Error de red al guardar evaluación', 'error')
     }
@@ -1064,8 +1071,21 @@ function MatchGraphInner() {
             </div>
           )}
 
+          {/* ── Load error state ── */}
+          {!engLoading && engLoadError && (
+            <div style={{ textAlign: 'center', padding: '4rem 1rem', background: 'white', borderRadius: 16, border: '1px solid #fcd0c8' }}>
+              <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'rgba(234,100,64,.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem', fontWeight: 800, fontSize: '1.2rem', color: CORAL }}>!</div>
+              <div style={{ fontFamily: 'var(--head)', fontWeight: 700, fontSize: '1rem', color: INK, marginBottom: '.4rem' }}>Error al cargar evaluaciones</div>
+              <div style={{ fontSize: '.82rem', color: '#9aacac', marginBottom: '1.25rem' }}>Verificá tu conexión e intentá de nuevo.</div>
+              <button onClick={() => { setEngLoadError(false); loadEngagements() }}
+                style={{ background: FOREST, color: 'white', border: 'none', borderRadius: 9, padding: '9px 20px', fontSize: '.83rem', fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--body)' }}>
+                Reintentar
+              </button>
+            </div>
+          )}
+
           {/* ── Empty state ── */}
-          {!engLoading && engagements.length === 0 && (
+          {!engLoading && !engLoadError && engagements.length === 0 && (
             <div style={{ textAlign: 'center', padding: '5rem 1rem', background: 'white', borderRadius: 16, border: '1px solid #e8eded' }}>
               <div style={{ width: 60, height: 60, borderRadius: 16, background: PALE, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.2rem' }}><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#1B3B3E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 8h10M7 12h10M7 16h6"/></svg></div>
               <div style={{ fontFamily: 'var(--head)', fontWeight: 700, fontSize: '1.05rem', color: INK, marginBottom: '.5rem' }}>Sin evaluaciones aún</div>
@@ -1688,7 +1708,8 @@ function MatchGraphInner() {
           </div>
           <button onClick={() => { setShowCompare(false); setCompareMode(false); setCompareIds([]) }}
             style={{ fontSize: '.75rem', fontWeight: 600, padding: '7px 15px', borderRadius: 9, border: '1.5px solid #e0eaea', background: 'white', color: '#4a6a6a', cursor: 'pointer' }}>
-            ← Volver al resumen
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 4 }}><path d="M15 18l-6-6 6-6"/></svg>
+            Volver al resumen
           </button>
         </div>
 
@@ -1858,7 +1879,8 @@ function MatchGraphInner() {
             onClick={() => setCandIdx(candIdx === 0 ? -1 : candIdx - 1)}
             style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '.78rem', fontWeight: 700, color: FOREST, padding: '4px 8px', borderRadius: 6, display: 'flex', alignItems: 'center', gap: '.3rem', transition: 'background .12s' }}
           >
-            ← {candIdx === 0 ? 'Resumen' : 'Anterior'}
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+            {candIdx === 0 ? 'Resumen' : 'Anterior'}
           </button>
           <span style={{ fontSize: '.78rem', fontWeight: 600, color: '#4a6a6a' }}>
             C{candIdx + 1}: {currentCand?.name.split(' ')[0]} · {avgScore(currentCand!)}%
@@ -1868,7 +1890,8 @@ function MatchGraphInner() {
               onClick={() => setCandIdx(candIdx + 1)}
               style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '.78rem', fontWeight: 700, color: FOREST, padding: '4px 8px', borderRadius: 6, display: 'flex', alignItems: 'center', gap: '.3rem', transition: 'background .12s' }}
             >
-              Siguiente →
+              Siguiente
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6"/></svg>
             </button>
           ) : (
             <span style={{ width: 80 }} />

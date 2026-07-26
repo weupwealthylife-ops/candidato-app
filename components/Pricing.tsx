@@ -160,8 +160,8 @@ export default function Pricing() {
             onClick={() => setTab('matching')}
             style={{
               border: 'none', cursor: 'pointer', borderRadius: 10,
-              padding: '10px 24px', fontSize: '.84rem', fontWeight: 700,
-              fontFamily: 'inherit', transition: 'all .18s',
+              padding: '10px 20px', fontSize: '.84rem', fontWeight: 700,
+              fontFamily: 'inherit', transition: 'all .18s', whiteSpace: 'nowrap',
               background: tab === 'matching' ? 'var(--forest)' : 'transparent',
               color: tab === 'matching' ? 'white' : 'var(--ink-70)',
               boxShadow: tab === 'matching' ? '0 2px 8px rgba(27,59,62,.25)' : 'none',
@@ -173,8 +173,8 @@ export default function Pricing() {
             onClick={() => setTab('preseleccion')}
             style={{
               border: 'none', cursor: 'pointer', borderRadius: 10,
-              padding: '10px 24px', fontSize: '.84rem', fontWeight: 700,
-              fontFamily: 'inherit', transition: 'all .18s',
+              padding: '10px 20px', fontSize: '.84rem', fontWeight: 700,
+              fontFamily: 'inherit', transition: 'all .18s', whiteSpace: 'nowrap',
               background: tab === 'preseleccion' ? 'var(--forest)' : 'transparent',
               color: tab === 'preseleccion' ? 'white' : 'var(--ink-70)',
               boxShadow: tab === 'preseleccion' ? '0 2px 8px rgba(27,59,62,.25)' : 'none',
