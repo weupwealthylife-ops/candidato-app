@@ -93,7 +93,7 @@ export default function Hero() {
               { ico: 'PM', bg: '#fff3e0', job: 'Product Manager', co: 'Bancolombia · Medellín', pct: '88%' },
             ].map((m, i) => (
               <div key={i} className={`hmv-row${i > 0 ? ' hmv-row-sep' : ''}`}>
-                <span className="hmv-ico" style={{ background: m.bg, fontSize: '.62rem', fontWeight: 800, color: '#1B3B3E' }}>{m.ico}</span>
+                <span className="hmv-ico" style={{ background: m.bg, fontSize: '.75rem', fontWeight: 800, color: '#1B3B3E' }}>{m.ico}</span>
                 <div className="hmv-body">
                   <div className="hmv-job">{m.job}</div>
                   <div className="hmv-co">{m.co}</div>

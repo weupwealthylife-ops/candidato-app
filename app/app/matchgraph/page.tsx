@@ -856,8 +856,8 @@ function MatchGraphInner() {
             <button
               onClick={() => setShowProfileMenu(p => !p)}
               onBlur={e => { if (!e.currentTarget.parentElement?.contains(e.relatedTarget as Node)) setTimeout(() => setShowProfileMenu(false), 150) }}
-              style={{ display: 'flex', alignItems: 'center', gap: 6, background: showProfileMenu ? 'rgba(255,255,255,.15)' : 'rgba(255,255,255,.08)', border: '1px solid rgba(255,255,255,.12)', borderRadius: 8, padding: '5px 10px 5px 6px', cursor: 'pointer', transition: 'all .15s' }}>
-              <div style={{ width: 22, height: 22, borderRadius: '50%', background: isAdmin ? CORAL : 'rgba(255,255,255,.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '.62rem', fontWeight: 800, color: 'white', flexShrink: 0 }}>
+              style={{ display: 'flex', alignItems: 'center', gap: 6, background: showProfileMenu ? 'rgba(255,255,255,.15)' : 'rgba(255,255,255,.08)', border: '1px solid rgba(255,255,255,.12)', borderRadius: 8, padding: '11px 10px 11px 8px', cursor: 'pointer', transition: 'all .15s', minHeight: 44 }}>
+              <div style={{ width: 24, height: 24, borderRadius: '50%', background: isAdmin ? CORAL : 'rgba(255,255,255,.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '.72rem', fontWeight: 800, color: 'white', flexShrink: 0 }}>
                 {userInitial}
               </div>
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.6)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9l6 6 6-6"/></svg>
@@ -993,7 +993,7 @@ function MatchGraphInner() {
         <TopBar actions={isAdmin ? (
           <button
             onClick={() => { setEngForm({ title: '', company_name: '', client_email: '', job_area: '', city: '', notes: '', status: 'open' }); setShowCreateEng(true) }}
-            style={{ background: CORAL, border: 'none', color: 'white', borderRadius: 8, padding: '6px 14px', cursor: 'pointer', fontSize: '.78rem', fontWeight: 700, fontFamily: 'var(--body)', letterSpacing: '.01em', whiteSpace: 'nowrap' }}>
+            style={{ background: CORAL, border: 'none', color: 'white', borderRadius: 8, padding: '11px 14px', cursor: 'pointer', fontSize: '.78rem', fontWeight: 700, fontFamily: 'var(--body)', letterSpacing: '.01em', whiteSpace: 'nowrap', minHeight: 44 }}>
             + {isMobile ? 'Nueva' : 'Nueva evaluación'}
           </button>
         ) : undefined} />
@@ -1867,8 +1867,8 @@ function MatchGraphInner() {
 
       {/* Swipe hint — touch devices only */}
       {candIdx >= 0 && (
-        <div className="mg-swipe-hint no-print" style={{ alignItems: 'center', justifyContent: 'center', gap: '.4rem', padding: '5px', background: '#f4f8f8', fontSize: '.68rem', color: '#b0c4c4', letterSpacing: '.03em' }}>
-          ← deslizá para navegar →
+        <div className="mg-swipe-hint no-print" style={{ alignItems: 'center', justifyContent: 'center', gap: '.4rem', padding: '5px', background: '#f4f8f8', fontSize: '.75rem', color: '#b0c4c4', letterSpacing: '.03em' }}>
+          deslizá para navegar
         </div>
       )}
 

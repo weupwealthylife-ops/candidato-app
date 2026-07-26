@@ -143,7 +143,7 @@ export default function SignupPage() {
                         boxShadow: userType === t ? '0 1px 4px rgba(0,0,0,.1)' : 'none',
                       }}
                     >
-                      {t === 'candidate' ? '👤 Candidato' : '🏢 Empresa'}
+                      {t === 'candidate' ? 'Candidato' : 'Empresa'}
                     </button>
                   ))}
                 </div>
@@ -179,7 +179,7 @@ export default function SignupPage() {
                   opacity: loading ? 0.7 : 1, transition: 'opacity .15s',
                 }}
               >
-                {loading ? 'Verificando…' : `Continuar como ${label.es} →`}
+                {loading ? 'Verificando…' : `Continuar como ${label.es}`}
               </button>
 
               <p style={{ textAlign: 'center', fontFamily: 'var(--body)', fontSize: '.78rem', color: '#9aacac', marginTop: '1.25rem', lineHeight: 1.6 }}>
