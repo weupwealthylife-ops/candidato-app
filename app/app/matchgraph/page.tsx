@@ -483,12 +483,24 @@ function MatchGraphInner() {
   async function saveCandidate() {
     if (!selEng) return
     setSaving(true)
-    const body = { action: 'upsert_candidate', ...candForm, engagement_id: selEng!.id, id: editingCand?.id }
-    const saveRes = await fetch('/api/matchgraph', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
-    setSaving(false); setShowEditCand(false); setEditingCand(null)
-    if (saveRes.ok) showToast('Candidato guardado', 'success')
-    else showToast('Error al guardar', 'error')
-    const res = await fetch(`/api/matchgraph?action=detail&id=${selEng!.id}`)
+    const engId = selEng.id
+    const body = { action: 'upsert_candidate', ...candForm, engagement_id: engId, id: editingCand?.id }
+    try {
+      const saveRes = await fetch('/api/matchgraph', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+      setSaving(false); setShowEditCand(false); setEditingCand(null)
+      if (saveRes.ok) {
+        showToast('Candidato guardado', 'success')
+      } else {
+        const errData = await saveRes.json().catch(() => ({}))
+        console.error('[MG] saveCandidate error:', errData)
+        showToast(errData.error ? `Error: ${errData.error}` : 'Error al guardar', 'error')
+      }
+    } catch (e) {
+      setSaving(false); setShowEditCand(false); setEditingCand(null)
+      console.error('[MG] saveCandidate exception:', e)
+      showToast('Error de red al guardar', 'error')
+    }
+    const res = await fetch(`/api/matchgraph?action=detail&id=${engId}`)
     const data = await res.json()
     setCandidates(data.candidates || [])
     if (showActivity) loadActivity()
@@ -805,7 +817,7 @@ function MatchGraphInner() {
             <a href="/app/matchgraph/admin" style={{ display: 'flex', alignItems: 'center', gap: 5, color: 'rgba(255,255,255,.55)', textDecoration: 'none', fontSize: '.74rem', fontWeight: 600, fontFamily: 'var(--body)', background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.1)', borderRadius: 8, padding: '5px 10px', transition: 'all .15s' }}
               onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.color = 'white'; (e.currentTarget as HTMLAnchorElement).style.background = 'rgba(255,255,255,.12)' }}
               onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.color = 'rgba(255,255,255,.55)'; (e.currentTarget as HTMLAnchorElement).style.background = 'rgba(255,255,255,.06)' }}>
-              📊 Métricas
+              Métricas
             </a>
           )}
 
@@ -925,7 +937,7 @@ function MatchGraphInner() {
                 disabled={isSending}
                 style={{ background: sent ? '#e6f4ec' : PALE, color: sent ? '#2A7E4E' : FOREST, border: 'none', borderRadius: 7, padding: '4px 10px', cursor: isSending ? 'not-allowed' : 'pointer', fontSize: '.67rem', fontWeight: 700, fontFamily: 'var(--body)', whiteSpace: 'nowrap', flexShrink: 0, transition: 'all .15s', opacity: isSending ? 0.6 : 1 }}
               >
-                {isSending ? '…' : sent ? `✓ Enviado ${timeAgo(new Date(sent).toISOString())}` : '📧 Notificar'}
+                {isSending ? '…' : sent ? `✓ Enviado ${timeAgo(new Date(sent).toISOString())}` : 'Notificar'}
               </button>
             </div>
           )}
@@ -961,7 +973,7 @@ function MatchGraphInner() {
             {/* Admin: view toggle */}
             {isAdmin && engagements.length > 0 && !isMobile && (
               <div style={{ display: 'flex', background: '#eaeae6', borderRadius: 9, padding: 3, gap: 3, flexShrink: 0 }}>
-                {([['byCompany', '🏢 Empresas'], ['byList', '📋 Lista']] as const).map(([v, label]) => (
+                {([['byCompany', 'Empresas'], ['byList', 'Lista']] as const).map(([v, label]) => (
                   <button key={v} onClick={() => setDashView(v)}
                     style={{ padding: '5px 12px', borderRadius: 6, border: 'none', cursor: 'pointer', fontSize: '.72rem', fontWeight: 700, fontFamily: 'var(--body)', background: dashView === v ? 'white' : 'transparent', color: dashView === v ? FOREST : '#9aacac', boxShadow: dashView === v ? '0 1px 4px rgba(0,0,0,.1)' : 'none', transition: 'all .15s' }}>
                     {label}
@@ -975,14 +987,14 @@ function MatchGraphInner() {
           {isAdmin && engagements.length > 0 && (
             <div style={{ display: 'grid', gridTemplateColumns: `repeat(${isMobile ? 2 : 4}, 1fr)`, gap: '.65rem', marginBottom: '1.5rem' }}>
               {[
-                { label: 'Clientes', value: groups.length, color: '#4A6FA5', icon: '🏢' },
-                { label: 'Evaluaciones', value: engagements.length, color: FOREST, icon: '📋' },
-                { label: 'Activas', value: open.length, color: '#2A7E4E', icon: '🟢' },
-                { label: 'Cerradas', value: closed.length, color: '#888', icon: '⬜' },
+                { label: 'Clientes', value: groups.length, color: '#4A6FA5', icon: null },
+                { label: 'Evaluaciones', value: engagements.length, color: FOREST, icon: null },
+                { label: 'Activas', value: open.length, color: '#2A7E4E', icon: null },
+                { label: 'Cerradas', value: closed.length, color: '#888', icon: null },
               ].map(s => (
                 <div key={s.label} style={{ background: 'white', border: '1px solid #e4eaea', borderRadius: 12, padding: '.85rem 1rem' }}>
-                  <div style={{ fontSize: '.62rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.09em', color: '#9aacac', marginBottom: '.25rem', display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <span>{s.icon}</span>{s.label}
+                  <div style={{ fontSize: '.62rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.09em', color: '#9aacac', marginBottom: '.25rem' }}>
+                    {s.label}
                   </div>
                   <div style={{ fontFamily: 'var(--head)', fontSize: '1.7rem', fontWeight: 700, color: s.color, lineHeight: 1 }}>{s.value}</div>
                 </div>
@@ -993,7 +1005,7 @@ function MatchGraphInner() {
           {/* ── Search bar (admin) ── */}
           {isAdmin && engagements.length > 0 && (
             <div style={{ position: 'relative', marginBottom: '1.5rem' }}>
-              <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', fontSize: '.85rem', color: '#9aacac', pointerEvents: 'none' }}>🔍</span>
+              <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#9aacac', pointerEvents: 'none', display: 'flex' }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg></span>
               <input
                 type="text"
                 placeholder="Buscar empresa, email o cargo…"
@@ -1019,7 +1031,7 @@ function MatchGraphInner() {
           {/* ── Empty state ── */}
           {!engLoading && engagements.length === 0 && (
             <div style={{ textAlign: 'center', padding: '5rem 1rem', background: 'white', borderRadius: 16, border: '1px solid #e8eded' }}>
-              <div style={{ width: 60, height: 60, borderRadius: 16, background: PALE, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.2rem', fontSize: '1.5rem' }}>📋</div>
+              <div style={{ width: 60, height: 60, borderRadius: 16, background: PALE, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.2rem' }}><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#1B3B3E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 8h10M7 12h10M7 16h6"/></svg></div>
               <div style={{ fontFamily: 'var(--head)', fontWeight: 700, fontSize: '1.05rem', color: INK, marginBottom: '.5rem' }}>Sin evaluaciones aún</div>
               {isAdmin
                 ? <div style={{ fontSize: '.83rem', color: '#9aacac' }}>Creá la primera evaluación con el botón de arriba.</div>
@@ -1031,7 +1043,7 @@ function MatchGraphInner() {
           {/* ── No search results ── */}
           {!engLoading && engagements.length > 0 && searchQuery && filteredGroups.length === 0 && filteredFlat.length === 0 && (
             <div style={{ textAlign: 'center', padding: '3rem 1rem', background: 'white', borderRadius: 14, border: '1px solid #e8eded' }}>
-              <div style={{ fontSize: '1.5rem', marginBottom: '.75rem' }}>🔍</div>
+              <div style={{ width: 44, height: 44, borderRadius: 12, background: PALE, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto .75rem' }}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1B3B3E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg></div>
               <div style={{ fontFamily: 'var(--head)', fontWeight: 700, color: INK, marginBottom: '.4rem' }}>Sin resultados</div>
               <div style={{ fontSize: '.82rem', color: '#9aacac' }}>No encontramos nada para &ldquo;{searchQuery}&rdquo;</div>
             </div>
@@ -1178,7 +1190,7 @@ function MatchGraphInner() {
                 {candidates.length >= 2 && !compareMode && (
                   <button onClick={() => { setCompareMode(true); setCompareIds([]) }}
                     style={{ fontSize: '.72rem', fontWeight: 700, padding: '5px 13px', borderRadius: 8, border: `1.5px solid ${FOREST}`, background: 'white', color: FOREST, cursor: 'pointer', transition: 'all .15s' }}>
-                    ⚖️ Comparar
+                    Comparar
                   </button>
                 )}
                 {compareMode && (
@@ -1316,7 +1328,7 @@ function MatchGraphInner() {
           </>
         ) : (
           <div style={{ border: '2px dashed #d8e4e4', borderRadius: 16, padding: '3rem 2rem', textAlign: 'center', background: 'white' }}>
-            <div style={{ width: 64, height: 64, borderRadius: 16, background: PALE, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.1rem', fontSize: '1.6rem' }}>👥</div>
+            <div style={{ width: 64, height: 64, borderRadius: 16, background: PALE, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.1rem' }}><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#1B3B3E" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
             <div style={{ fontFamily: 'var(--head)', fontWeight: 700, fontSize: '1.05rem', color: INK, marginBottom: '.4rem' }}>Sin candidatos aún</div>
             {session?.isAdmin ? (
               <>
@@ -1339,7 +1351,7 @@ function MatchGraphInner() {
 
         {selEng!.notes && (
           <div style={{ background: '#fffbea', border: '1px solid #fde68a', borderRadius: 11, padding: '1rem 1.25rem', fontSize: '.81rem', color: '#92400e', lineHeight: 1.65 }}>
-            <strong>📌 Nota:</strong> {selEng!.notes}
+            <strong>Nota:</strong> {selEng!.notes}
           </div>
         )}
 
@@ -1348,20 +1360,20 @@ function MatchGraphInner() {
           <div className="no-print" style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap', marginTop: '1.25rem' }}>
             <button onClick={generateShare} disabled={shareLoading}
               style={{ fontSize: '.75rem', fontWeight: 600, padding: '7px 14px', borderRadius: 8, border: `1.5px solid ${FOREST}`, background: shareToken ? PALE : 'white', color: FOREST, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '.35rem' }}>
-              🔗 {shareLoading ? 'Generando…' : shareToken ? 'Ver enlace público' : 'Compartir evaluación'}
+              {shareLoading ? 'Generando…' : shareToken ? 'Ver enlace público' : 'Compartir evaluación'}
             </button>
             <button onClick={notifyClient} disabled={notifying}
               style={{ fontSize: '.75rem', fontWeight: 600, padding: '7px 14px', borderRadius: 8, border: '1.5px solid #e0eaea', background: 'white', color: '#4a6a6a', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '.35rem' }}>
-              📧 {notifying ? 'Enviando…' : 'Notificar cliente'}
+              {notifying ? 'Enviando…' : 'Notificar cliente'}
             </button>
             <button onClick={() => { if (showActivity) { setShowActivity(false) } else { loadActivity() } }}
               style={{ fontSize: '.75rem', fontWeight: 600, padding: '7px 14px', borderRadius: 8, border: '1.5px solid #e0eaea', background: showActivity ? PALE : 'white', color: '#4a6a6a', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '.35rem' }}>
-              📋 {activityLoading ? 'Cargando…' : showActivity ? 'Ocultar actividad' : 'Ver actividad'}
+              {activityLoading ? 'Cargando…' : showActivity ? 'Ocultar actividad' : 'Ver actividad'}
             </button>
             {selEng && (
               <a href={`/app/matchgraph/print/${selEng.id}`} target="_blank" rel="noopener noreferrer"
                 style={{ fontSize: '.75rem', fontWeight: 600, padding: '7px 14px', borderRadius: 8, border: '1.5px solid #e0eaea', background: 'white', color: '#4a6a6a', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '.35rem', textDecoration: 'none' }}>
-                🖨️ PDF completo
+                PDF completo
               </a>
             )}
           </div>
@@ -1380,7 +1392,7 @@ function MatchGraphInner() {
             ) : (
               <div style={{ padding: '.5rem 0' }}>
                 {activity.map((a, i) => {
-                  const icons: Record<string, string> = { candidate_added: '👤', engagement_created: '📋', client_feedback: '💬', pipeline_status: '🔄', client_notes: '📝' }
+                  const icons: Record<string, string> = { candidate_added: '·', engagement_created: '·', client_feedback: '·', pipeline_status: '·', client_notes: '·' }
                   const labels: Record<string, string> = { candidate_added: 'Candidato agregado', engagement_created: 'Evaluación creada', client_feedback: 'Feedback del cliente', pipeline_status: 'Estado actualizado', client_notes: 'Nota guardada' }
                   const d = new Date(a.created_at)
                   const timeStr = d.toLocaleDateString('es-CO', { day: '2-digit', month: 'short' }) + ' · ' + d.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })
@@ -1425,18 +1437,18 @@ function MatchGraphInner() {
           <div className="no-print" style={{ display: 'flex', gap: '.5rem', marginBottom: '1.3rem', flexWrap: 'wrap', alignItems: 'center' }}>
             <button onClick={() => openEditCandidate(c)}
               style={{ fontSize: '.75rem', fontWeight: 600, padding: '6px 13px', borderRadius: 8, border: `1.5px solid ${FOREST}`, background: 'white', color: FOREST, cursor: 'pointer', transition: 'all .15s' }}>
-              ✏️ Editar candidato
+              Editar candidato
             </button>
             <button onClick={async () => {
               await fetch('/api/matchgraph', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'upsert_candidate', id: c.id, is_top: !c.is_top }) })
               setCandidates(prev => prev.map(x => x.id === c.id ? { ...x, is_top: !x.is_top } : x))
             }}
               style={{ fontSize: '.75rem', fontWeight: 600, padding: '6px 13px', borderRadius: 8, border: '1.5px solid #e0eaea', background: c.is_top ? PALE : 'white', color: c.is_top ? FOREST : '#9aacac', cursor: 'pointer', transition: 'all .15s' }}>
-              {c.is_top ? '⭐ Top candidato' : '☆ Marcar como top'}
+              {c.is_top ? '★ Top candidato' : '☆ Marcar como top'}
             </button>
             <button onClick={() => window.print()}
               style={{ fontSize: '.75rem', fontWeight: 600, padding: '6px 13px', borderRadius: 8, border: '1.5px solid #e0eaea', background: 'white', color: '#4a6a6a', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '.3rem' }}>
-              🖨️ Imprimir / PDF
+              Imprimir / PDF
             </button>
             <button onClick={() => deleteCandidate(c.id)}
               style={{ fontSize: '.75rem', fontWeight: 600, padding: '6px 13px', borderRadius: 8, border: '1.5px solid #fcd0c8', background: 'white', color: '#c0392b', cursor: 'pointer', marginLeft: 'auto', transition: 'all .15s' }}>
@@ -1476,7 +1488,7 @@ function MatchGraphInner() {
                     {calendarLink(c, selEng) && (
                       <a href={calendarLink(c, selEng)!} target="_blank" rel="noopener noreferrer"
                         style={{ display: 'inline-flex', alignItems: 'center', gap: '.25rem', fontSize: '.68rem', fontWeight: 600, color: '#4a6a6a', textDecoration: 'none', padding: '2px 8px', borderRadius: 6, border: '1px solid #d8e4e4', background: '#f8fbfb' }}>
-                        📅 Google Calendar
+                        Google Calendar
                       </a>
                     )}
                   </div>
@@ -1516,13 +1528,13 @@ function MatchGraphInner() {
             {/* Client feedback */}
             <div className="no-print" style={{ background: 'white', border: '1px solid #e0eaea', borderRadius: 13, padding: '1rem 1.15rem', marginBottom: '1.2rem' }}>
               <div style={{ fontSize: '.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: '#9aacac', marginBottom: '.65rem' }}>
-                {session?.isAdmin ? '💬 Feedback del cliente' : '💬 Tu evaluación'}
+                {session?.isAdmin ? 'Feedback del cliente' : 'Tu evaluación'}
               </div>
               <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap' }}>
                 {[
-                  { key: 'interested', label: '👍 Interesado', color: '#2A7E4E', bg: '#e6f4ec', border: '#b6ddc6' },
-                  { key: 'maybe', label: '🤔 Dudas', color: '#e6a817', bg: '#fffbf0', border: '#f5dcb0' },
-                  { key: 'no', label: '👎 No sigue', color: CORAL, bg: '#fff4f2', border: '#fcd0c8' },
+                  { key: 'interested', label: 'Interesado', color: '#2A7E4E', bg: '#e6f4ec', border: '#b6ddc6' },
+                  { key: 'maybe', label: 'Dudas', color: '#e6a817', bg: '#fffbf0', border: '#f5dcb0' },
+                  { key: 'no', label: 'No sigue', color: CORAL, bg: '#fff4f2', border: '#fcd0c8' },
                 ].map(opt => (
                   <button key={opt.key} disabled={savingFeedback === c.id} onClick={() => !session?.isAdmin && saveFeedback(c.id, opt.key)}
                     style={{ fontSize: '.78rem', fontWeight: 700, padding: '7px 16px', borderRadius: 9, border: `1.5px solid ${c.client_feedback === opt.key ? opt.border : '#e0eaea'}`, background: c.client_feedback === opt.key ? opt.bg : '#fafafa', color: c.client_feedback === opt.key ? opt.color : '#b0c4c4', cursor: session?.isAdmin ? 'default' : 'pointer', transition: 'all .18s', transform: c.client_feedback === opt.key ? 'scale(1.03)' : 'scale(1)' }}>
@@ -1580,7 +1592,7 @@ function MatchGraphInner() {
             )}
 
             <div style={{ background: 'white', border: '1px solid #e0eaea', borderRadius: 13, padding: '1.05rem 1.2rem', marginBottom: '1rem' }}>
-              <div style={{ fontSize: '.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: '#9aacac', marginBottom: '.6rem' }}>📄 Hoja de vida (CV)</div>
+              <div style={{ fontSize: '.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: '#9aacac', marginBottom: '.6rem' }}>Hoja de vida (CV)</div>
               {c.cv_url ? (
                 <a href={c.cv_url} target="_blank" rel="noreferrer"
                   style={{ display: 'inline-flex', alignItems: 'center', gap: '.4rem', background: FOREST, color: 'white', borderRadius: 9, padding: '8px 18px', textDecoration: 'none', fontSize: '.83rem', fontWeight: 600, transition: 'opacity .15s' }}>
@@ -1592,7 +1604,7 @@ function MatchGraphInner() {
             </div>
 
             <div className="no-print" style={{ background: '#f9fbfc', border: '1.5px solid #e0eaea', borderRadius: 13, padding: '1.05rem 1.2rem' }}>
-              <div style={{ fontSize: '.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: '#9aacac', marginBottom: '.55rem' }}>📝 Tus notas</div>
+              <div style={{ fontSize: '.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: '#9aacac', marginBottom: '.55rem' }}>Tus notas</div>
               <textarea
                 style={{ ...ta, minHeight: 84, background: 'white' }}
                 placeholder="Tus observaciones sobre este candidato…"
@@ -1674,11 +1686,11 @@ function MatchGraphInner() {
                   </div>
                 )}
                 <div style={{ fontWeight: 700, fontSize: '.92rem', color: INK, marginBottom: '.2rem' }}>{c.name}</div>
-                {c.is_top && <span style={{ fontSize: '.6rem', fontWeight: 700, background: FOREST, color: 'white', borderRadius: 6, padding: '2px 8px', letterSpacing: '.03em' }}>⭐ TOP</span>}
+                {c.is_top && <span style={{ fontSize: '.6rem', fontWeight: 700, background: FOREST, color: 'white', borderRadius: 6, padding: '2px 8px', letterSpacing: '.03em' }}>TOP</span>}
                 <div style={{ fontSize: '2rem', fontWeight: 800, color, marginTop: '.6rem', lineHeight: 1 }}>{fit}%</div>
                 <div style={{ fontSize: '.65rem', color: '#9aacac', marginBottom: '.6rem' }}>fit score</div>
-                {c.salary_expectation && <div style={{ fontSize: '.75rem', color: '#4a6a6a' }}>💰 {c.salary_expectation}</div>}
-                {c.mobility && <div style={{ fontSize: '.72rem', color: '#9aacac', marginTop: '.2rem' }}>🚗 {c.mobility}</div>}
+                {c.salary_expectation && <div style={{ fontSize: '.75rem', color: '#4a6a6a' }}>{c.salary_expectation}</div>}
+                {c.mobility && <div style={{ fontSize: '.72rem', color: '#9aacac', marginTop: '.2rem' }}>{c.mobility}</div>}
                 <button onClick={() => { setShowCompare(false); setCompareMode(false); setCompareIds([]); setCandIdx(candidates.findIndex(x => x.id === c.id)) }}
                   style={{ marginTop: '.85rem', fontSize: '.72rem', fontWeight: 700, padding: '6px 14px', borderRadius: 8, border: `1.5px solid ${color}`, background: 'white', color, cursor: 'pointer', width: '100%' }}>
                   Ver perfil completo
@@ -1727,7 +1739,7 @@ function MatchGraphInner() {
                     const bestFit = Math.max(...comps.map(avgScore))
                     return (
                       <td key={c.id} style={{ padding: '9px 14px', textAlign: 'center', fontWeight: 800, color: COMP_COLORS[ci], fontSize: '.95rem' }}>
-                        {fit}%{fit === bestFit && comps.length > 1 ? ' 🏆' : ''}
+                        {fit}%{fit === bestFit && comps.length > 1 ? ' ★' : ''}
                       </td>
                     )
                   })}
@@ -1916,7 +1928,7 @@ function MatchGraphInner() {
           <div style={{ display: 'flex', gap: '.5rem', justifyContent: 'space-between', alignItems: 'center' }}>
             <button onClick={generateShare} disabled={shareLoading}
               style={{ fontSize: '.75rem', fontWeight: 600, padding: '7px 14px', borderRadius: 8, border: `1.5px solid ${FOREST}`, background: 'white', color: FOREST, cursor: 'pointer' }}>
-              {shareLoading ? 'Actualizando…' : '🔄 Regenerar enlace'}
+              {shareLoading ? 'Actualizando…' : 'Regenerar enlace'}
             </button>
             <a href={`/app/matchgraph/share/${shareToken}`} target="_blank" rel="noopener noreferrer"
               style={{ fontSize: '.78rem', fontWeight: 600, color: FOREST, textDecoration: 'none', padding: '7px 14px', border: `1.5px solid ${FOREST}`, borderRadius: 8 }}>

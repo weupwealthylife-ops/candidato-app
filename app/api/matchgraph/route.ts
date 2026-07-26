@@ -235,11 +235,12 @@ export async function POST(req: NextRequest) {
   if (action === 'upsert_candidate') {
     const { id, ...rest } = body; delete rest.action
     if (id) {
-      await client.from('matchgraph_candidates').update(rest).eq('id', id)
+      const { error: updErr } = await client.from('matchgraph_candidates').update(rest).eq('id', id)
+      if (updErr) return NextResponse.json({ error: updErr.message }, { status: 500 })
       return NextResponse.json({ ok: true })
     }
     const { data, error } = await client.from('matchgraph_candidates').insert([rest]).select().maybeSingle()
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    if (error) return NextResponse.json({ error: error.message, detail: error.details, hint: error.hint }, { status: 500 })
 
     // Log activity for new candidate
     if (data?.id && data?.engagement_id) {
