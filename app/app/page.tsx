@@ -748,19 +748,19 @@ export default function AppPage() {
                   <p className="ol-sub">
                     {isC
                       ? t(
-                          'Tu próxima oportunidad ya existe — solo falta que te encuentre. Nuestra IA analiza tu perfil y te conecta con las empresas que realmente encajan.',
-                          'Your next opportunity already exists — it just needs to find you. Our AI analyses your profile and connects you with companies that truly fit.',
+                          'Tu próxima oportunidad ya existe — solo falta que te encuentre. El algoritmo analiza tu perfil y te conecta con las empresas que realmente encajan.',
+                          'Your next opportunity already exists — it just needs to find you. Our algorithm analyses your profile and connects you with companies that truly fit.',
                         )
                       : t(
-                          'El talento que necesitás ya está aquí. Nuestra IA filtra, analiza y te entrega solo los perfiles que realmente encajan con tu vacante — sin ruido, sin pérdida de tiempo.',
-                          'The talent you need is already here. Our AI filters, analyses and delivers only the profiles that truly fit your role — no noise, no wasted time.',
+                          'El talento que necesitás ya está aquí. El algoritmo filtra, analiza y te entrega solo los perfiles que realmente encajan con tu vacante — sin ruido, sin pérdida de tiempo.',
+                          'The talent you need is already here. Our algorithm filters, analyses and delivers only the profiles that truly fit your role — no noise, no wasted time.',
                         )}
                   </p>
                 </div>
                 <div className="ol-proof">
-                  <div className="ol-proof-item">⚡ {t('Match inteligente en 24 horas', 'Intelligent match in 24 hours')}</div>
-                  <div className="ol-proof-item">🔒 {t('Perfil 100% privado y seguro', '100% private and secure profile')}</div>
-                  <div className="ol-proof-item">🎯 {t('Solo oportunidades relevantes', 'Only relevant opportunities')}</div>
+                  <div className="ol-proof-item">✓ {t('Match en 24 horas', 'Match in 24 hours')}</div>
+                  <div className="ol-proof-item">✓ {t('Perfil 100% privado y seguro', '100% private and secure profile')}</div>
+                  <div className="ol-proof-item">✓ {t('Solo oportunidades relevantes', 'Only relevant opportunities')}</div>
                   <div className="ol-proof-item">✓ {t('Gratis para candidatos', 'Free for candidates')}</div>
                 </div>
               </div>
@@ -780,13 +780,13 @@ export default function AppPage() {
                       className={`ob-type-btn${isC ? ' active' : ''}`}
                       onClick={() => { setUserType('candidate'); setCStep(1); setPhase('gate'); setGateEmail('') }}
                     >
-                      👤 <span>{t('Soy candidato', "I'm a candidate")}</span>
+                      <span>{t('Soy candidato', "I'm a candidate")}</span>
                     </button>
                     <button
                       className={`ob-type-btn${!isC ? ' active' : ''}`}
                       onClick={() => { setUserType('company'); setCoStep(1); setPhase('gate'); setGateEmail('') }}
                     >
-                      🏢 <span>{t('Soy empresa', "I'm a company")}</span>
+                      <span>{t('Soy empresa', "I'm a company")}</span>
                     </button>
                   </div>
                 )}
@@ -807,7 +807,7 @@ export default function AppPage() {
                           className={`ob-role-card${isC ? ' active' : ''}`}
                           onClick={() => { setUserType('candidate'); setGateEmail('') }}
                         >
-                          <div className="ob-role-ico-wrap">👤</div>
+                          <div className="ob-role-ico-wrap" style={{ fontFamily: 'var(--head)', fontWeight: 800, fontSize: '.85rem', letterSpacing: '-.01em' }}>C</div>
                           <div className="ob-role-body">
                             <div className="ob-role-title">{t('Soy candidato', "I'm a candidate")}</div>
                             <div className="ob-role-desc">{t('Encontrá trabajo · Gratis', 'Find jobs · Free')}</div>
@@ -818,7 +818,7 @@ export default function AppPage() {
                           className={`ob-role-card${!isC ? ' active' : ''}`}
                           onClick={() => { setUserType('company'); setGateEmail('') }}
                         >
-                          <div className="ob-role-ico-wrap">🏢</div>
+                          <div className="ob-role-ico-wrap" style={{ fontFamily: 'var(--head)', fontWeight: 800, fontSize: '.85rem', letterSpacing: '-.01em' }}>E</div>
                           <div className="ob-role-body">
                             <div className="ob-role-title">{t('Soy empresa', "I'm a company")}</div>
                             <div className="ob-role-desc">{t('Top 1% del talento colombiano', 'Top 1% Colombian talent')}</div>
@@ -1524,7 +1524,7 @@ export default function AppPage() {
                           className="ava-menu-item"
                           onClick={() => { setCandView('profile'); setAvatarOpen(false) }}
                         >
-                          👤 {t('Mi perfil', 'My profile')}
+                          {t('Mi perfil', 'My profile')}
                         </button>
                       )}
                       {isC && (
@@ -1540,7 +1540,7 @@ export default function AppPage() {
                           className="ava-menu-item"
                           onClick={() => { setCompView('mycompany'); setAvatarOpen(false) }}
                         >
-                          🏢 {t('Mi empresa', 'My company')}
+                          {t('Mi empresa', 'My company')}
                         </button>
                       )}
                       <div style={{ borderTop: '1px solid var(--line)', margin: '.35rem 0' }} />
@@ -1663,7 +1663,7 @@ export default function AppPage() {
               <span className="mobile-nav-ico">📋</span>{t('Vacantes', 'Listings')}
             </button>
             <button className={`mobile-nav-btn${compView === 'mycompany' ? ' active' : ''}`} onClick={() => setCompView('mycompany')}>
-              <span className="mobile-nav-ico">🏢</span>{t('Empresa', 'Company')}
+              <span className="mobile-nav-ico">◈</span>{t('Empresa', 'Company')}
             </button>
             <button className="mobile-nav-btn" onClick={logout}>
               <span className="mobile-nav-ico">←</span>{t('Salir', 'Out')}
@@ -1679,7 +1679,7 @@ export default function AppPage() {
           </span>
           <span className="sb-ai">
             {isC
-              ? t(`IA analizando ${jobs.length || '…'} vacantes`, `AI analysing ${jobs.length || '…'} listings`)
+              ? t(`Analizando ${jobs.length || '…'} vacantes`, `Analysing ${jobs.length || '…'} listings`)
               : t(`${candidates.length || '…'} candidatos en el pool`, `${candidates.length || '…'} candidates in pool`)}
           </span>
         </div>
@@ -3238,7 +3238,7 @@ function MyCompanyView({ userEmail, coProfile, onUpdate, t }: {
           {/* Left col — company info */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <div className="card">
-              <SectionTitle>🏢 {t('Información general', 'General info')}</SectionTitle>
+              <SectionTitle>{t('Información general', 'General info')}</SectionTitle>
               <div className="profile-row"><span className="profile-lbl">{t('Empresa', 'Company')}</span><span>{coProfile?.company_name || '—'}</span></div>
               <div className="profile-row"><span className="profile-lbl">Email</span><span>{userEmail}</span></div>
               <div className="profile-row"><span className="profile-lbl">{t('Industria', 'Industry')}</span><span>{(coProfile?.industry as string) || '—'}</span></div>
@@ -3334,7 +3334,7 @@ function MyCompanyView({ userEmail, coProfile, onUpdate, t }: {
           {/* Left — General info */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <div className="card">
-              <SectionTitle>🏢 {t('Información general', 'General info')}</SectionTitle>
+              <SectionTitle>{t('Información general', 'General info')}</SectionTitle>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '.7rem' }}>
                 <div><label style={lbl}>{t('Nombre de la empresa', 'Company name')}</label><input style={inp} value={form.company_name} onChange={e => f('company_name', e.target.value)} /></div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '.6rem' }}>
@@ -4117,7 +4117,7 @@ function MyJobsView({ userEmail, coName, onPost, t }: {
                   <div style={{ background: 'linear-gradient(135deg,#fff5f3,#fff8f0)', border: '1.5px solid var(--coral)', borderRadius: 10, padding: '.75rem 1rem', marginBottom: '.75rem', display: 'flex', alignItems: 'center', gap: '.75rem', flexWrap: 'wrap' }}>
                     <div style={{ flex: 1 }}>
                       <div style={{ fontWeight: 700, fontSize: '.82rem', color: 'var(--coral)' }}>
-                        🚀 {t(`¡${j.views} visitas! Activá el matching con IA`, `${j.views} views! Activate AI matching`)}
+                        {t(`¡${j.views} visitas! Activá el matching`, `${j.views} views! Activate matching`)}
                       </div>
                       <div style={{ fontSize: '.74rem', color: 'var(--ink-45)', marginTop: 2 }}>
                         {t('Notificá candidatos compatibles automáticamente.', 'Automatically notify compatible candidates.')}
@@ -4389,7 +4389,7 @@ function PostJobView({ userEmail, onSuccess, t }: {
             {t('Vacante destacada', 'Featured listing')}
           </div>
           <div style={{ fontSize: '.75rem', color: 'var(--ink-45)', lineHeight: 1.45 }}>
-            {t('Matching automático con IA. Candidatos notificados en 2h.', 'Automatic AI matching. Candidates notified in 2h.')}
+            {t('Matching automático. Candidatos notificados en 2h.', 'Automatic matching. Candidates notified in 2h.')}
           </div>
           <div style={{ marginTop: '.4rem', fontSize: '.72rem', fontWeight: 700, color: 'var(--coral)' }}>
             {t('Desde $300.000 COP', 'From $300,000 COP')}
@@ -4490,7 +4490,7 @@ function PostJobView({ userEmail, onSuccess, t }: {
           {postMode === 'free' && (
             <div className="fg fg-full">
               <div style={{ background: 'rgba(27,59,62,.05)', borderRadius: 10, padding: '.9rem 1rem', fontSize: '.8rem', color: 'var(--ink-70)', lineHeight: 1.6 }}>
-                💡 {t('La vacante gratuita aparece en el feed público. Los candidatos pueden verla y postularse directamente. Para activar el matching automático con IA, podés destacarla después.', 'The free listing appears in the public feed. Candidates can view and apply directly. To activate automatic AI matching, you can feature it later.')}
+                {t('La vacante gratuita aparece en el feed público. Los candidatos pueden verla y postularse directamente. Para activar el matching automático, podés destacarla después.', 'The free listing appears in the public feed. Candidates can view and apply directly. To activate automatic matching, you can feature it later.')}
               </div>
             </div>
           )}

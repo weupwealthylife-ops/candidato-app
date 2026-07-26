@@ -108,7 +108,7 @@ export default function Metrics() {
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-            <span style={{ fontSize: '1.4rem' }}>🇨🇴 → 🌎</span>
+            <span style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--forest)', letterSpacing: '-.01em' }}>🇨🇴 · col</span>
             <div>
               <div className="m-tag">{t('Cobertura', 'Coverage')}</div>
               <div className="m-label" style={{ marginBottom: 0 }}>

@@ -188,25 +188,14 @@ export default function Register() {
                 <div style={{ flex: 1, height: 3, borderRadius: 2, background: 'var(--line)' }} />
               </div>
 
-              <div className="frow">
-                <div className="fg">
-                  <label>{t('Nombre', 'First name')}</label>
-                  <input
-                    type="text"
-                    value={firstName}
-                    onChange={e => setFirstName(e.target.value)}
-                    placeholder={t('Daniela', 'Jane')}
-                  />
-                </div>
-                <div className="fg">
-                  <label>{t('Apellido (opcional)', 'Last name (optional)')}</label>
-                  <input
-                    type="text"
-                    value={lastName}
-                    onChange={e => setLastName(e.target.value)}
-                    placeholder={t('Martínez', 'Smith')}
-                  />
-                </div>
+              <div className="fg">
+                <label>{t('Nombre', 'First name')}</label>
+                <input
+                  type="text"
+                  value={firstName}
+                  onChange={e => setFirstName(e.target.value)}
+                  placeholder={t('Daniela', 'Jane')}
+                />
               </div>
               <div className="fg">
                 <label>Email</label>
@@ -251,6 +240,15 @@ export default function Register() {
                 <div style={{ flex: 1, height: 3, borderRadius: 2, background: 'var(--forest)' }} />
               </div>
 
+              <div className="fg">
+                <label>{t('Apellido (opcional)', 'Last name (optional)')}</label>
+                <input
+                  type="text"
+                  value={lastName}
+                  onChange={e => setLastName(e.target.value)}
+                  placeholder={t('Martínez', 'Smith')}
+                />
+              </div>
               <div className="frow">
                 <div className="fg">
                   <label>{t('Ciudad', 'City')}</label>
