@@ -167,7 +167,7 @@ export default function Pricing() {
               boxShadow: tab === 'matching' ? '0 2px 8px rgba(27,59,62,.25)' : 'none',
             }}
           >
-            {t('✦ Matching', '✦ Matching')}
+            {t('Matching', 'Matching')}
           </button>
           <button
             onClick={() => setTab('preseleccion')}
@@ -180,7 +180,7 @@ export default function Pricing() {
               boxShadow: tab === 'preseleccion' ? '0 2px 8px rgba(27,59,62,.25)' : 'none',
             }}
           >
-            {t('⬡ Preselección & Validación', '⬡ Screening & Validation')}
+            {t('Preselección & Validación', 'Screening & Validation')}
           </button>
         </div>
       </div>
@@ -290,7 +290,6 @@ export default function Pricing() {
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '.4rem',
                 }}
               >
-                <span style={{ fontSize: '.85rem' }}>⬡</span>
                 {t('Ver Match Graph', 'View Match Graph')}
               </a>
             </div>
@@ -332,19 +331,6 @@ export default function Pricing() {
             >
               {t(plan.cta.es, plan.cta.en)}
             </a>
-            {plan.featured && (
-              <div style={{ marginTop: '1rem', padding: '.85rem 1rem', background: 'rgba(234,100,64,.06)', borderRadius: 10, borderLeft: '3px solid var(--coral)' }}>
-                <p style={{ margin: 0, fontSize: '.78rem', color: 'var(--ink-70)', lineHeight: 1.6, fontStyle: 'italic' }}>
-                  {t(
-                    '"Encontramos al candidato ideal en 10 días. El matching fue muy preciso."',
-                    '"We found the ideal candidate in 10 days. The matching was spot-on."',
-                  )}
-                </p>
-                <div style={{ marginTop: '.4rem', fontSize: '.72rem', fontWeight: 700, color: 'var(--forest)' }}>
-                  — Andrés P., CEO · helppeople
-                </div>
-              </div>
-            )}
           </div>
         ))}
       </div>

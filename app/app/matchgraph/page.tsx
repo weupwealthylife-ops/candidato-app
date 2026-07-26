@@ -280,6 +280,9 @@ function MatchGraphInner() {
   const [dragIndex, setDragIndex] = useState<number | null>(null)
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
 
+  // Profile menu dropdown
+  const [showProfileMenu, setShowProfileMenu] = useState(false)
+
   const loadEngagements = useCallback(async () => {
     try {
       const res = await fetch('/api/matchgraph?action=list')
@@ -335,13 +338,19 @@ function MatchGraphInner() {
 
   async function openEngagement(eng: Engagement) {
     setEngLoading(true)
-    const res = await fetch(`/api/matchgraph?action=detail&id=${eng.id}`)
-    const data = await res.json()
-    setSelEng(data.engagement)
-    const cands = data.candidates || []
-    setCandidates(cands)
-    setClientNotes(Object.fromEntries(cands.map((c: Candidate) => [c.id, c.client_notes || ''])))
-    setShareToken(data.engagement?.share_token || null)
+    try {
+      const res = await fetch(`/api/matchgraph?action=detail&id=${eng.id}`)
+      const data = await res.json().catch(() => ({}))
+      setSelEng(data.engagement || eng)
+      const cands = data.candidates || []
+      setCandidates(cands)
+      setClientNotes(Object.fromEntries(cands.map((c: Candidate) => [c.id, c.client_notes || ''])))
+      setShareToken(data.engagement?.share_token || null)
+    } catch (e) {
+      console.error('[MG] openEngagement error:', e)
+      setSelEng(eng)
+      setCandidates([])
+    }
     setCandIdx(-1); setShowActivity(false); setActivity([])
     setView('engagement')
     setEngLoading(false)
@@ -507,7 +516,22 @@ function MatchGraphInner() {
       const saveRes = await fetch('/api/matchgraph', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
       setSaving(false); setShowEditCand(false); setEditingCand(null)
       if (saveRes.ok) {
+        const resData = await saveRes.json().catch(() => ({}))
         showToast('Candidato guardado', 'success')
+        // Optimistic update using the candidate data returned by the server
+        if (resData.candidate) {
+          setCandidates(prev => {
+            const exists = prev.find(c => c.id === resData.candidate.id)
+            return exists
+              ? prev.map(c => c.id === resData.candidate.id ? resData.candidate : c)
+              : [...prev, resData.candidate]
+          })
+        }
+        // Background reload to sync order and any server-side defaults
+        fetch(`/api/matchgraph?action=detail&id=${engId}`)
+          .then(r => r.json().catch(() => ({})))
+          .then(d => { if (d.candidates) setCandidates(d.candidates) })
+          .catch(() => {})
       } else {
         const errData = await saveRes.json().catch(() => ({}))
         console.error('[MG] saveCandidate error:', errData)
@@ -518,9 +542,6 @@ function MatchGraphInner() {
       console.error('[MG] saveCandidate exception:', e)
       showToast('Error de red al guardar', 'error')
     }
-    const res = await fetch(`/api/matchgraph?action=detail&id=${engId}`)
-    const data = await res.json()
-    setCandidates(data.candidates || [])
     if (showActivity) loadActivity()
   }
 
@@ -789,83 +810,80 @@ function MatchGraphInner() {
   const TopBar = ({ title, actions }: { title?: string; actions?: React.ReactNode }) => {
     const isAdmin = session?.isAdmin
     const userInitial = session?.email?.[0]?.toUpperCase() || '?'
-    const shortEmail = session?.email ? (session.email.length > 26 ? session.email.slice(0, 24) + '…' : session.email) : ''
     return (
-      <div className="no-print" style={{ background: FOREST, padding: '0 max(1.5rem, 2vw)', height: 60, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, position: 'sticky', top: 0, zIndex: 100, boxShadow: '0 1px 0 rgba(255,255,255,.07), 0 2px 12px rgba(0,0,0,.18)' }}>
+      <div className="no-print" style={{ background: FOREST, padding: '0 max(1.25rem, 2vw)', height: 56, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, position: 'sticky', top: 0, zIndex: 100, boxShadow: '0 1px 0 rgba(255,255,255,.07), 0 2px 12px rgba(0,0,0,.18)' }}>
 
-        {/* Left: back nav + logo */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 0, minWidth: 0 }}>
+        {/* Left: back + logo */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 0, minWidth: 0, flex: 1 }}>
           {view === 'engagement' && (
             <button
               onClick={() => setView('dashboard')}
-              style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'none', border: 'none', color: 'rgba(255,255,255,.5)', borderRadius: 8, padding: '5px 10px 5px 2px', cursor: 'pointer', fontSize: '.76rem', fontWeight: 500, fontFamily: 'var(--body)', marginRight: 10, transition: 'color .15s', whiteSpace: 'nowrap' }}
-              onMouseEnter={e => (e.currentTarget.style.color = 'rgba(255,255,255,.9)')}
-              onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,.5)')}>
-              ← {isMobile ? '' : 'Evaluaciones'}
+              style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'none', border: 'none', color: 'rgba(255,255,255,.55)', borderRadius: 7, padding: '5px 10px 5px 4px', cursor: 'pointer', fontSize: '.78rem', fontWeight: 500, fontFamily: 'var(--body)', marginRight: 8, transition: 'color .15s', whiteSpace: 'nowrap', flexShrink: 0 }}
+              onMouseEnter={e => (e.currentTarget.style.color = 'white')}
+              onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,.55)')}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+              {!isMobile && 'Evaluaciones'}
             </button>
           )}
-
-          {/* Logo lockup */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 9, flexShrink: 0 }}>
-            <BirdLogo size={28} light />
-            <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-              <span style={{ color: 'white', fontFamily: 'var(--head)', fontWeight: 700, fontSize: '.97rem', letterSpacing: '-.02em' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+            <BirdLogo size={26} light />
+            {!isMobile && (
+              <span style={{ color: 'white', fontFamily: 'var(--head)', fontWeight: 700, fontSize: '.94rem', letterSpacing: '-.02em' }}>
                 Candidato®
               </span>
-              {!isMobile && (
-                <span style={{ background: 'rgba(255,255,255,.1)', color: 'rgba(255,255,255,.55)', fontSize: '.58rem', fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase', borderRadius: 5, padding: '2px 7px', fontFamily: 'var(--body)', border: '1px solid rgba(255,255,255,.08)' }}>
-                  Match Graph
-                </span>
-              )}
-            </div>
+            )}
           </div>
-
-          {/* Breadcrumb */}
           {title && !isMobile && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 18, paddingLeft: 18, borderLeft: '1px solid rgba(255,255,255,.1)', minWidth: 0, overflow: 'hidden' }}>
-              <span style={{ color: 'rgba(255,255,255,.6)', fontSize: '.8rem', fontFamily: 'var(--body)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 220 }}>{title}</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 16, paddingLeft: 16, borderLeft: '1px solid rgba(255,255,255,.1)', minWidth: 0, overflow: 'hidden' }}>
+              <span style={{ color: 'rgba(255,255,255,.55)', fontSize: '.8rem', fontFamily: 'var(--body)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 240 }}>{title}</span>
             </div>
           )}
         </div>
 
-        {/* Right: actions + user chip + logout */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-          {/* Admin shortcut actions */}
-          {isAdmin && view === 'dashboard' && !isMobile && (
-            <a href="/app/matchgraph/admin" style={{ display: 'flex', alignItems: 'center', gap: 5, color: 'rgba(255,255,255,.55)', textDecoration: 'none', fontSize: '.74rem', fontWeight: 600, fontFamily: 'var(--body)', background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.1)', borderRadius: 8, padding: '5px 10px', transition: 'all .15s' }}
-              onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.color = 'white'; (e.currentTarget as HTMLAnchorElement).style.background = 'rgba(255,255,255,.12)' }}
-              onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.color = 'rgba(255,255,255,.55)'; (e.currentTarget as HTMLAnchorElement).style.background = 'rgba(255,255,255,.06)' }}>
-              Métricas
-            </a>
-          )}
-
-          {/* Slot for page-specific actions (e.g. "+ Nueva evaluación") */}
+        {/* Right: actions + compact profile menu */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
           {actions}
 
-          {/* User chip */}
-          {!isMobile && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '4px 10px 4px 6px', background: 'rgba(255,255,255,.07)', borderRadius: 9, border: '1px solid rgba(255,255,255,.1)', maxWidth: 220, overflow: 'hidden' }}>
-              <div style={{ width: 24, height: 24, borderRadius: '50%', background: isAdmin ? CORAL : 'rgba(255,255,255,.22)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '.65rem', fontWeight: 800, color: 'white', flexShrink: 0, letterSpacing: '-.01em' }}>
+          {/* Profile button → dropdown */}
+          <div style={{ position: 'relative' }}>
+            <button
+              onClick={() => setShowProfileMenu(p => !p)}
+              onBlur={e => { if (!e.currentTarget.parentElement?.contains(e.relatedTarget as Node)) setTimeout(() => setShowProfileMenu(false), 150) }}
+              style={{ display: 'flex', alignItems: 'center', gap: 6, background: showProfileMenu ? 'rgba(255,255,255,.15)' : 'rgba(255,255,255,.08)', border: '1px solid rgba(255,255,255,.12)', borderRadius: 8, padding: '5px 10px 5px 6px', cursor: 'pointer', transition: 'all .15s' }}>
+              <div style={{ width: 22, height: 22, borderRadius: '50%', background: isAdmin ? CORAL : 'rgba(255,255,255,.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '.62rem', fontWeight: 800, color: 'white', flexShrink: 0 }}>
                 {userInitial}
               </div>
-              <div style={{ minWidth: 0 }}>
-                <div style={{ fontSize: '.68rem', color: 'rgba(255,255,255,.85)', fontFamily: 'var(--body)', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', letterSpacing: '-.01em' }}>{shortEmail}</div>
-                {isAdmin && (
-                  <div style={{ fontSize: '.56rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: CORAL, lineHeight: 1 }}>Super Admin</div>
-                )}
-              </div>
-            </div>
-          )}
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.6)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+            </button>
 
-          {/* Logout */}
-          <button
-            onClick={logout}
-            title="Cerrar sesión"
-            style={{ background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.1)', color: 'rgba(255,255,255,.6)', borderRadius: 8, padding: '6px 13px', cursor: 'pointer', fontSize: '.74rem', fontWeight: 600, fontFamily: 'var(--body)', transition: 'all .15s', display: 'flex', alignItems: 'center', gap: 5 }}
-            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,.13)'; (e.currentTarget as HTMLButtonElement).style.color = 'white' }}
-            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,.06)'; (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,.6)' }}>
-            {isMobile ? '→' : 'Salir'}
-          </button>
+            {showProfileMenu && (
+              <div style={{ position: 'absolute', top: 'calc(100% + 8px)', right: 0, background: 'white', borderRadius: 12, boxShadow: '0 8px 32px rgba(14,30,32,.2)', minWidth: 200, overflow: 'hidden', zIndex: 200 }}>
+                {/* User info */}
+                <div style={{ padding: '12px 14px 10px', borderBottom: '1px solid #f0f4f4' }}>
+                  <div style={{ fontSize: '.8rem', fontWeight: 700, color: INK, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{session?.email}</div>
+                  {isAdmin && (
+                    <div style={{ fontSize: '.64rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: CORAL, marginTop: 2 }}>Super Admin</div>
+                  )}
+                </div>
+                {/* Menu items */}
+                {isAdmin && (
+                  <a href="/app/matchgraph/admin"
+                    style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', fontSize: '.83rem', fontWeight: 600, color: INK, textDecoration: 'none', transition: 'background .12s' }}
+                    onMouseEnter={e => (e.currentTarget.style.background = '#f5f9f9')}
+                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                    Métricas
+                  </a>
+                )}
+                <button
+                  onClick={logout}
+                  style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', fontSize: '.83rem', fontWeight: 600, color: '#c0392b', background: 'none', border: 'none', width: '100%', textAlign: 'left', cursor: 'pointer', borderTop: '1px solid #f0f4f4', transition: 'background .12s', fontFamily: 'var(--body)' }}
+                  onMouseEnter={e => (e.currentTarget.style.background = '#fff4f2')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                  Cerrar sesión
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     )

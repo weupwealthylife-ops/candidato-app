@@ -57,16 +57,23 @@ export async function GET(req: NextRequest) {
   if (action === 'detail') {
     const id = req.nextUrl.searchParams.get('id')
     if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 })
-    let eq = client.from('matchgraph_engagements').select('*').eq('id', id)
-    if (!isAdmin) eq = eq.ilike('client_email', email)
-    const { data: eng } = await eq.maybeSingle()
-    if (!eng) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-    const { data: candidates } = await client
-      .from('matchgraph_candidates')
-      .select('id, engagement_id, sort_order, name, photo_url, cv_url, score_profession, score_experience, score_sector, score_requirements, score_availability, is_top, formation, relevant_experience, technical_strengths, qa_notes, salary_expectation, mobility, interview_date, client_notes, client_feedback, pipeline_status, created_at')
-      .eq('engagement_id', id)
-      .order('sort_order')
-    return NextResponse.json({ engagement: eng, candidates: candidates || [] })
+    try {
+      let eq = client.from('matchgraph_engagements').select('*').eq('id', id)
+      if (!isAdmin) eq = eq.ilike('client_email', email)
+      const { data: eng, error: engErr } = await eq.maybeSingle()
+      if (engErr) return NextResponse.json({ error: engErr.message }, { status: 500 })
+      if (!eng) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+      const { data: candidates, error: candErr } = await client
+        .from('matchgraph_candidates')
+        .select('id, engagement_id, sort_order, name, photo_url, cv_url, score_profession, score_experience, score_sector, score_requirements, score_availability, is_top, formation, relevant_experience, technical_strengths, qa_notes, salary_expectation, mobility, interview_date, client_notes, client_feedback, pipeline_status, created_at')
+        .eq('engagement_id', id)
+        .order('sort_order')
+      if (candErr) console.error('[MG detail] candidates query error:', candErr.message)
+      return NextResponse.json({ engagement: eng, candidates: candidates || [] })
+    } catch (e) {
+      console.error('[MG detail] unexpected error:', e)
+      return NextResponse.json({ error: 'Internal error' }, { status: 500 })
+    }
   }
 
   if (action === 'analytics') {
