@@ -865,40 +865,34 @@ export default function AppPage() {
                 {/* ── WELCOME BACK ── */}
                 {phase === 'welcome' && (
                   <div className="ob-gate ob-gate-center" style={{ gap: 0 }}>
-                    {/* Avatar */}
-                    <div className="ob-welcome-avatar" style={{ background: userType === 'company' ? 'var(--forest)' : 'var(--coral)', marginBottom: '1rem' }}>
-                      {foundName?.[0]?.toUpperCase() || '?'}
+                    {/* Centered logo */}
+                    <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.5rem' }}>
+                      <Image src="/bird-logo.png" alt="Candidato" width={40} height={40} style={{ objectFit: 'contain' }} />
                     </div>
 
-                    {/* Eyebrow */}
-                    <div style={{ fontSize: '.65rem', fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: userType === 'company' ? 'var(--forest)' : 'var(--coral)', marginBottom: '.4rem' }}>
-                      {userType === 'company' ? t('Empresa · Bienvenido/a de vuelta', 'Company · Welcome back') : t('Candidato · Bienvenido/a de vuelta', 'Candidate · Welcome back')}
+                    {/* Avatar — forest green circle with bird logo */}
+                    <div style={{ width: 72, height: 72, borderRadius: '50%', background: 'var(--forest)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1rem', flexShrink: 0 }}>
+                      <Image src="/bird-logo.png" alt="" width={38} height={38} style={{ objectFit: 'contain', filter: 'brightness(0) invert(1)' }} />
                     </div>
 
                     {/* Name */}
-                    <h2 style={{ fontFamily: 'var(--head)', fontSize: '1.9rem', fontWeight: 800, color: 'var(--ink)', margin: '0 0 .25rem', textAlign: 'center', letterSpacing: '-.03em' }}>
-                      {foundName.split(' ')[0]}
+                    <h2 style={{ fontFamily: 'var(--head)', fontSize: '1.9rem', fontWeight: 800, color: 'var(--ink)', margin: '0 0 .2rem', textAlign: 'center', letterSpacing: '-.03em' }}>
+                      {t('Hola', 'Hi')}, {foundName.split(' ')[0]}
                     </h2>
 
-                    {/* Email */}
-                    <p style={{ fontSize: '.78rem', color: 'var(--ink-45)', margin: '0 0 .7rem', textAlign: 'center' }}>{gateEmail}</p>
-
-                    {/* Context hint */}
-                    <p style={{ fontSize: '.82rem', color: 'var(--ink-70)', margin: '0 0 1.5rem', textAlign: 'center', lineHeight: 1.5 }}>
-                      {userType === 'company'
-                        ? t('Gestioná tus vacantes y encontrá talento.', 'Manage your listings and find talent.')
-                        : t('Tu próximo match te espera.', 'Your next match is waiting.')}
-                    </p>
+                    {/* Email — acts as identity confirmation */}
+                    <p style={{ fontSize: '.78rem', color: 'var(--ink-45)', margin: '0 0 1.6rem', textAlign: 'center' }}>{gateEmail}</p>
 
                     {/* Primary CTA */}
                     <button
                       className="submit-btn"
-                      style={{ fontSize: '1rem', padding: '.9rem 1.5rem', background: userType === 'company' ? 'var(--forest)' : 'var(--coral)', width: '100%' }}
+                      style={{ fontSize: '1rem', padding: '.95rem 1.5rem', background: userType === 'company' ? 'var(--forest)' : 'var(--coral)', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '.5rem', borderRadius: 12 }}
                       onClick={() => enterApp({ name: foundName, email: gateEmail, type: userType, companyName: userType === 'company' ? coname : undefined })}
                     >
                       {userType === 'company'
-                        ? t('Ver mis vacantes', 'Go to my listings')
+                        ? t('Entrar a mi cuenta', 'Enter my account')
                         : t('Ver mis matches', 'See my matches')}
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
                     </button>
 
                     {/* Secondary actions */}
@@ -910,7 +904,7 @@ export default function AppPage() {
                       {t('Crear cuenta nueva con este email', 'Create new account with this email')}
                     </button>
                     <button onClick={() => { setPhase('gate'); setGateEmail('') }} className="ob-notme-btn" style={{ marginTop: '.35rem' }}>
-                      {t('← Usar otro email', '← Use a different email')}
+                      {t('Usar otro email', 'Use a different email')}
                     </button>
                   </div>
                 )}
