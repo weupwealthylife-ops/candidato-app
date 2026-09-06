@@ -768,7 +768,7 @@ export default function AppPage() {
               <div className="onboard-right">
               <div className="onboard-right-inner">
                 {/* Mobile-only logo header */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '1.6rem' }} className="ob-mobile-brand">
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '1.6rem' }} className="ob-mobile-brand">
                   <Image src="/bird-logo.png" alt="Candidato" width={28} height={28} style={{ objectFit: 'contain' }} />
                   <span style={{ fontFamily: 'var(--head)', fontSize: '.95rem', fontWeight: 700, color: 'var(--forest)' }}>Candidato®</span>
                 </div>
@@ -865,16 +865,6 @@ export default function AppPage() {
                 {/* ── WELCOME BACK ── */}
                 {phase === 'welcome' && (
                   <div className="ob-gate ob-gate-center" style={{ gap: 0 }}>
-                    {/* Centered logo */}
-                    <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.5rem' }}>
-                      <Image src="/bird-logo.png" alt="Candidato" width={40} height={40} style={{ objectFit: 'contain' }} />
-                    </div>
-
-                    {/* Avatar — forest green circle with bird logo */}
-                    <div style={{ width: 72, height: 72, borderRadius: '50%', background: 'var(--forest)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1rem', flexShrink: 0 }}>
-                      <Image src="/bird-logo.png" alt="" width={38} height={38} style={{ objectFit: 'contain', filter: 'brightness(0) invert(1)' }} />
-                    </div>
-
                     {/* Name */}
                     <h2 style={{ fontFamily: 'var(--head)', fontSize: '1.9rem', fontWeight: 800, color: 'var(--ink)', margin: '0 0 .2rem', textAlign: 'center', letterSpacing: '-.03em' }}>
                       {t('Hola', 'Hi')}, {foundName.split(' ')[0]}
