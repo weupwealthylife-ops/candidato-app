@@ -880,8 +880,16 @@ export default function AppPage() {
                       {t('Hola', 'Hi')}, {foundName.split(' ')[0]}
                     </h2>
 
-                    {/* Email — acts as identity confirmation */}
-                    <p style={{ fontSize: '.78rem', color: 'var(--ink-45)', margin: '0 0 1.6rem', textAlign: 'center' }}>{gateEmail}</p>
+                    {/* Email + "not me" inline */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '.5rem', margin: '0 0 1.6rem', flexWrap: 'wrap' }}>
+                      <p style={{ fontSize: '.78rem', color: 'var(--ink-45)', margin: 0 }}>{gateEmail}</p>
+                      <button
+                        onClick={() => { setPhase('gate'); setGateEmail('') }}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '.72rem', color: 'var(--ink-45)', textDecoration: 'underline', textUnderlineOffset: 3, padding: 0, fontFamily: 'var(--body)' }}
+                      >
+                        {t('¿No sos vos?', 'Not you?')}
+                      </button>
+                    </div>
 
                     {/* Primary CTA */}
                     <button
@@ -895,16 +903,24 @@ export default function AppPage() {
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
                     </button>
 
+                    {/* Magic link option */}
+                    <button
+                      type="button"
+                      onClick={sendMagicLink}
+                      style={{ background: 'none', border: '1.5px solid var(--line)', borderRadius: 10, color: 'var(--ink-70)', fontSize: '.8rem', cursor: 'pointer', padding: '.7rem 1.2rem', width: '100%', fontFamily: 'var(--body)', fontWeight: 600, marginTop: '.75rem', transition: 'border-color .15s, color .15s' }}
+                      onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--forest)'; (e.currentTarget as HTMLButtonElement).style.color = 'var(--forest)' }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--line)'; (e.currentTarget as HTMLButtonElement).style.color = 'var(--ink-70)' }}
+                    >
+                      {t('Recibir enlace por email', 'Send me a login link')}
+                    </button>
+
                     {/* Secondary actions */}
-                    <div style={{ width: '100%', height: '1px', background: 'var(--line)', margin: '1.3rem 0 .9rem' }} />
+                    <div style={{ width: '100%', height: '1px', background: 'var(--line)', margin: '1.2rem 0 .8rem' }} />
                     <button
                       onClick={() => { setCurrentUser(null); if (userType === 'candidate') setCem(gateEmail); else setCoem(gateEmail); setPhase('register') }}
                       className="ob-notme-btn"
                     >
                       {t('Crear cuenta nueva con este email', 'Create new account with this email')}
-                    </button>
-                    <button onClick={() => { setPhase('gate'); setGateEmail('') }} className="ob-notme-btn" style={{ marginTop: '.35rem' }}>
-                      {t('Usar otro email', 'Use a different email')}
                     </button>
                   </div>
                 )}

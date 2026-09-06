@@ -1569,6 +1569,11 @@ footer{
   .apply-modal{padding:1.2rem 1rem 1.8rem}
   /* Bundle picker — 3 cards very tight, reduce padding */
   .fg .bundle-plans{gap:.4rem!important}
+  /* Onboarding panel — tighten at 375px */
+  .onboard-right{padding:1.1rem .85rem}
+  .ob-gate-title{font-size:1.25rem}
+  .submit-btn{font-size:.9rem;padding:11px}
+  .ob-notme-btn{font-size:.7rem}
 }
 
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
