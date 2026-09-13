@@ -60,7 +60,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,.btn:focus-visible
 .lang-pill{display:flex;border-radius:50px;overflow:hidden;border:1px solid var(--line);background:var(--white)}
 .lang-pill button{border:none;background:transparent;padding:4px 11px;font-family:var(--body);font-size:.71rem;font-weight:600;cursor:pointer;color:var(--ink-45);transition:all .18s}
 .lang-pill button.on{background:var(--forest);color:var(--white);border-radius:50px}
-.btn{display:inline-flex;align-items:center;gap:6px;border:none;cursor:pointer;font-family:var(--body);transition:all .22s;white-space:nowrap;letter-spacing:.01em}
+.btn{display:inline-flex;align-items:center;gap:6px;border:none;cursor:pointer;font-family:var(--body);transition:all .22s;white-space:nowrap;letter-spacing:.01em;min-height:44px}
 .btn-forest{background:var(--forest);color:var(--white);border-radius:8px;padding:9px 20px;font-size:.82rem;font-weight:600}
 .btn-forest:hover{background:var(--forest-dk);transform:translateY(-1px);box-shadow:0 8px 24px rgba(27,59,62,.28)}
 .btn-coral{background:var(--coral);color:var(--white);border-radius:8px;padding:9px 20px;font-size:.82rem;font-weight:600}
@@ -925,9 +925,9 @@ footer{
   display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.8rem;
 }
 .f-brand{font-family:var(--head);font-size:.92rem;font-weight:700;color:rgba(255,255,255,.5)}
-.f-copy{font-size:.68rem;color:rgba(255,255,255,.2)}
+.f-copy{font-size:.75rem;color:rgba(255,255,255,.2)}
 .f-links{display:flex;gap:1.3rem}
-.f-links a{font-size:.72rem;color:rgba(255,255,255,.3);transition:color .2s}
+.f-links a{font-size:.75rem;color:rgba(255,255,255,.3);transition:color .2s;display:inline-flex;align-items:center;min-height:44px;padding:.5rem 0}
 .f-links a:hover{color:rgba(255,255,255,.65)}
 
 /* ════════════════════════════════════
@@ -1034,7 +1034,7 @@ footer{
   .contact-row{gap:.5rem}
   .cc-btn{width:56px;height:56px}
   .testimonials-grid{grid-template-columns:1fr}
-  .testimonial-card-3{display:none}
+  .testimonial-card-3{display:none!important}
   .btn-sm{min-height:36px}
 }
 @media(max-width:380px){
@@ -1210,7 +1210,7 @@ footer{
 .sk-tags{display:flex;flex-wrap:wrap;gap:.3rem;margin-top:.4rem}
 .sk-tag{background:rgba(27,59,62,.08);border:1px solid rgba(27,59,62,.15);border-radius:4px;padding:2px 8px;font-size:.67rem;font-weight:600;color:var(--forest);cursor:pointer}
 .sk-tag:hover{background:var(--coral-lt);color:var(--coral)}
-.submit-btn{width:100%;background:var(--forest);border:none;border-radius:var(--radius-sm);padding:12px;color:white;font-family:var(--body);font-size:.87rem;font-weight:700;cursor:pointer;transition:all .22s;display:flex;align-items:center;justify-content:center;gap:.5rem}
+.submit-btn{width:100%;background:var(--forest);border:none;border-radius:var(--radius-sm);padding:12px;min-height:44px;color:white;font-family:var(--body);font-size:.87rem;font-weight:700;cursor:pointer;transition:all .22s;display:flex;align-items:center;justify-content:center;gap:.5rem}
 .submit-btn:hover{background:var(--forest-dk);transform:translateY(-1px);box-shadow:0 8px 24px rgba(27,59,62,.25)}
 .submit-btn:disabled{background:var(--sage);cursor:not-allowed;transform:none;box-shadow:none}
 
@@ -1298,7 +1298,7 @@ footer{
 .ob-gate-eyebrow{font-size:.68rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--coral);margin-bottom:.7rem}
 .ob-gate-title{font-family:var(--head);font-size:1.45rem;font-weight:800;color:var(--ink);letter-spacing:-.03em;line-height:1.15;margin-bottom:.45rem}
 .ob-gate-sub{font-size:.8rem;color:var(--ink-45);margin-bottom:1.4rem;line-height:1.6}
-.ob-gate-hint{font-size:.71rem;color:var(--ink-45);text-align:center;margin-top:.9rem;line-height:1.55}
+.ob-gate-hint{font-size:.75rem;color:var(--ink-45);text-align:center;margin-top:.9rem;line-height:1.55}
 
 /* Role cards */
 .ob-role-cards-wrap{background:var(--off);border-radius:14px;padding:5px;margin-bottom:1.3rem}
@@ -1330,6 +1330,7 @@ footer{
 .ob-gate-divider span{font-size:.7rem;font-weight:600;color:var(--ink-45);white-space:nowrap;letter-spacing:.03em}
 .ob-gate-input{
   width:100%;padding:12px 16px;border-radius:10px;
+  min-height:44px;
   border:1.5px solid var(--line);background:var(--white);
   font-family:var(--body);font-size:.9rem;color:var(--ink);
   transition:border-color .18s,box-shadow .18s;outline:none;

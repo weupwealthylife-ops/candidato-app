@@ -756,7 +756,7 @@ function MatchGraphInner() {
 
           <p style={{ textAlign: 'center', fontSize: '.75rem', color: '#b0c4c4', margin: '1.2rem 0 0', lineHeight: 1.5 }}>
             ¿Aún no tenés acceso?{' '}
-            <a href="https://wa.me/573205046723" target="_blank" rel="noopener noreferrer" style={{ color: FOREST, fontWeight: 600, textDecoration: 'none', display: 'inline-block', padding: '.5rem 0' }}>
+            <a href="https://wa.me/573205046723" target="_blank" rel="noopener noreferrer" style={{ color: FOREST, fontWeight: 600, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', minHeight: 44, padding: '.5rem .25rem' }}>
               Contactá a tu consultor
             </a>
           </p>

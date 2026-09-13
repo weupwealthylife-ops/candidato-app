@@ -767,11 +767,11 @@ export default function AppPage() {
 
               <div className="onboard-right">
               <div className="onboard-right-inner">
-                {/* Mobile-only logo header */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '1.6rem' }} className="ob-mobile-brand">
+                {/* Mobile-only logo header — linked back to landing */}
+                <a href="/" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '1.6rem', textDecoration: 'none' }} className="ob-mobile-brand">
                   <Image src="/bird-logo.png" alt="Candidato" width={28} height={28} style={{ objectFit: 'contain' }} />
                   <span style={{ fontFamily: 'var(--head)', fontSize: '.95rem', fontWeight: 700, color: 'var(--forest)' }}>Candidato®</span>
-                </div>
+                </a>
 
                 {/* Small type switch — only shown during registration steps */}
                 {phase === 'register' && (
@@ -806,8 +806,9 @@ export default function AppPage() {
                         <button
                           className={`ob-role-card${isC ? ' active' : ''}`}
                           onClick={() => { setUserType('candidate'); setGateEmail('') }}
+                          aria-label={t('Soy candidato', "I'm a candidate")}
                         >
-                          <div className="ob-role-ico-wrap" style={{ fontFamily: 'var(--head)', fontWeight: 800, fontSize: '.85rem', letterSpacing: '-.01em' }}>C</div>
+                          <div className="ob-role-ico-wrap" style={{ fontFamily: 'var(--head)', fontWeight: 800, fontSize: '.85rem', letterSpacing: '-.01em' }} aria-hidden="true">C</div>
                           <div className="ob-role-body">
                             <div className="ob-role-title">{t('Soy candidato', "I'm a candidate")}</div>
                             <div className="ob-role-desc">{t('Encontrá trabajo · Gratis', 'Find jobs · Free')}</div>
@@ -817,8 +818,9 @@ export default function AppPage() {
                         <button
                           className={`ob-role-card${!isC ? ' active' : ''}`}
                           onClick={() => { setUserType('company'); setGateEmail('') }}
+                          aria-label={t('Soy empresa', "I'm a company")}
                         >
-                          <div className="ob-role-ico-wrap" style={{ fontFamily: 'var(--head)', fontWeight: 800, fontSize: '.85rem', letterSpacing: '-.01em' }}>E</div>
+                          <div className="ob-role-ico-wrap" style={{ fontFamily: 'var(--head)', fontWeight: 800, fontSize: '.85rem', letterSpacing: '-.01em' }} aria-hidden="true">E</div>
                           <div className="ob-role-body">
                             <div className="ob-role-title">{t('Soy empresa', "I'm a company")}</div>
                             <div className="ob-role-desc">{t('Top 1% del talento colombiano', 'Top 1% Colombian talent')}</div>
