@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import { Instrument_Sans, Sora } from 'next/font/google'
+import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
 
 const instrumentSans = Instrument_Sans({
@@ -54,7 +55,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es" className={`${sora.variable} ${instrumentSans.variable}`}>
-      <body>{children}</body>
+      <body>
+        {children}
+        <Analytics />
+      </body>
     </html>
   )
 }

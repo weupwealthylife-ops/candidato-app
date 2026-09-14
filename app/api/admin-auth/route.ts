@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-const ADMIN_EMAILS = (process.env.NEXT_PUBLIC_ADMIN_EMAILS || 'enrique280196@gmail.com,carlos280196@hotmail.com')
-  .split(',').map(e => e.trim().toLowerCase())
+// ADMIN_EMAILS is server-only (no NEXT_PUBLIC_ prefix) — stored in Vercel as ADMIN_EMAILS
+const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || process.env.NEXT_PUBLIC_ADMIN_EMAILS || '')
+  .split(',').map(e => e.trim().toLowerCase()).filter(Boolean)
 
 const ADMIN_SECRET = process.env.ADMIN_SECRET
 

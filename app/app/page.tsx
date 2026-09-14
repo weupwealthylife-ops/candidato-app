@@ -988,6 +988,27 @@ export default function AppPage() {
                     <p className="ob-gate-hint">
                       {t('¿No llegó? Revisá la carpeta de spam.', "Didn't arrive? Check your spam folder.")}
                     </p>
+
+                    {/* Referral nudge — show only for newly registered candidates */}
+                    {userType === 'candidate' && (
+                      <div style={{ marginTop: '1.5rem', width: '100%', background: 'var(--pale)', borderRadius: 12, padding: '1rem 1.1rem', textAlign: 'center' }}>
+                        <p style={{ fontSize: '.78rem', color: 'var(--forest)', fontWeight: 600, margin: '0 0 .5rem' }}>
+                          {t('¿Conocés a alguien que busca trabajo?', 'Know someone looking for a job?')}
+                        </p>
+                        <p style={{ fontSize: '.72rem', color: 'var(--ink-45)', margin: '0 0 .75rem', lineHeight: 1.55 }}>
+                          {t('Compartí Candidato — es 100% gratis y puede cambiarle el trabajo.', 'Share Candidato — it\'s 100% free and could change their career.')}
+                        </p>
+                        <a
+                          href={`https://wa.me/?text=${encodeURIComponent(t('Te recomiendo Candidato, la plataforma donde encontré mi próxima oportunidad laboral en Colombia. Es gratis para candidatos: https://candidato.com.co/app', 'Check out Candidato, the platform where I found my next job opportunity in Colombia. Free for candidates: https://candidato.com.co/app'))}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: '.4rem', background: '#25D366', color: 'white', borderRadius: 8, padding: '8px 16px', fontSize: '.78rem', fontWeight: 700, textDecoration: 'none', minHeight: 36 }}
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.125.555 4.12 1.527 5.849L0 24l6.335-1.652C8.05 23.446 9.975 24 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818c-1.943 0-3.746-.587-5.242-1.592l-.374-.223-3.876 1.016 1.033-3.765-.244-.387C2.583 15.708 2.182 13.9 2.182 12 2.182 6.579 6.579 2.182 12 2.182S21.818 6.579 21.818 12 17.421 21.818 12 21.818z"/></svg>
+                          {t('Compartir por WhatsApp', 'Share on WhatsApp')}
+                        </a>
+                      </div>
+                    )}
                   </div>
                 )}
 
