@@ -681,11 +681,17 @@ export default function AppPage() {
       return
     }
     try {
-      const sb = createClient()
-      await sb.auth.signInWithOtp({
-        email,
-        options: { emailRedirectTo: `${window.location.origin}/auth/callback?next=/app` },
+      const res = await fetch('/api/send-magic-link', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, redirectTo: `${window.location.origin}/auth/callback?next=/app` }),
       })
+      if (res.status === 429) {
+        const data = await res.json()
+        showToast(t('Demasiados intentos', 'Too many attempts'), data.error || t('Esperá unos minutos.', 'Wait a few minutes.'), '⚠️')
+        return
+      }
+      if (!res.ok) throw new Error('send failed')
       setPhase('magic-sent')
     } catch {
       showToast(t('Error', 'Error'), t('No pudimos enviar el enlace. Intentá de nuevo.', 'Could not send the link. Please try again.'), '❌')

@@ -1,7 +1,11 @@
 import type { Metadata, Viewport } from 'next'
 import { Instrument_Sans, Sora } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
+import Script from 'next/script'
 import './globals.css'
+
+// Set your LinkedIn partner ID in NEXT_PUBLIC_LINKEDIN_PARTNER_ID Vercel env var
+const LI_PARTNER_ID = process.env.NEXT_PUBLIC_LINKEDIN_PARTNER_ID || ''
 
 const instrumentSans = Instrument_Sans({
   subsets: ['latin'],
@@ -58,6 +62,20 @@ export default function RootLayout({
       <body>
         {children}
         <Analytics />
+        {/* LinkedIn Insight Tag — set NEXT_PUBLIC_LINKEDIN_PARTNER_ID in Vercel */}
+        {LI_PARTNER_ID && (
+          <Script id="li-insight" strategy="afterInteractive">{`
+            _linkedin_partner_id="${LI_PARTNER_ID}";
+            window._linkedin_data_partner_ids=window._linkedin_data_partner_ids||[];
+            window._linkedin_data_partner_ids.push(_linkedin_partner_id);
+            (function(l){if(!l){window.lintrk=function(a,b){window.lintrk.q.push([a,b])};window.lintrk.q=[]}
+            var s=document.getElementsByTagName("script")[0];
+            var b=document.createElement("script");
+            b.type="text/javascript";b.async=true;
+            b.src="https://snap.licdn.com/li.lms-analytics/insight.min.js";
+            s.parentNode.insertBefore(b,s)})(window.lintrk);
+          `}</Script>
+        )}
       </body>
     </html>
   )
