@@ -12,14 +12,20 @@ export default function NotFound() {
       background: '#F5F4F0',
       display: 'flex',
       flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: '2rem max(5vw,24px)',
       fontFamily: 'var(--font-instrument, system-ui)',
-      textAlign: 'center',
     }}>
+      {/* Minimal nav */}
+      <nav style={{ height: 64, display: 'flex', alignItems: 'center', padding: '0 max(5vw,24px)', borderBottom: '1px solid rgba(14,30,32,.07)' }}>
+        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/bird-logo.png" alt="Candidato" width={24} height={24} style={{ objectFit: 'contain' }} />
+          <span style={{ fontFamily: 'var(--font-sora, system-ui)', fontWeight: 700, fontSize: '.95rem', color: '#1B3B3E' }}>Candidato®</span>
+        </Link>
+      </nav>
+
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '2rem max(5vw,24px)', textAlign: 'center' }}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/bird-logo.png" alt="Candidato" width={48} height={48} style={{ objectFit: 'contain', opacity: .35, marginBottom: '1.5rem' }} />
+      <img src="/bird-logo.png" alt="" aria-hidden="true" width={48} height={48} style={{ objectFit: 'contain', opacity: .25, marginBottom: '1.5rem' }} />
 
       <p style={{ fontSize: '.7rem', fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase', color: '#EA6440', marginBottom: '.5rem' }}>
         Error 404
@@ -56,6 +62,7 @@ export default function NotFound() {
         }}>
           Abrir la app
         </Link>
+      </div>
       </div>
     </div>
   )

@@ -162,6 +162,7 @@ export default function Pricing() {
               border: 'none', cursor: 'pointer', borderRadius: 10,
               padding: '10px 20px', fontSize: '.84rem', fontWeight: 700,
               fontFamily: 'inherit', transition: 'all .18s', whiteSpace: 'nowrap',
+              minHeight: 44,
               background: tab === 'matching' ? 'var(--forest)' : 'transparent',
               color: tab === 'matching' ? 'white' : 'var(--ink-70)',
               boxShadow: tab === 'matching' ? '0 2px 8px rgba(27,59,62,.25)' : 'none',
@@ -175,6 +176,7 @@ export default function Pricing() {
               border: 'none', cursor: 'pointer', borderRadius: 10,
               padding: '10px 20px', fontSize: '.84rem', fontWeight: 700,
               fontFamily: 'inherit', transition: 'all .18s', whiteSpace: 'nowrap',
+              minHeight: 44,
               background: tab === 'preseleccion' ? 'var(--forest)' : 'transparent',
               color: tab === 'preseleccion' ? 'white' : 'var(--ink-70)',
               boxShadow: tab === 'preseleccion' ? '0 2px 8px rgba(27,59,62,.25)' : 'none',
@@ -344,7 +346,7 @@ export default function Pricing() {
             )}
             <a
               href="https://wa.me/573205046723?text=Hola%2C%20vengo%20de%20candidato.com.co%20y%20me%20interesa%20un%20plan%20enterprise"
-              style={{ color: 'var(--forest)', fontWeight: 600, textDecoration: 'underline', textUnderlineOffset: 3, display: 'inline-block', padding: '.5rem 0' }}
+              style={{ color: 'var(--forest)', fontWeight: 600, textDecoration: 'underline', textUnderlineOffset: 3, display: 'inline-flex', alignItems: 'center', minHeight: 44, padding: '0 2px' }}
               target="_blank"
               rel="noopener noreferrer"
             >
@@ -359,7 +361,7 @@ export default function Pricing() {
             )}
             <a
               href="https://wa.me/573205046723?text=Hola%2C%20me%20interesa%20una%20demo%20del%20servicio%20de%20Preselección%20de%20candidato.com.co"
-              style={{ color: 'var(--forest)', fontWeight: 600, textDecoration: 'underline', textUnderlineOffset: 3, display: 'inline-block', padding: '.5rem 0' }}
+              style={{ color: 'var(--forest)', fontWeight: 600, textDecoration: 'underline', textUnderlineOffset: 3, display: 'inline-flex', alignItems: 'center', minHeight: 44, padding: '0 2px' }}
               target="_blank"
               rel="noopener noreferrer"
             >
