@@ -46,7 +46,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
       <h2 style={{ fontFamily: 'var(--font-sora, system-ui)', fontSize: '1.05rem', fontWeight: 700, color: '#0E1E20', marginBottom: '.75rem', paddingBottom: '.4rem', borderBottom: '1px solid rgba(14,30,32,.07)' }}>
         {title}
       </h2>
-      <div style={{ fontSize: '.875rem', color: 'rgba(14,30,32,.7)', lineHeight: 1.75 }}>
+      <div style={{ fontSize: '.9375rem', color: 'rgba(14,30,32,.7)', lineHeight: 1.8 }}>
         {children}
       </div>
     </section>

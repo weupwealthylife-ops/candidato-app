@@ -51,7 +51,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,.btn:focus-visible
   border-bottom:1px solid var(--line);transition:box-shadow .3s;
 }
 .nav.scrolled{box-shadow:0 1px 20px rgba(14,30,32,.06)}
-.nav-logo{display:flex;align-items:center;gap:8px;font-family:var(--head);font-size:1.05rem;font-weight:700;color:var(--forest);letter-spacing:-.02em}
+.nav-logo{display:flex;align-items:center;gap:8px;font-family:var(--head);font-size:1.05rem;font-weight:700;color:var(--forest);letter-spacing:-.02em;min-height:44px}
 .nav-bird{width:34px;height:34px;flex-shrink:0;object-fit:contain}
 .nav-links{list-style:none;display:flex;align-items:center;gap:1.8rem}
 .nav-links a{font-size:.8rem;font-weight:500;color:var(--ink-70);letter-spacing:.01em;transition:color .2s}

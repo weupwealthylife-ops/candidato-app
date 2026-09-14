@@ -857,7 +857,7 @@ export default function AppPage() {
                     <button
                       type="button"
                       onClick={sendMagicLink}
-                      style={{ background: 'none', border: 'none', color: 'var(--ink-45)', fontSize: '.75rem', cursor: 'pointer', marginTop: '.4rem', textDecoration: 'underline', padding: '.75rem 0', display: 'inline-block' }}
+                      style={{ background: 'none', border: 'none', color: 'var(--ink-45)', fontSize: '.75rem', cursor: 'pointer', marginTop: '.4rem', textDecoration: 'underline', padding: '.75rem 0', display: 'inline-flex', alignItems: 'center', minHeight: '44px' }}
                     >
                       {t('¿Olvidaste tu acceso? Recibir enlace por email', 'Forgot your access? Get a login link by email')}
                     </button>
@@ -1165,7 +1165,7 @@ export default function AppPage() {
                             </button>
                           </div>
                           <div className="fg fg-full">
-                            <p style={{ fontSize: '.75rem', color: 'var(--ink-45)', textAlign: 'center', lineHeight: 1.6 }}>
+                            <p style={{ fontSize: '.8rem', color: 'var(--ink-45)', textAlign: 'center', lineHeight: 1.6 }}>
                               {t('Al registrarte aceptás nuestros', 'By signing up you accept our')}{' '}
                               <a href="/terminos" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--ink-70)', fontWeight: 600 }}>{t('términos', 'terms')}</a>
                               {' '}{t('y', 'and')}{' '}
