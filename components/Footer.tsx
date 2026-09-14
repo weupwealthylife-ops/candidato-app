@@ -18,6 +18,8 @@ export default function Footer() {
         <a href="/app">{t('Candidatos', 'Candidates')}</a>
         <a href="#pricing">{t('Empresas', 'Companies')}</a>
         <a href="#contact">{t('Contacto', 'Contact')}</a>
+        <a href="/privacidad" style={{ opacity: .6 }}>{t('Privacidad', 'Privacy')}</a>
+        <a href="/terminos" style={{ opacity: .6 }}>{t('Términos', 'Terms')}</a>
       </div>
     </footer>
   )

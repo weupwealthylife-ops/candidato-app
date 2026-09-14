@@ -1165,8 +1165,12 @@ export default function AppPage() {
                             </button>
                           </div>
                           <div className="fg fg-full">
-                            <p style={{ fontSize: '.64rem', color: 'var(--ink-45)', textAlign: 'center' }}>
-                              {t('Al registrarte aceptás los términos. Recibirás un email de verificación.', 'By signing up you accept the terms. You\'ll receive a verification email.')}
+                            <p style={{ fontSize: '.75rem', color: 'var(--ink-45)', textAlign: 'center', lineHeight: 1.6 }}>
+                              {t('Al registrarte aceptás nuestros', 'By signing up you accept our')}{' '}
+                              <a href="/terminos" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--ink-70)', fontWeight: 600 }}>{t('términos', 'terms')}</a>
+                              {' '}{t('y', 'and')}{' '}
+                              <a href="/privacidad" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--ink-70)', fontWeight: 600 }}>{t('privacidad', 'privacy policy')}</a>.
+                              {' '}{t('Recibirás un email de verificación.', 'You\'ll receive a verification email.')}
                             </p>
                           </div>
                         </div>

@@ -711,13 +711,17 @@ function MatchGraphInner() {
       <div style={{ flex: 1, background: OFF, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2.5rem 2rem', borderTopLeftRadius: 0, borderBottomLeftRadius: 0 }}>
         <div style={{ width: '100%', maxWidth: 380 }}>
           {/* Mobile-only logo */}
-          <div className="mg-mobile-brand" style={{ alignItems: 'center', gap: 10, marginBottom: '2rem', display: 'none' }}>
+          <div className="mg-mobile-brand" style={{ alignItems: 'center', gap: 10, marginBottom: '1.2rem', display: 'none' }}>
             <BirdLogo size={36} />
             <div>
               <div style={{ fontFamily: 'var(--head)', fontWeight: 700, fontSize: '1.05rem', color: FOREST }}>Candidato®</div>
               <div style={{ fontSize: '.6rem', color: '#9aacac', letterSpacing: '.12em', textTransform: 'uppercase' }}>Match Graph</div>
             </div>
           </div>
+          {/* Mobile-only context line */}
+          <p className="mg-mobile-brand" style={{ display: 'none', fontSize: '.8rem', color: '#9aacac', margin: '0 0 1.6rem', lineHeight: 1.6 }}>
+            Accedé a tus evaluaciones de talento preseleccionado para tu empresa.
+          </p>
 
           <div className="mg-desktop-logo" style={{ alignItems: 'center', gap: 8, marginBottom: '1.5rem' }}>
             <BirdLogo size={28} />

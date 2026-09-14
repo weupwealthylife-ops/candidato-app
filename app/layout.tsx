@@ -35,7 +35,7 @@ export const metadata: Metadata = {
     images: [{ url: '/bird-logo.png', width: 400, height: 400, alt: 'Candidato' }],
   },
   twitter: {
-    card: 'summary',
+    card: 'summary_large_image',
     title: 'Candidato® — Matching inteligente de talento',
     description: 'Conectamos el talento correcto con la empresa correcta en Colombia.',
   },
