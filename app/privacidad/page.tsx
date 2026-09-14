@@ -59,7 +59,7 @@ function Legal() {
   return (
     <div>
       <p style={{ fontSize: '.875rem', color: ink45, marginBottom: '1.8rem', lineHeight: 1.75 }}>
-        Candidato Colombia SAS (en adelante <strong style={{ color: forest }}>"Candidato"</strong>) es responsable del tratamiento de los datos personales que recopila a través de su plataforma digital disponible en <strong style={{ color: forest }}>candidato.com.co</strong>. Esta política se rige por la <strong>Ley 1581 de 2012</strong> y el Decreto 1377 de 2013 de la República de Colombia.
+        Candidato Colombia SAS (en adelante <strong style={{ color: forest }}>&ldquo;Candidato&rdquo;</strong>) es responsable del tratamiento de los datos personales que recopila a través de su plataforma digital disponible en <strong style={{ color: forest }}>candidato.com.co</strong>. Esta política se rige por la <strong>Ley 1581 de 2012</strong> y el Decreto 1377 de 2013 de la República de Colombia.
       </p>
 
       <Section title="1. Datos que recopilamos">

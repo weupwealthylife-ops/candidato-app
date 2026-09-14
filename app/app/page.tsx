@@ -774,10 +774,10 @@ export default function AppPage() {
               <div className="onboard-right">
               <div className="onboard-right-inner">
                 {/* Mobile-only logo header — linked back to landing */}
-                <a href="/" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '1.6rem', textDecoration: 'none', minHeight: '44px' }} className="ob-mobile-brand">
+                <Link href="/" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '1.6rem', textDecoration: 'none', minHeight: '44px' }} className="ob-mobile-brand">
                   <Image src="/bird-logo.png" alt="Candidato" width={28} height={28} style={{ objectFit: 'contain' }} />
                   <span style={{ fontFamily: 'var(--head)', fontSize: '.95rem', fontWeight: 700, color: 'var(--forest)' }}>Candidato®</span>
-                </a>
+                </Link>
 
                 {/* Small type switch — only shown during registration steps */}
                 {phase === 'register' && (
