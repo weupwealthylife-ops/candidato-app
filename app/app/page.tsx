@@ -2,6 +2,7 @@
 
 import { useState, useEffect, KeyboardEvent } from 'react'
 import Image from 'next/image'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 
 type UserType = 'candidate' | 'company'
