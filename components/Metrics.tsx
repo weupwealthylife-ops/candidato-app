@@ -4,9 +4,11 @@ import { useEffect, useRef, useState } from 'react'
 import { useLang } from '@/lib/LangContext'
 
 function useCountUp(target: number, duration = 1400, trigger: boolean) {
-  const [val, setVal] = useState(0)
+  // Start at target so SSR/OG scrapers see real numbers; animate to 0→target on client
+  const [val, setVal] = useState(target)
   useEffect(() => {
     if (!trigger) return
+    setVal(0)
     const start = performance.now()
     const step = (now: number) => {
       const p = Math.min((now - start) / duration, 1)

@@ -116,7 +116,8 @@ button:focus-visible,input:focus-visible,select:focus-visible,.btn:focus-visible
 .nav-hamburger span.open:nth-child(3){transform:translateY(-7px) rotate(-45deg)}
 
 /* Mobile drawer */
-.nav-mobile-drawer{position:fixed;inset:0;z-index:500;background:rgba(14,30,32,.5);backdrop-filter:blur(4px)}
+.nav-mobile-drawer{position:fixed;inset:0;z-index:500;background:rgba(14,30,32,.7);backdrop-filter:blur(6px)}
+.nav.nav-drawer-open{visibility:hidden}
 .nav-mobile-inner{position:absolute;top:0;right:0;width:min(320px,90vw);height:100vh;background:white;padding:1.5rem 1.3rem;overflow-y:auto;box-shadow:-8px 0 32px rgba(0,0,0,.15)}
 .hero-stats{
   display:flex;gap:0;padding-top:2.4rem;border-top:1px solid var(--line);
@@ -164,7 +165,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,.btn:focus-visible
   transition:transform .6s cubic-bezier(.22,1,.36,1);
 }
 .stat-item.in .stat-bar{transform:scaleX(1)}
-.stat-l{font-size:.72rem;color:var(--ink-45);margin-top:6px;font-weight:500;letter-spacing:.02em}
+.stat-l{font-size:.75rem;color:var(--ink-45);margin-top:6px;font-weight:500;letter-spacing:.02em}
 
 /* Right panel — forest with iPhone */
 .hero-r{
@@ -201,7 +202,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,.btn:focus-visible
 
 /* ── Mobile Hero Visual ── */
 .hero-mobile-visual{display:none;margin-top:2rem;width:100%;max-width:400px}
-.hmv-label{font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--ink-45);margin-bottom:.6rem;font-family:var(--body)}
+.hmv-label{font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--ink-45);margin-bottom:.6rem;font-family:var(--body)}
 .hmv-card{background:var(--white);border:1px solid var(--line);border-radius:14px;padding:.25rem 0;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.06)}
 .hmv-row{display:flex;align-items:center;gap:.75rem;padding:.75rem 1rem}
 .hmv-row-sep{border-top:1px solid var(--line)}
@@ -495,7 +496,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,.btn:focus-visible
 .m-card.accent{background:var(--pale);border-color:var(--mist)}
 .m-wide-text{font-size:.82rem;color:var(--ink-70);line-height:1.7;max-width:360px;font-weight:400}
 
-.m-tag{display:inline-block;font-size:.6rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--coral);background:var(--coral-lt);border-radius:4px;padding:2px 7px;margin-bottom:.9rem}
+.m-tag{display:inline-block;font-size:.75rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--coral);background:var(--coral-lt);border-radius:4px;padding:2px 7px;margin-bottom:.9rem}
 .m-card.dark .m-tag{background:rgba(234,100,64,.18);color:rgba(255,210,190,.9)}
 .m-num{font-family:var(--head);font-size:3.2rem;font-weight:800;line-height:1;letter-spacing:-.05em;color:var(--forest);margin-bottom:.4rem}
 .m-card.dark .m-num{color:var(--white)}
@@ -1013,7 +1014,7 @@ footer{
   .contact-row{gap:.75rem}
 }
 @media(max-width:640px){
-  nav{height:60px;padding:0 5vw}
+  nav#nav{height:60px;padding:0 5vw}
   .lang-pill{display:none}
   .hero-l{padding:94px 5vw 56px}
   .hero-h1{font-size:clamp(2.2rem,8vw,3rem)}
@@ -1504,7 +1505,7 @@ footer{
   .frow{grid-template-columns:1fr}
 
   /* Landing */
-  nav{height:60px;padding:0 5vw}
+  nav#nav{height:60px;padding:0 5vw}
   .lang-pill{display:none}
   .hero-l{padding:94px 5vw 56px}
   .hero-h1{font-size:clamp(2.2rem,8vw,3rem)}

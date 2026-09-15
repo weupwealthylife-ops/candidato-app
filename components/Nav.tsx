@@ -20,7 +20,7 @@ export default function Nav() {
 
   return (
     <>
-      <nav className={`nav${scrolled ? ' scrolled' : ''}`} id="nav">
+      <nav className={`nav${scrolled ? ' scrolled' : ''}${menuOpen ? ' nav-drawer-open' : ''}`} id="nav">
         <a href="#hero" className="nav-logo" onClick={close}>
           <Image src="/bird-logo.png" alt="Candidato" width={34} height={34} className="nav-bird" priority />
           Candidato®
